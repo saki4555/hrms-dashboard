@@ -31,39 +31,22 @@ const data = {
       title: "Dashboard",
       url: "/",
       items: [
-        { title: "Overview", url: "/dashboard/overview", isActive: true },
-        { title: "Announcements", url: "/dashboard/announcements" },
+        { title: "Overview", url: "/", isActive: false },
+        { title: "Announcements", url: "/" },
       ],
     },
     {
       title: "Employees",
       url: "/employees",
       items: [
-        { title: "All Employees", url: "/employees" },
-        { title: "Departments", url: "/departments" },
-        { title: "Divisions", url: "/divisions" },
-        { title: "Attendance", url: "/attendance" },
-        { title: "Leave Requests", url: "/leaves" },
+      
+        {
+          title: "Core HR", url: "/core-hr", isActive: true
+        },
+        
       ],
     },
-    {
-      title: "Payroll",
-      url: "/payroll",
-      items: [
-        { title: "Salary Management", url: "/payroll/salaries" },
-        { title: "Bonuses & Deductions", url: "/payroll/adjustments" },
-        { title: "Payslips", url: "/payroll/payslips" },
-      ],
-    },
-    {
-      title: "Performance",
-      url: "/performance",
-      items: [
-        { title: "Reviews", url: "/performance/reviews" },
-        { title: "Goals", url: "/performance/goals" },
-        { title: "Training", url: "/performance/training" },
-      ],
-    },
+    
    
   ],
 }
