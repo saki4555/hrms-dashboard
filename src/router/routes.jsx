@@ -3,7 +3,8 @@ import Login from "@/pages/login"
 import Welcome from "@/pages/welcome"
 import { Route, Routes } from "react-router"
 import ProtectedRoute from "./protectec-route"
-import CoreHR from "@/pages/core-hr"
+import CoreHRPage from "@/features/core-hr/pages/coreHRPage"
+
 
 
 const AppRoutes = () => {
@@ -14,7 +15,7 @@ const AppRoutes = () => {
 
        <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Welcome />} />
-        <Route path="core-hr" element={<CoreHR />} /> {/* Remove leading slash */}
+        <Route path="core-hr" element={<CoreHRPage />} /> 
        </Route>
     </Routes> 
   )
