@@ -37,7 +37,7 @@ import { toast } from "sonner";
 import {
   MARITAL_STATUS_OPTIONS,
   REG_DISABILITY_OPTIONS,
-} from "@/lib/constants/employee-options";
+} from "@/lib/constants/employeeOptions";
 import { DatePicker } from "@/components/DatePicker";
 
 const employeeSchema = z.object({

@@ -46,83 +46,16 @@ import {
 import CreateEmployeeSheet from "./CreateEmployeeSheet";
 import { useEmployees } from "../hooks/useEmployees";
 import { DataTablePagination } from "@/components/DataTablePagination";
+import { useNavigate } from "react-router";
+import { usePersonTypes } from "../hooks/usePersonTypes";
 
-// Employee data
-// const employeeData = [
-//   {
-//     PERSON_ID: "1",
-//     EMP_NO: "1",
-//     TITLE: null,
-//     FIRST_NAME: "John",
-//     LAST_NAME: "Doe",
-//     GENDER: "Male",
-//     DATE_OF_BIRTH: "1990-05-01",
-//     JOIN_DATE: "2023-01-01",
-//     PERSON_TYPE_ID: "1",
-//     STATUS: "1",
-//   },
-//   {
-//     PERSON_ID: "17",
-//     EMP_NO: "E00000",
-//     TITLE: "Mr.",
-//     FIRST_NAME: "Rahim",
-//     LAST_NAME: "Uddin",
-//     GENDER: "Male",
-//     DATE_OF_BIRTH: "1992-07-15",
-//     JOIN_DATE: "2023-05-01",
-//     PERSON_TYPE_ID: "1",
-//     STATUS: "1",
-//   },
-//   {
-//     PERSON_ID: "19",
-//     EMP_NO: "E00018",
-//     TITLE: "Ms.",
-//     FIRST_NAME: "Fatema",
-//     LAST_NAME: "Akter",
-//     GENDER: "Female",
-//     DATE_OF_BIRTH: "1988-11-25",
-//     JOIN_DATE: "2024-01-15",
-//     PERSON_TYPE_ID: "2",
-//     STATUS: "1",
-//   },
-//   {
-//     PERSON_ID: "12",
-//     EMP_NO: "12",
-//     TITLE: "Mrs.",
-//     FIRST_NAME: "Saki",
-//     LAST_NAME: "aa",
-//     GENDER: "Female",
-//     DATE_OF_BIRTH: "2025-10-24",
-//     JOIN_DATE: "2025-10-29",
-//     PERSON_TYPE_ID: "1",
-//     STATUS: "1",
-//   },
-//   {
-//     PERSON_ID: "22",
-//     EMP_NO: "E00021",
-//     TITLE: "Dr.",
-//     FIRST_NAME: "Gems",
-//     LAST_NAME: "asfdasdf",
-//     GENDER: "Male",
-//     DATE_OF_BIRTH: "2025-10-22",
-//     JOIN_DATE: "2025-10-22",
-//     PERSON_TYPE_ID: "1",
-//     STATUS: "1",
-//   },
-// ];
 
-const personTypes = [
-  { PERSON_TYPE_ID: "1", PERSON_TYPE: "Management", STATUS: "1" },
-  { PERSON_TYPE_ID: "2", PERSON_TYPE: "Non-Management Staff", STATUS: "1" },
-  { PERSON_TYPE_ID: "3", PERSON_TYPE: "Non-Management Worker", STATUS: "1" },
-  { PERSON_TYPE_ID: "4", PERSON_TYPE: "Contact", STATUS: "1" },
-  { PERSON_TYPE_ID: "5", PERSON_TYPE: "Intern", STATUS: "1" },
-];
 
-const getPersonTypeName = (id) => {
-  const type = personTypes.find((t) => t.PERSON_TYPE_ID === id);
-  return type ? type.PERSON_TYPE : "Unknown";
-};
+
+
+
+
+
 
 const getStatusLabel = (status) => {
   return status === "1" ? "Active" : "Inactive";
@@ -135,11 +68,16 @@ export default function EmployeeList() {
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const navigate = useNavigate();
+
   const { data: employeeData = [], isLoading, isError } = useEmployees();
+  const {data: personTypes = [], isLoading: personTypesLoading} = usePersonTypes();
 
-  console.log({ isLoading, isError });
 
-  console.log({ employeeData }, "from use employee hook");
+  console.log("Person types", personTypes)
+
+
+  // console.log({ employeeData }, "from use employee hook");
 
   const columns = [
     {
@@ -276,9 +214,7 @@ export default function EmployeeList() {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() =>
-                  alert(
-                    `View details for ${employee.FIRST_NAME} ${employee.LAST_NAME}`
-                  )
+                  navigate(`/core-hr/employee/${employee.EMP_NO}`)
                 }
               >
                 <Eye className="mr-2 h-4 w-4" />
@@ -321,6 +257,12 @@ export default function EmployeeList() {
       globalFilter,
     },
   });
+
+
+  const getPersonTypeName = (id) => {
+  const type = personTypes.find((t) => t.PERSON_TYPE_ID === id);
+  return type ? type.PERSON_TYPE : "Unknown";
+};
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
@@ -434,9 +376,9 @@ export default function EmployeeList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -479,7 +421,7 @@ export default function EmployeeList() {
               </Table>
             </div>
 
-           
+
 
             <DataTablePagination table={table} />
           </div>
