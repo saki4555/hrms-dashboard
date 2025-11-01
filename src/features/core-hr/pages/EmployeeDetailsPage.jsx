@@ -38,6 +38,8 @@ export default function EmployeeDetailsPage() {
   
   const { data: employee, isLoading, error } = useEmployee(empNo)
 
+  console.log({employee}, "coming from employee details page");
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">

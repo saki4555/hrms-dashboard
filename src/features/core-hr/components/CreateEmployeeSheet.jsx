@@ -1,8 +1,5 @@
-
-
-
 import React, { useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import axios from "axios";
 import { toast } from "sonner";
 import {
@@ -45,9 +48,10 @@ const employeeSchema = z.object({
   title: z
     .string({
       invalid_type_error: "Title must be a string",
-    }).min(1, "Title is required")
+    })
+    .min(1, "Title is required")
     .trim(),
-  
+
   firstName: z
     .string({
       required_error: "First name is required",
@@ -55,7 +59,7 @@ const employeeSchema = z.object({
     })
     .min(1, "First name cannot be empty")
     .trim(),
-  
+
   lastName: z
     .string({
       required_error: "Last name is required",
@@ -63,7 +67,7 @@ const employeeSchema = z.object({
     })
     .min(1, "Last name cannot be empty")
     .trim(),
-  
+
   fathersName: z
     .string({
       required_error: "Father's name is required",
@@ -71,9 +75,9 @@ const employeeSchema = z.object({
     })
     .min(1, "Father's name cannot be empty")
     .trim(),
-  
+
   fathersNameB: z.string().trim().optional(),
-  
+
   mothersName: z
     .string({
       required_error: "Mother's name is required",
@@ -81,21 +85,22 @@ const employeeSchema = z.object({
     })
     .min(1, "Mother's name cannot be empty")
     .trim(),
-  
+
   mothersNameB: z.string().trim().optional(),
-  
+
   gender: z
     .string({
       required_error: "Gender is required",
       invalid_type_error: "Gender must be a string",
-    }).min(1,"Gender is Required")
+    })
+    .min(1, "Gender is Required")
     .trim(),
-  
+
   dateOfBirth: z.date({
     required_error: "Date of birth is required",
     invalid_type_error: "Invalid date format for date of birth",
   }),
-  
+
   // Optional Personal Information
   nid: z.string().trim().optional(),
   birthRegNo: z.string().trim().optional(),
@@ -104,26 +109,27 @@ const employeeSchema = z.object({
   countryOfBirth: z.string().trim().optional(),
   maritalStatus: z.string().trim().optional(),
   nationality: z.string().trim().optional(),
-  
+
   // Employment Information
   joinDate: z.date({
     required_error: "Join date is required",
     invalid_type_error: "Invalid date format for join date",
   }),
-  
+
   personTypeId: z
     .string({
       required_error: "Person type is required",
       invalid_type_error: "Person type must be a string",
-    }).min(1, "Person type is required")
+    })
+    .min(1, "Person type is required")
     .trim(),
-  
+
   regDisability: z.string().trim().optional(),
   effectiveStartDate: z.date().optional(),
-  
+
   // Present Address
   presentAddressType: z.string().trim().optional(),
-  
+
   presentAddress1: z
     .string({
       required_error: "Present address is required",
@@ -131,7 +137,7 @@ const employeeSchema = z.object({
     })
     .min(1, "Present address cannot be empty")
     .trim(),
-  
+
   presentAddress1B: z.string().trim().optional(),
   presentCountry: z.string().trim().optional(),
   presentRegion: z.string().trim().optional(),
@@ -139,10 +145,10 @@ const employeeSchema = z.object({
   presentUpazilla: z.string().trim().optional(),
   presentUnions: z.string().trim().optional(),
   presentArea: z.string().trim().optional(),
-  
+
   // Permanent Address
   permanentAddressType: z.string().trim().optional(),
-  
+
   permanentAddress1: z
     .string({
       required_error: "Permanent address is required",
@@ -150,7 +156,7 @@ const employeeSchema = z.object({
     })
     .min(1, "Permanent address cannot be empty")
     .trim(),
-  
+
   permanentAddress1B: z.string().trim().optional(),
   permanentCountry: z.string().trim().optional(),
   permanentRegion: z.string().trim().optional(),
@@ -230,10 +236,16 @@ export default function CreateEmployeeSheet() {
 
       // Build addresses array
       const addresses = [];
-      
+
       // Add present address if any field is filled
-      if (data.presentAddress1 || data.presentCountry || data.presentRegion || 
-          data.presentDistrict || data.presentUpazilla || data.presentArea) {
+      if (
+        data.presentAddress1 ||
+        data.presentCountry ||
+        data.presentRegion ||
+        data.presentDistrict ||
+        data.presentUpazilla ||
+        data.presentArea
+      ) {
         addresses.push({
           ADDRESS_TYPE_ID: 1, // Present address type
           ADDRESS1: data.presentAddress1 || "",
@@ -249,8 +261,14 @@ export default function CreateEmployeeSheet() {
       }
 
       // Add permanent address if any field is filled
-      if (data.permanentAddress1 || data.permanentCountry || data.permanentRegion || 
-          data.permanentDistrict || data.permanentUpazilla || data.permanentArea) {
+      if (
+        data.permanentAddress1 ||
+        data.permanentCountry ||
+        data.permanentRegion ||
+        data.permanentDistrict ||
+        data.permanentUpazilla ||
+        data.permanentArea
+      ) {
         addresses.push({
           ADDRESS_TYPE_ID: 2, // Permanent address type
           ADDRESS1: data.permanentAddress1 || "",
@@ -308,7 +326,7 @@ export default function CreateEmployeeSheet() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent className="md:max-w-2xl overflow-y-auto">
+      <SheetContent className="md:max-w-2xl overflow-y-auto border-l">
         <SheetHeader>
           <SheetTitle>Create Employee</SheetTitle>
           <SheetDescription>
@@ -320,641 +338,671 @@ export default function CreateEmployeeSheet() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-6 space-y-6 px-4"
+            className="mt-4 space-y-6 px-5 md:px-6"
           >
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Personal Information
-              </h3>
+            <Accordion type="single" collapsible defaultValue="personal">
+              {/* Personal Information */}
+              <AccordionItem value="personal">
+                <AccordionTrigger>Personal Information</AccordionTrigger>
+                
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select title" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Mr.">Mr.</SelectItem>
+                              <SelectItem value="Mrs.">Mrs.</SelectItem>
+                              <SelectItem value="Ms.">Ms.</SelectItem>
+                              <SelectItem value="Dr.">Dr.</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select title" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Mr.">Mr.</SelectItem>
-                          <SelectItem value="Mrs.">Mrs.</SelectItem>
-                          <SelectItem value="Ms.">Ms.</SelectItem>
-                          <SelectItem value="Dr.">Dr.</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter first name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter first name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter last name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter last name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="fathersName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Father's Name *</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter father's name"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="fathersName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Father's Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter father's name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="fathersNameB"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Father's Name (Bangla)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="পিতার নাম" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="fathersNameB"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Father's Name (Bangla)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="পিতার নাম" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="mothersName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mother's Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter mother's name"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="mothersName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mother's Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter mother's name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="mothersNameB"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mother's Name (Bangla)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="মাতার নাম" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="mothersNameB"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mother's Name (Bangla)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="মাতার নাম" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gender *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Male">Male</SelectItem>
+                              <SelectItem value="Female">Female</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gender *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date of Birth *</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select date of birth"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="dateOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Birth *</FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Select date of birth"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="nid"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>NID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter NID number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="nid"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>NID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter NID number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="birthRegNo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Birth Registration No</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter birth reg. no"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="birthRegNo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Birth Registration No</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter birth reg. no" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="townOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Town of Birth</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter town of birth"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="townOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Town of Birth</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter town of birth" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="regionOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Region of Birth</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter region" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="regionOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Region of Birth</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter region" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="countryOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country of Birth</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter country" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="countryOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country of Birth</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter country" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="maritalStatus"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marital Status</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {MARITAL_STATUS_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="maritalStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marital Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {MARITAL_STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="nationality"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nationality</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter nationality" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-                <FormField
-                  control={form.control}
-                  name="nationality"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nationality</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter nationality" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Employment Information */}
+              <AccordionItem value="employment">
+                <AccordionTrigger>Employment Information</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="joinDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Join Date *</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select join date"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="personTypeId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Person Type *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select person type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {personTypes.map((type) => (
+                                <SelectItem
+                                  key={type.PERSON_TYPE_ID}
+                                  value={type.PERSON_TYPE_ID.toString()}
+                                >
+                                  {type.PERSON_TYPE}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="regDisability"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Registered Disability</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select option" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {REG_DISABILITY_OPTIONS.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="effectiveStartDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Effective Start Date</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select effective start date"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Address Information - Present */}
+              <AccordionItem value="present">
+                <AccordionTrigger>
+                  Address Information (Present)
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="presentAddress1"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Address Line 1</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentAddress1B"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Address Line 1 (Bangla)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ঠিকানা" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter country" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentRegion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Region</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter region" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentDistrict"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>District</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter district" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentUpazilla"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Upazilla</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter upazilla" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentUnions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unions</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter unions" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="presentArea"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Area/Village</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter area/village"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Address Information - Permanent */}
+              <AccordionItem value="permanent">
+                <AccordionTrigger>
+                  Address Information (Permanent)
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress1"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Address Line 1</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress1B"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Address Line 1 (Bangla)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ঠিকানা" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter country" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentRegion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Region</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter region" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentDistrict"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>District</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter district" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentUpazilla"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Upazilla</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter upazilla" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentUnions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unions</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter unions" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="permanentArea"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Area/Village</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter area/village"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Form Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 py-4">
+                <Button type="submit">Submit</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    form.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
               </div>
-            </div>
-
-            {/* Employment Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Employment Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="joinDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Join Date *</FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Select join date"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="personTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Person Type *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select person type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {personTypes.map((type) => (
-                            <SelectItem
-                              key={type.PERSON_TYPE_ID}
-                              value={type.PERSON_TYPE_ID.toString()}
-                            >
-                              {type.PERSON_TYPE}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="regDisability"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Registered Disability</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {REG_DISABILITY_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="effectiveStartDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Effective Start Date</FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Select effective start date"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Address Information - Present */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Address Information (Present)
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="presentAddress1"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentAddress1B"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1 (Bangla)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ঠিকানা" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentCountry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter country" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentRegion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Region</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter region" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentDistrict"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>District</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter district" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentUpazilla"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Upazilla</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter upazilla" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentUnions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unions</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter unions" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="presentArea"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Area/Village</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter area/village" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Address Information - Permanent */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Address Information (Permanent)
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="permanentAddress1"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentAddress1B"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Address Line 1 (Bangla)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ঠিকানা" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentCountry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter country" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentRegion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Region</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter region" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentDistrict"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>District</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter district" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentUpazilla"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Upazilla</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter upazilla" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentUnions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unions</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter unions" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="permanentArea"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Area/Village</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter area/village" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 py-4">
-              <Button type="submit">Submit</Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setOpen(false);
-                  form.reset();
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            </Accordion>
           </form>
         </Form>
       </SheetContent>
