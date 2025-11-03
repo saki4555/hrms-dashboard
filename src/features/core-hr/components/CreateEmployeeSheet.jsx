@@ -338,7 +338,7 @@ export default function CreateEmployeeSheet() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-4 space-y-6 px-5 md:px-6"
+            className="mt-4 space-y-6 px-6 md:px-8"
           >
             <Accordion type="single" collapsible defaultValue="personal">
               {/* Personal Information */}
