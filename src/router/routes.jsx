@@ -3,8 +3,9 @@ import Login from "@/pages/login"
 import Welcome from "@/pages/welcome"
 import { Route, Routes } from "react-router"
 import ProtectedRoute from "./protectec-route"
-import CoreHRPage from "@/features/core-hr/pages/coreHRPage"
+
 import EmployeeDetailsPage from "@/features/core-hr/pages/EmployeeDetailsPage"
+import CoreHRPage from "@/features/core-hr/pages/CoreHRPage"
 
 
 
