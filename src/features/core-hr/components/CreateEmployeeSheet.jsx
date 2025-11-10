@@ -326,7 +326,7 @@ export default function CreateEmployeeSheet() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent className="md:max-w-2xl overflow-y-auto">
+      <SheetContent className="md:max-w-2xl overflow-y-auto" >
         <SheetHeader>
           <SheetTitle>Create Employee</SheetTitle>
           <SheetDescription>

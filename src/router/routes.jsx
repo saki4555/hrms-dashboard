@@ -6,6 +6,8 @@ import ProtectedRoute from "./protectec-route"
 
 import EmployeeDetailsPage from "@/features/core-hr/pages/EmployeeDetailsPage"
 import CoreHRPage from "@/features/core-hr/pages/CoreHRPage"
+import EditEmployeePage from "@/features/core-hr/pages/EditEmployeePage"
+import CreateEmployeePage from "@/features/core-hr/pages/CreateEmployeePage"
 
 
 
@@ -22,6 +24,9 @@ const AppRoutes = () => {
           path="core-hr/employee/:empNo"
           element={<ProtectedRoute><EmployeeDetailsPage /></ProtectedRoute>}
         />
+         <Route path="/core-hr/create-employee" element={<CreateEmployeePage />} />
+        <Route path="/core-hr/employee/edit/:empNo" element={<EditEmployeePage />} />
+
       </Route>
     </Routes>
   )

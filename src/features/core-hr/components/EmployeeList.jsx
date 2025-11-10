@@ -50,6 +50,7 @@ import { useNavigate } from "react-router";
 import { usePersonTypes } from "../hooks/usePersonTypes";
 import EditEmployeeModal from "./EditEmployeeModal";
 import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
+import EditEmployeeDrawer from "./EditEmployeeDrawer";
 
 const getStatusLabel = (status) => {
   return status === "1" ? "Active" : "Inactive";
@@ -220,6 +221,11 @@ export default function EmployeeList() {
                 Copy Employee ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+           <DropdownMenuItem onClick={() => navigate(`/core-hr/employee/edit/${employee.EMP_NO}`)}>
+                Edit Employee Page
+              </DropdownMenuItem>
+
+
               <DropdownMenuItem onClick={() => handleOpenEdit(employee)}>
                 Edit Employee
               </DropdownMenuItem>
@@ -296,7 +302,7 @@ export default function EmployeeList() {
                 Manage employee information and records
               </p>
             </div>
-
+            <Button onClick={() => navigate('/core-hr/create-employee')}>Create Employee</Button>
             <CreateEmployeeSheet />
           </div>
         </div>
@@ -396,9 +402,9 @@ export default function EmployeeList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -452,7 +458,7 @@ export default function EmployeeList() {
         onSave={handleSave}
         showConfirmation={showConfirmation} // ← Add this!
       />
-      <ConfirmationDialog />
+
     </div>
   );
 }
