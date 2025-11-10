@@ -154,6 +154,7 @@ export default function EmployeeList() {
         return (
           <Button
             variant="ghost"
+            className=""
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Join Date
@@ -163,7 +164,7 @@ export default function EmployeeList() {
       },
       cell: ({ row }) => {
         const date = row.getValue("JOIN_DATE");
-        return <div>{date ? date : "N/A"}</div>;
+        return <div className="ml-2">{date ? date : "N/A"}</div>;
       },
     },
     {
@@ -292,7 +293,7 @@ export default function EmployeeList() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto">
         {/* Header */}
         <div className="bg-card rounded-lg shadow-sm p-4 md:p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

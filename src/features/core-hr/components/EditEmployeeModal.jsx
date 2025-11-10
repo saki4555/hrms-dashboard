@@ -302,7 +302,7 @@ export default function EditEmployeeModal({
         }
       }}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="md:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
           <DialogDescription>

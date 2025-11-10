@@ -26,56 +26,58 @@ import { useEmployee } from "../hooks/useEmployee";
 
 
 
+
 const employeeSchema = z.object({
   // Basic Information
-  title: z.string({ required_error: "Title is required" }).min(1).trim(),
-  firstName: z.string({ required_error: "First name is required" }).min(1).trim(),
-  lastName: z.string({ required_error: "Last name is required" }).min(1).trim(),
-  fathersName: z.string({ required_error: "Father's name is required" }).min(1).trim(),
-  fathersNameB: z.string().trim().optional(),
-  mothersName: z.string({ required_error: "Mother's name is required" }).min(1).trim(),
-  mothersNameB: z.string().trim().optional(),
-  gender: z.string({ required_error: "Gender is required" }).min(1).trim(),
+  TITLE: z.string({ required_error: "Title is required" }).min(1).trim(),
+  FIRST_NAME: z.string({ required_error: "First name is required" }).min(1).trim(),
+  LAST_NAME: z.string({ required_error: "Last name is required" }).min(1).trim(),
+  FATHERS_NAME: z.string({ required_error: "Father's name is required" }).min(1).trim(),
+  FATHERS_NAME_B: z.string().trim().optional(),
+  MOTHERS_NAME: z.string({ required_error: "Mother's name is required" }).min(1).trim(),
+  MOTHERS_NAME_B: z.string().trim().optional(),
+  GENDER: z.string({ required_error: "Gender is required" }).min(1).trim(),
 
   // Dates
-  dateOfBirth: z.date({ required_error: "Date of birth is required" }),
-  joinDate: z.date({ required_error: "Join date is required" }),
-  effectiveStartDate: z.date().optional(),
+  DATE_OF_BIRTH: z.date({ required_error: "Date of birth is required" }),
+  JOIN_DATE: z.date({ required_error: "Join date is required" }),
+  EFFECTIVE_START_DATE: z.date().optional(),
 
   // Personal Information
-  nid: z.string().trim().optional(),
-  birthRegNo: z.string().trim().optional(),
-  townOfBirth: z.string().trim().optional(),
-  regionOfBirth: z.string().trim().optional(),
-  countryOfBirth: z.string().trim().optional(),
-  maritalStatus: z.string().trim().optional(),
-  nationality: z.string().trim().optional(),
+  NID: z.string().trim().optional(),
+  BIRTH_REG_NO: z.string().trim().optional(),
+  TOWN_OF_BIRTH: z.string().trim().optional(),
+  REGION_OF_BIRTH: z.string().trim().optional(),
+  COUNTRY_OF_BIRTH: z.string().trim().optional(),
+  MARITAL_STATUS: z.string().trim().optional(),
+  NATIONALITY: z.string().trim().optional(),
 
   // Employment Information
-  personTypeId: z.string({ required_error: "Person type is required" }).min(1).trim(),
-  regDisability: z.string().trim().optional(),
+  EMP_NO: z.string().optional(),
+  PERSON_TYPE_ID: z.string({ required_error: "Person type is required" }).min(1).trim(),
+  REG_DISABILITY: z.string().trim().optional(),
 
   // Present Address
-  presentAddressType: z.string().trim().optional(),
-  presentAddress1: z.string({ required_error: "Present address is required" }).min(1).trim(),
-  presentAddress1B: z.string().trim().optional(),
-  presentCountry: z.string().trim().optional(),
-  presentRegion: z.string().trim().optional(),
-  presentDistrict: z.string().trim().optional(),
-  presentUpazilla: z.string().trim().optional(),
-  presentUnions: z.string().trim().optional(),
-  presentArea: z.string().trim().optional(),
+  PRESENT_ADDRESS_TYPE: z.string().trim().optional(),
+  PRESENT_ADDRESS1: z.string({ required_error: "Present address is required" }).min(1).trim(),
+  PRESENT_ADDRESS1_B: z.string().trim().optional(),
+  PRESENT_COUNTRY: z.string().trim().optional(),
+  PRESENT_REGION: z.string().trim().optional(),
+  PRESENT_DISTRICT: z.string().trim().optional(),
+  PRESENT_UPAZILLA: z.string().trim().optional(),
+  PRESENT_UNIONS: z.string().trim().optional(),
+  PRESENT_AREA: z.string().trim().optional(),
 
   // Permanent Address
-  permanentAddressType: z.string().trim().optional(),
-  permanentAddress1: z.string({ required_error: "Permanent address is required" }).min(1).trim(),
-  permanentAddress1B: z.string().trim().optional(),
-  permanentCountry: z.string().trim().optional(),
-  permanentRegion: z.string().trim().optional(),
-  permanentDistrict: z.string().trim().optional(),
-  permanentUpazilla: z.string().trim().optional(),
-  permanentUnions: z.string().trim().optional(),
-  permanentArea: z.string().trim().optional(),
+  PERMANENT_ADDRESS_TYPE: z.string().trim().optional(),
+  PERMANENT_ADDRESS1: z.string({ required_error: "Permanent address is required" }).min(1).trim(),
+  PERMANENT_ADDRESS1_B: z.string().trim().optional(),
+  PERMANENT_COUNTRY: z.string().trim().optional(),
+  PERMANENT_REGION: z.string().trim().optional(),
+  PERMANENT_DISTRICT: z.string().trim().optional(),
+  PERMANENT_UPAZILLA: z.string().trim().optional(),
+  PERMANENT_UNIONS: z.string().trim().optional(),
+  PERMANENT_AREA: z.string().trim().optional(),
 });
 
 
@@ -157,6 +159,7 @@ export default function EditEmployeePage() {
     };
 
     const onSubmit = async (data) => {
+    console.log("ehloooo")
         const confirmed = await showConfirmation({
             title: "Save changes?",
             description:
