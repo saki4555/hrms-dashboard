@@ -44,6 +44,7 @@ import {
 import { DatePicker } from "@/components/DatePicker";
 import { usePersonTypes } from "../hooks/usePersonTypes";
 
+
 const employeeSchema = z.object({
     // Basic Information
     title: z
@@ -288,7 +289,7 @@ export default function CreateEmployeePage() {
 
             console.log(payload);
 
-            const res = await axios.post("api/insert_employee.php", payload, {
+            const res = await axios.post("/api/insert_employee.php", payload, {
                 headers: {
                     Authorization: "Bearer 123456",
                 },
