@@ -19,13 +19,13 @@ const queryClient = new QueryClient()
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-    <AuthProvider>
-    <AppRoutes />
-    </AuthProvider>
-    </ThemeProvider>
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -48,14 +48,8 @@ import { useEmployees } from "../hooks/useEmployees";
 import { DataTablePagination } from "@/components/DataTablePagination";
 import { useNavigate } from "react-router";
 import { usePersonTypes } from "../hooks/usePersonTypes";
-
-
-
-
-
-
-
-
+import EditEmployeeModal from "./EditEmployeeModal";
+import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
 
 const getStatusLabel = (status) => {
   return status === "1" ? "Active" : "Inactive";
@@ -67,15 +61,17 @@ export default function EmployeeList() {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const navigate = useNavigate();
 
   const { data: employeeData = [], isLoading, isError } = useEmployees();
-  const {data: personTypes = [], isLoading: personTypesLoading} = usePersonTypes();
+  const { data: personTypes = [], isLoading: personTypesLoading } =
+    usePersonTypes();
+  const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
-
-  console.log("Person types", personTypes)
-
+  // console.log("Person types", personTypes);
 
   // console.log({ employeeData }, "from use employee hook");
 
@@ -213,9 +209,7 @@ export default function EmployeeList() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem
-                onClick={() =>
-                  navigate(`/core-hr/employee/${employee.EMP_NO}`)
-                }
+                onClick={() => navigate(`/core-hr/employee/${employee.EMP_NO}`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
@@ -226,7 +220,10 @@ export default function EmployeeList() {
                 Copy Employee ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Edit Employee</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleOpenEdit(employee)}>
+                Edit Employee
+              </DropdownMenuItem>
+
               <DropdownMenuItem className="text-red-600">
                 Deactivate
               </DropdownMenuItem>
@@ -258,11 +255,34 @@ export default function EmployeeList() {
     },
   });
 
-
   const getPersonTypeName = (id) => {
-  const type = personTypes.find((t) => t.PERSON_TYPE_ID === id);
-  return type ? type.PERSON_TYPE : "Unknown";
-};
+    const type = personTypes.find((t) => t.PERSON_TYPE_ID === id);
+    return type ? type.PERSON_TYPE : "Unknown";
+  };
+
+  const handleOpenEdit = (employee) => {
+    setSelectedEmployee(employee);
+    setIsEditOpen(true);
+  };
+
+  const handleSave = async (mode, formData) => {
+    console.log("Edit modal saved:", { mode, formData });
+    // Example: ask confirmation? (optional)
+    if (mode === "update") {
+      const confirmed = await showConfirmation({
+        title: "Create new record?",
+        description: "You are about to create a new employee record. Continue?",
+        confirmText: "Proceed",
+        cancelText: "Cancel",
+      });
+      if (!confirmed) {
+        console.log("User cancelled update mode save.");
+        return;
+      }
+    }
+    // For now: just console log; later integrate your state update or API call.
+    setIsEditOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
@@ -376,9 +396,9 @@ export default function EmployeeList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -421,12 +441,18 @@ export default function EmployeeList() {
               </Table>
             </div>
 
-
-
             <DataTablePagination table={table} />
           </div>
         </div>
       </div>
+      <EditEmployeeModal
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        employee={selectedEmployee}
+        onSave={handleSave}
+        showConfirmation={showConfirmation} // ← Add this!
+      />
+      <ConfirmationDialog />
     </div>
   );
 }

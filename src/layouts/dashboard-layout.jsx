@@ -11,7 +11,7 @@ import { Toaster } from "sonner";
 
 const DashboardLayout = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset>
         <main className="px-4">
