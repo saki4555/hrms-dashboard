@@ -326,7 +326,7 @@ export default function CreateEmployeeSheet() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent className="md:max-w-2xl overflow-y-auto border-l">
+      <SheetContent className="md:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Create Employee</SheetTitle>
           <SheetDescription>
@@ -338,11 +338,11 @@ export default function CreateEmployeeSheet() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-4 space-y-6 px-5 md:px-6"
+            className="mt-4 space-y-6 px-6 md:px-8"
           >
             <Accordion type="single" collapsible defaultValue="personal">
               {/* Personal Information */}
-              <AccordionItem value="personal">
+              <AccordionItem  value="personal">
                 <AccordionTrigger>Personal Information</AccordionTrigger>
                 
                 <AccordionContent>

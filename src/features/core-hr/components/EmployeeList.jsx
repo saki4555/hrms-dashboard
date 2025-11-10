@@ -162,7 +162,7 @@ export default function EmployeeList() {
       },
       cell: ({ row }) => {
         const date = row.getValue("JOIN_DATE");
-        return <div>{date ? new Date(date).toLocaleDateString() : "N/A"}</div>;
+        return <div>{date ? date : "N/A"}</div>;
       },
     },
     {
@@ -183,7 +183,7 @@ export default function EmployeeList() {
       cell: ({ row }) => {
         const status = row.getValue("STATUS");
         return (
-          <Badge variant={status === "1" ? "default" : "destructive"}>
+          <Badge variant={status === "1" ? "success" : "destructive"}>
             {getStatusLabel(status)}
           </Badge>
         );
