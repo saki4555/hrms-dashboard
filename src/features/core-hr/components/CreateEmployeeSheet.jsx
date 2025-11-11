@@ -342,9 +342,9 @@ export default function CreateEmployeeSheet() {
           >
             <Accordion type="single" collapsible defaultValue="personal">
               {/* Personal Information */}
-              <AccordionItem  value="personal">
+              <AccordionItem value="personal">
                 <AccordionTrigger>Personal Information</AccordionTrigger>
-                
+
                 <AccordionContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
