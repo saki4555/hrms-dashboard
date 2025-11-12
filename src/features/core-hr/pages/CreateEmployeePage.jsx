@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   BriefcaseIcon,
   HomeIcon,
@@ -29,13 +29,7 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Accordion,
   AccordionContent,
@@ -177,7 +171,7 @@ const employeeSchema = z.object({
 });
 
 export default function CreateEmployeePage() {
-  const [open, setOpen] = useState(false);
+
   const { data: personTypes = [] } = usePersonTypes();
 
   const form = useForm({
@@ -287,6 +281,17 @@ export default function CreateEmployeePage() {
         MOTHERS_NAME_B: data.mothersNameB || "",
         GENDER: data.gender,
         DATE_OF_BIRTH: formatDate(data.dateOfBirth),
+        NID: data.nid || "",
+        BIRTH_REG_NO: data.birthRegNo || "",
+        TOWN_OF_BIRTH: data.townOfBirth || "",
+        REGION_OF_BIRTH: data.regionOfBirth || "",
+        COUNTRY_OF_BIRTH: data.countryOfBirth || "",
+
+        MARRITIAL_STATUS: data.maritalStatus,
+        NATIONALITY: data.nationality || "",
+        REG_DISABILITY: data.regDisability || "",
+        EFFECTIVE_START_DATE: data.effectiveStartDate || "",
+
         JOIN_DATE: formatDate(data.joinDate),
         PERSON_TYPE_ID: parseInt(data.personTypeId),
         LAST_UPDATE_BY: 101,
@@ -294,7 +299,6 @@ export default function CreateEmployeePage() {
       };
 
       console.log(payload, "payload");
-   
 
       const res = await axios.post("/api/insert_employee.php", payload, {
         headers: {
@@ -304,7 +308,7 @@ export default function CreateEmployeePage() {
 
       console.log("Employee Added:", res.data);
       toast.success("Employee added successfully!");
-      setOpen(false);
+      
       form.reset();
     } catch (error) {
       console.error("Error adding employee:", error.response?.data || error);
@@ -1102,16 +1106,7 @@ export default function CreateEmployeePage() {
 
             {/* Form Actions */}
             <div className="flex justify-end gap-3 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setOpen(false);
-                  form.reset();
-                }}
-              >
-                Cancel
-              </Button>
+            
               <Button type="submit">Submit</Button>
             </div>
           </form>
