@@ -303,7 +303,7 @@ export default function EmployeeList() {
                 Manage employee information and records
               </p>
             </div>
-            <Button onClick={() => navigate('/core-hr/create-employee')}>Create Employee</Button>
+            <Button onClick={() => navigate('/core-hr/employee/create-employee')}>Create Employee</Button>
             <CreateEmployeeSheet />
           </div>
         </div>

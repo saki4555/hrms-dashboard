@@ -3,13 +3,11 @@ import Login from "@/pages/login";
 import Welcome from "@/pages/welcome";
 import { Route, Routes } from "react-router";
 
-
 // Only import pages that actually exist
 import EmployeeDetailsPage from "@/features/core-hr/pages/EmployeeDetailsPage";
 import CoreHRPage from "@/features/core-hr/pages/CoreHRPage";
 import EditEmployeePage from "@/features/core-hr/pages/EditEmployeePage";
 import CreateEmployeePage from "@/features/core-hr/pages/CreateEmployeePage";
-
 
 import { PrivateRoute } from "./PrivateRoute";
 import Unauthorized from "@/features/authentication/pages/Unauthorized";
@@ -25,7 +23,9 @@ const AppRoutes = () => {
       <Route
         path="/"
         element={
-          <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+          <PrivateRoute
+            allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+          >
             <DashboardLayout />
           </PrivateRoute>
         }
@@ -33,9 +33,17 @@ const AppRoutes = () => {
         {/* Dashboard (All roles) */}
         <Route index element={<Welcome />} />
 
-        {/* Core HR (Admin + HR) */}
+        {/* core-hr routes */}
         <Route
-          path="core-hr"
+          path="core-hr/requisition"
+          element={
+            <PrivateRoute allowedRoles={["Admin", "HR"]}>
+              <div>Requisition page</div>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="core-hr/employees"
           element={
             <PrivateRoute allowedRoles={["Admin", "HR"]}>
               <CoreHRPage />
@@ -43,8 +51,8 @@ const AppRoutes = () => {
           }
         />
 
-        <Route
-          path="core-hr/create-employee"
+         <Route
+          path="core-hr/employee/create-employee"
           element={
             <PrivateRoute allowedRoles={["Admin", "HR"]}>
               <CreateEmployeePage />
@@ -69,7 +77,24 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+        <Route
+          path="core-hr/lifecycle"
+          element={
+            <PrivateRoute allowedRoles={["Admin", "HR"]}>
+              <div>Lifecyles page</div>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="core-hr/documents"
+          element={
+            <PrivateRoute allowedRoles={["Admin", "HR"]}>
+              <div>Documents page</div>
+            </PrivateRoute>
+          }
+        />
 
+       
         {/* Team Management (PLACEHOLDER PAGES) */}
         <Route
           path="team-attendance"
@@ -112,7 +137,9 @@ const AppRoutes = () => {
         <Route
           path="self-service/leave"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Leave Request Page</div>
             </PrivateRoute>
           }
@@ -121,7 +148,9 @@ const AppRoutes = () => {
         <Route
           path="self-service/payslips"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Payslip Page</div>
             </PrivateRoute>
           }
@@ -130,7 +159,9 @@ const AppRoutes = () => {
         <Route
           path="self-service/profile"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Profile Page</div>
             </PrivateRoute>
           }
@@ -164,7 +195,6 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
-
       </Route>
     </Routes>
   );

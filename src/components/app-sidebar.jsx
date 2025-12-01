@@ -31,7 +31,7 @@ const navConfig = [
     title: "Dashboard",
     roles: ["Admin", "HR", "Supervisor", "Employee"],
     icon: IconLayoutDashboard,
-    defaultOpen: true, // 👈 Dashboard open
+    defaultOpen: true, 
     items: [
       { title: "Overview", url: "/", roles: ["Admin", "HR", "Supervisor", "Employee"] },
     ],
@@ -42,10 +42,10 @@ const navConfig = [
     roles: ["Admin", "HR"],
     icon: IconUserCheck,
     items: [
-      { title: "Employee Requisition", url: "/requisition", roles: ["Admin", "HR"] },
-      { title: "Employee Management", url: "/employees", roles: ["Admin", "HR"] },
-      { title: "Employment Lifecycle", url: "/lifecycle", roles: ["Admin", "HR"] },
-      { title: "Documents", url: "/documents", roles: ["Admin", "HR"] },
+      { title: "Employee Requisition", url: "core-hr/requisition", roles: ["Admin", "HR"] },
+      { title: "Employee Management", url: "core-hr/employees", roles: ["Admin", "HR"] },
+      { title: "Employment Lifecycle", url: "core-hr/lifecycle", roles: ["Admin", "HR"] },
+      { title: "Documents", url: "core-hr/documents", roles: ["Admin", "HR"] },
     ],
   },
   {
