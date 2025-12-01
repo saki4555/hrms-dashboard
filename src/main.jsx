@@ -4,7 +4,7 @@ import './index.css'
 
 import { BrowserRouter } from 'react-router'
 import AppRoutes from './router/routes'
-import { AuthProvider } from './context/auth-context'
+
 import { ThemeProvider } from './components/theme-provider'
 import {
 
@@ -21,9 +21,9 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
+        
             <AppRoutes />
-          </AuthProvider>
+         
         </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>
