@@ -38,43 +38,96 @@ const navConfig = [
   },
   {
     title: "Core HR",
-
     roles: ["Admin", "HR"],
     icon: IconUserCheck,
     items: [
-      { title: "Employee Requisition", url: "core-hr/requisition", roles: ["Admin", "HR"] },
-      { title: "Employee Management", url: "core-hr/employees", roles: ["Admin", "HR"] },
-      { title: "Employment Lifecycle", url: "core-hr/lifecycle", roles: ["Admin", "HR"] },
-      { title: "Documents", url: "core-hr/documents", roles: ["Admin", "HR"] },
+      { title: "Employee Requisition", url: "/core-hr/requisition", roles: ["Admin", "HR"] },
+      { title: "Employee Management", url: "/core-hr/employees", roles: ["Admin", "HR"] },
+      { title: "Employment Lifecycle", url: "/core-hr/lifecycle", roles: ["Admin", "HR"] },
+      { title: "Digital Document Management", url: "/core-hr/documents", roles: ["Admin", "HR"] },
     ],
   },
   {
-    title: "Team Management",
-
+    title: "Attendance Management",
     roles: ["Admin", "HR", "Supervisor"],
-    icon: IconBrandTeams,
+    icon: IconUserCheck,
     items: [
-      { title: "Team Attendance", url: "/team-attendance", roles: ["Admin", "HR", "Supervisor"] },
-      { title: "Approve Requests", url: "/approvals", roles: ["Admin", "HR", "Supervisor"] },
+      { title: "Setup", url: "/attendance/setup", roles: ["Admin", "HR"] },
+      { title: "Employee Assignment", url: "/attendance/assignment", roles: ["Admin", "HR"] },
+      { title: "Work Schedule", url: "/attendance/schedule", roles: ["Admin", "HR", "Supervisor"] },
+      { title: "Attendance Data", url: "/attendance/data", roles: ["Admin", "HR"] },
+      { title: "Attendance Reports", url: "/attendance/reports", roles: ["Admin", "HR", "Supervisor"] },
     ],
   },
   {
-    title: "Payroll",
+    title: "Payroll Management",
     icon: IconPaywall,
     roles: ["Admin", "HR"],
     items: [
-      { title: "Payroll Configuration", url: "/payroll/config", roles: ["Admin"] },
-      { title: "Run Payroll", url: "/payroll/run", roles: ["Admin", "HR"] },
+      { title: "Configuration", url: "/payroll/configuration", roles: ["Admin"] },
+      { title: "Payroll Processing", url: "/payroll/processing", roles: ["Admin", "HR"] },
+      { title: "Approvals", url: "/payroll/approvals", roles: ["Admin", "HR"] },
+      { title: "Output", url: "/payroll/output", roles: ["Admin", "HR"] },
     ],
   },
   {
-    title: "Self Service",
+    title: "Performance Management",
     icon: IconPerspectiveOff,
     roles: ["Admin", "HR", "Supervisor", "Employee"],
     items: [
-      { title: "Leave Request", url: "/self-service/leave", roles: ["Admin", "HR", "Supervisor", "Employee"] },
-      { title: "Payslips", url: "/self-service/payslips", roles: ["Admin", "HR", "Supervisor", "Employee"] },
-      { title: "My Profile", url: "/self-service/profile", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+      { title: "Setup", url: "/performance/setup", roles: ["Admin", "HR"] },
+      { title: "Appraisal Process", url: "/performance/appraisal", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+      { title: "Reports", url: "/performance/reports", roles: ["Admin", "HR"] },
+    ],
+  },
+  {
+    title: "Self-Service Portal",
+    icon: IconPerspectiveOff,
+    roles: ["Admin", "HR", "Supervisor", "Employee"],
+    items: [
+      { title: "Employee Self-Service", url: "/self-service/ess", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+      { title: "Manager Self-Service", url: "/self-service/mss", roles: ["Admin", "HR", "Supervisor"] },
+    ],
+  },
+  {
+    title: "PF Management",
+    icon: IconPaywall,
+    roles: ["Admin", "HR", "Supervisor", "Employee"],
+    items: [
+      { title: "PF Overview", url: "/pf/overview", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+    ],
+  },
+  {
+    title: "Gratuity Management",
+    icon: IconPaywall,
+    roles: ["Admin", "HR", "Employee"],
+    items: [
+      { title: "Gratuity Overview", url: "/gratuity/overview", roles: ["Admin", "HR", "Employee"] },
+    ],
+  },
+  {
+    title: "Loan & Advance",
+    icon: IconPaywall,
+    roles: ["Admin", "HR", "Supervisor", "Employee"],
+    items: [
+      { title: "Loan Management", url: "/loan/management", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+    ],
+  },
+  {
+    title: "Document Management",
+    icon: IconSettings,
+    roles: ["Admin", "HR"],
+    items: [
+      { title: "Documents", url: "/documents/manage", roles: ["Admin", "HR"] },
+    ],
+  },
+  {
+    title: "Communication",
+    icon: IconSettings,
+    roles: ["Admin", "HR", "Supervisor", "Employee"],
+    items: [
+      { title: "Notifications", url: "/communication/notifications", roles: ["Admin", "HR", "Supervisor", "Employee"] },
+      { title: "Announcements", url: "/communication/announcements", roles: ["Admin", "HR"] },
     ],
   },
   {
@@ -82,20 +135,21 @@ const navConfig = [
     icon: IconReport,
     roles: ["Admin", "HR"],
     items: [
+      { title: "General Reports", url: "/reports/general", roles: ["Admin", "HR"] },
       { title: "Attendance Reports", url: "/reports/attendance", roles: ["Admin", "HR"] },
       { title: "Payroll Reports", url: "/reports/payroll", roles: ["Admin", "HR"] },
+      { title: "HR Analytics Dashboard", url: "/reports/analytics", roles: ["Admin", "HR"] },
     ],
   },
   {
     title: "Settings",
     icon: IconSettings,
-    roles: ["Admin"],
+    roles: ["Admin", "HR"],
     items: [
-      { title: "System Settings", url: "/settings/system", roles: ["Admin"] },
+      { title: "Work Structure", url: "/settings/work-structure", roles: ["Admin", "HR"] },
     ],
   },
 ];
-
 const user = {
   name: "Asm Saki",
   email: "saki@example.com",
