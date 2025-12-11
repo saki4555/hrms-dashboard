@@ -49,8 +49,9 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { useNavigate } from "react-router";
 import { usePersonTypes } from "../hooks/usePersonTypes";
 import EditEmployeeModal from "./EditEmployeeModal";
-import { useConfirmationDialog } from "../hooks/useConfirmationDialog";
+
 import EditEmployeeDrawer from "./EditEmployeeDrawer";
+import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 
 const getStatusLabel = (status) => {
   return status === "1" ? "Active" : "Inactive";
