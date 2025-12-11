@@ -17,7 +17,7 @@ const DashboardLayout = () => {
     <SidebarProvider defaultOpen={false}>
       <AppSidebar userRole={user?.role}/>
       <SidebarInset>
-        <main className="px-4">
+        <main className="">
          <DashboardNavbar />
           <Outlet />
         </main>

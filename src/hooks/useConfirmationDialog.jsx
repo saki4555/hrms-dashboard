@@ -1,6 +1,13 @@
 // features/core-hr/hooks/useConfirmationDialog.jsx
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 
 let externalResolve;
@@ -51,25 +58,22 @@ export function useConfirmationDialog() {
 
   const ConfirmationDialog = () =>
     state.open ? (
-      <Dialog open={state.open} onOpenChange={handleCancel}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{state.title}</DialogTitle>
-            <DialogDescription>{state.description}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+      <AlertDialog open={state.open} onOpenChange={handleCancel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{state.title}</AlertDialogTitle>
+            <AlertDialogDescription>{state.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
             <Button variant="outline" onClick={handleCancel}>
               {state.cancelText}
             </Button>
-            <Button
-              variant={state.variant}
-              onClick={handleConfirm}
-            >
+            <Button variant={state.variant} onClick={handleConfirm}>
               {state.confirmText}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     ) : null;
 
   return { showConfirmation, ConfirmationDialog };

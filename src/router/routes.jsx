@@ -12,29 +12,40 @@ import CreateEmployeePage from "@/features/core-hr/pages/CreateEmployeePage";
 import { PrivateRoute } from "./PrivateRoute";
 import Unauthorized from "@/features/authentication/pages/Unauthorized";
 import AddOrganizationPage from "@/features/core-hr/pages/AddOrganizationPage";
+import ManageOrganizaiton from "@/features/settings/work-structure/organization/pages/ManageOrganization";
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public */}
+      {/* =======================================================================
+       *                              PUBLIC ROUTES
+       * =======================================================================
+       */}
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
-      {/* Protected Layout */}
+      {/* =======================================================================
+       *                           PROTECTED ROUTES (LAYOUT WRAPPER)
+       * 
+       *   DashboardLayout is wrapped inside PrivateRoute to ensure only users
+       *   with valid session & roles can access the dashboard area.
+       * =======================================================================
+       */}
       <Route
         path="/"
         element={
-          <PrivateRoute
-            allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
-          >
+          <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
             <DashboardLayout />
           </PrivateRoute>
         }
       >
-        {/* Dashboard (All roles) */}
+        {/* ============================= DASHBOARD ============================= */}
         <Route index element={<Welcome />} />
 
-        {/* ==================== CORE HR ==================== */}
+        {/* =====================================================================
+         *                              CORE HR MODULE
+         * =====================================================================
+         */}
         <Route
           path="core-hr/requisition"
           element={
@@ -43,6 +54,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="core-hr/employees"
           element={
@@ -51,6 +63,8 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
+        {/* Employee Create / Edit / Details */}
         <Route
           path="core-hr/employee/create-employee"
           element={
@@ -59,6 +73,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="core-hr/employee/:empNo"
           element={
@@ -67,6 +82,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="core-hr/employee/edit/:empNo"
           element={
@@ -75,6 +91,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="core-hr/lifecycle"
           element={
@@ -83,6 +100,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="core-hr/documents"
           element={
@@ -92,7 +110,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== ATTENDANCE MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                        ATTENDANCE MANAGEMENT MODULE
+         * =====================================================================
+         */}
         <Route
           path="attendance/setup"
           element={
@@ -101,6 +122,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="attendance/assignment"
           element={
@@ -109,6 +131,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="attendance/schedule"
           element={
@@ -117,6 +140,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="attendance/data"
           element={
@@ -125,6 +149,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="attendance/reports"
           element={
@@ -134,7 +159,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== PAYROLL MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                          PAYROLL MANAGEMENT MODULE
+         * =====================================================================
+         */}
         <Route
           path="payroll/configuration"
           element={
@@ -143,6 +171,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="payroll/processing"
           element={
@@ -151,6 +180,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="payroll/approvals"
           element={
@@ -159,6 +189,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="payroll/output"
           element={
@@ -168,7 +199,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== PERFORMANCE MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                      PERFORMANCE MANAGEMENT MODULE
+         * =====================================================================
+         */}
         <Route
           path="performance/setup"
           element={
@@ -177,6 +211,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="performance/appraisal"
           element={
@@ -185,6 +220,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="performance/reports"
           element={
@@ -194,7 +230,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== SELF-SERVICE PORTAL ==================== */}
+        {/* =====================================================================
+         *                       SELF-SERVICE PORTAL (ESS/MSS)
+         * =====================================================================
+         */}
         <Route
           path="self-service/ess"
           element={
@@ -203,6 +242,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="self-service/mss"
           element={
@@ -212,7 +252,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== PF MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                              PF MANAGEMENT
+         * =====================================================================
+         */}
         <Route
           path="pf/overview"
           element={
@@ -222,7 +265,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== GRATUITY MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                          GRATUITY MANAGEMENT
+         * =====================================================================
+         */}
         <Route
           path="gratuity/overview"
           element={
@@ -232,7 +278,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== LOAN & ADVANCE ==================== */}
+        {/* =====================================================================
+         *                           LOAN & ADVANCE MODULE
+         * =====================================================================
+         */}
         <Route
           path="loan/management"
           element={
@@ -242,7 +291,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== DOCUMENT MANAGEMENT ==================== */}
+        {/* =====================================================================
+         *                         DOCUMENT MANAGEMENT MODULE
+         * =====================================================================
+         */}
         <Route
           path="documents/manage"
           element={
@@ -252,7 +304,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== COMMUNICATION & NOTIFICATIONS ==================== */}
+        {/* =====================================================================
+         *                    COMMUNICATION & NOTIFICATION MODULE
+         * =====================================================================
+         */}
         <Route
           path="communication/notifications"
           element={
@@ -261,6 +316,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="communication/announcements"
           element={
@@ -270,7 +326,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== REPORTS & ANALYTICS ==================== */}
+        {/* =====================================================================
+         *                         REPORTS & ANALYTICS MODULE
+         * =====================================================================
+         */}
         <Route
           path="reports/general"
           element={
@@ -279,6 +338,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="reports/attendance"
           element={
@@ -287,6 +347,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="reports/payroll"
           element={
@@ -295,6 +356,7 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+
         <Route
           path="reports/analytics"
           element={
@@ -304,12 +366,24 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ==================== SETTINGS ==================== */}
+        {/* =====================================================================
+         *                                 SETTINGS
+         * =====================================================================
+         */}
         <Route
           path="settings/work-structure"
           element={
             <PrivateRoute allowedRoles={["Admin", "HR"]}>
               <AddOrganizationPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="settings/work-structure/organization"
+          element={
+            <PrivateRoute allowedRoles={["Admin", "HR"]}>
+              <ManageOrganizaiton />
             </PrivateRoute>
           }
         />
