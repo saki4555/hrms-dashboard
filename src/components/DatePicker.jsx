@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { IconCalendarEvent } from "@tabler/icons-react"
 
 export function DatePicker({
   label = "",
@@ -36,7 +37,8 @@ export function DatePicker({
             className={`${className} justify-between font-normal`}
           >
             {value ? value.toLocaleDateString() : placeholder}
-            <ChevronDownIcon />
+            
+            <IconCalendarEvent className="size-4 text-muted-foreground/50 "/>
           </Button>
         </PopoverTrigger>
 

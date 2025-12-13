@@ -30,6 +30,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { showSubmittedData } from "@/lib/showo-submitted-date";
+
 
 // Validation Schema
 const organizationSchema = z.object({
@@ -112,6 +114,7 @@ export default function AddOrganizationPage() {
     };
 
     console.log("Submitted Organization Data:", formattedData);
+    showSubmittedData(formattedData);
 
     // Add to table (mock)
     const newOrg = {
@@ -202,7 +205,7 @@ export default function AddOrganizationPage() {
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger >
                             <SelectValue placeholder="Select organization type" />
                           </SelectTrigger>
                         </FormControl>

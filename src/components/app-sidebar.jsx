@@ -184,12 +184,12 @@ export function AppSidebar({ userRole, ...props }) {
                     defaultOpen={item.defaultOpen ?? false}
                     className="group/collapsible"
                   >
-                    <SidebarMenuItem>
+                    <SidebarMenuItem >
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton tooltip={item.title} className="truncate">
-                          {item.icon && <item.icon />}
+                          {item.icon && <item.icon className="text-foreground/90"/>}
                           <span>{item.title}</span>
-                          <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <ChevronRight size={10} className="ml-auto  text-foreground/90 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
 

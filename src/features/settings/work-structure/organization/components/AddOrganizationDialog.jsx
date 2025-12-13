@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { ChevronDownIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -18,47 +27,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { DatePicker } from "@/components/DatePicker";
+import { showSubmittedData } from "@/lib/showo-submitted-date";
 
-// DatePicker Component
-function DatePicker({ label = "", value, onChange, placeholder = "Select date", className = "w-48", error }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-2">
-      {label && <Label className="px-0">{label}</Label>}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={`${className} justify-between font-normal ${!value && "text-muted-foreground"}`}
-          >
-            {value ? value.toLocaleDateString() : placeholder}
-            <ChevronDownIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={value}
-            captionLayout="dropdown"
-            onSelect={(selected) => {
-              onChange?.(selected);
-              setOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-    </div>
-  );
-}
 
 const ORGANIZATION_TYPES = [
   { value: "headquarters", label: "Headquarters" },
@@ -87,101 +73,50 @@ const PARENT_ORGANIZATIONS = [
   { id: "org-10", name: "Operations Management" },
 ];
 
+const getDefaultStartDate = () => new Date();
+const getDefaultEndDate = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + 100);
+  return date;
+};
+
+const getEndDateFromStart = (startDate) => {
+  const endDate = new Date(startDate);
+  endDate.setFullYear(endDate.getFullYear() + 100);
+  return endDate;
+};
+
+// Zod schema
+const formSchema = z.object({
+  organizationId: z
+    .string()
+    .min(1, "Organization ID is required")
+    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens allowed"),
+  name: z
+    .string()
+    .min(1, "Organization name is required")
+    .min(2, "Name must be at least 2 characters"),
+  type: z.string().min(1, "Organization type is required"),
+  parentOrganization: z.string().optional(),
+  effectiveStartDate: z.date({
+    required_error: "Effective start date is required",
+  }),
+  effectiveEndDate: z.date({
+    required_error: "Effective end date is required",
+  }),
+  status: z.string().min(1, "Status is required"),
+}).refine((data) => data.effectiveEndDate > data.effectiveStartDate, {
+  message: "End date must be after start date",
+  path: ["effectiveEndDate"],
+});
+
 export default function AddOrganizationDialog({ open, onOpenChange, showConfirmation }) {
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [errors, setErrors] = useState({});
-  
-  const getDefaultStartDate = () => new Date();
-  const getDefaultEndDate = () => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 100);
-    return date;
-  };
 
-  const [formData, setFormData] = useState({
-    organizationId: "",
-    name: "",
-    type: "",
-    parentOrganization: "",
-    effectiveStartDate: getDefaultStartDate(),
-    effectiveEndDate: getDefaultEndDate(),
-    status: "active",
-  });
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) return null;
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.organizationId.trim()) {
-      newErrors.organizationId = "Organization ID is required";
-    } else if (!/^[A-Z0-9-]+$/i.test(formData.organizationId)) {
-      newErrors.organizationId = "Only letters, numbers, and hyphens allowed";
-    }
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Organization name is required";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
-    }
-
-    if (!formData.type) {
-      newErrors.type = "Organization type is required";
-    }
-
-    if (!formData.effectiveStartDate) {
-      newErrors.effectiveStartDate = "Effective start date is required";
-    }
-
-    if (!formData.effectiveEndDate) {
-      newErrors.effectiveEndDate = "Effective end date is required";
-    }
-
-    if (formData.effectiveStartDate && formData.effectiveEndDate) {
-      if (formData.effectiveEndDate <= formData.effectiveStartDate) {
-        newErrors.effectiveEndDate = "End date must be after start date";
-      }
-    }
-
-    if (!formData.status) {
-      newErrors.status = "Status is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setIsDirty(true);
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    const parentOrg = PARENT_ORGANIZATIONS.find(org => org.id === formData.parentOrganization);
-    
-    const formattedData = {
-      ...formData,
-      parentOrganizationName: parentOrg?.name || "None",
-      effectiveStartDate: formData.effectiveStartDate.toISOString().split('T')[0],
-      effectiveEndDate: formData.effectiveEndDate.toISOString().split('T')[0],
-    };
-
-    console.log("Organization Data:", formattedData);
-
-    setFormData({
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
       organizationId: "",
       name: "",
       type: "",
@@ -189,10 +124,32 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       effectiveStartDate: getDefaultStartDate(),
       effectiveEndDate: getDefaultEndDate(),
       status: "active",
-    });
-    setIsDirty(false);
-    setErrors({});
-    onOpenChange(false);
+    },
+  });
+
+  const { formState: { isDirty } } = form;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) return null;
+
+  const onSubmit = (data) => {
+    const parentOrg = PARENT_ORGANIZATIONS.find(org => org.id === data.parentOrganization);
+    
+    const formattedData = {
+      ...data,
+      parentOrganizationName: parentOrg?.name || "None",
+      effectiveStartDate: data.effectiveStartDate.toISOString().split('T')[0],
+      effectiveEndDate: data.effectiveEndDate.toISOString().split('T')[0],
+    };
+
+    console.log("Organization Data:", formattedData);
+    showSubmittedData(formattedData);
+
+    // form.reset();
+    // onOpenChange(false);
   };
 
   const handleCancel = async () => {
@@ -208,18 +165,18 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       if (!confirmed) return;
     }
 
-    setFormData({
-      organizationId: "",
-      name: "",
-      type: "",
-      parentOrganization: "",
-      effectiveStartDate: getDefaultStartDate(),
-      effectiveEndDate: getDefaultEndDate(),
-      status: "active",
-    });
-    setIsDirty(false);
-    setErrors({});
+    form.reset();
     onOpenChange(false);
+  };
+
+  const handleStartDateChange = (date, field) => {
+    field.onChange(date);
+    
+    // Automatically update end date to 100 years from the selected start date
+    if (date) {
+      const newEndDate = getEndDateFromStart(date);
+      form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
+    }
   };
 
   return (
@@ -244,158 +201,217 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
           </div>
         </DialogHeader>
 
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Organization ID */}
-            <div className="flex flex-col gap-2">
-              <Label>
-                Organization ID <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                placeholder="e.g., ORG-001"
-                value={formData.organizationId}
-                onChange={(e) => handleChange("organizationId", e.target.value)}
-                className="font-mono"
+        <Form {...form}>
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Organization ID */}
+              <FormField
+                control={form.control}
+                name="organizationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Organization ID <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., ORG-001"
+                        className="font-mono"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.organizationId && (
-                <p className="text-sm text-destructive">{errors.organizationId}</p>
-              )}
-            </div>
 
-            {/* Organization Name */}
-            <div className="flex flex-col gap-2">
-              <Label>
-                Organization Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                placeholder="Enter organization name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
+              {/* Organization Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Organization Name <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter organization name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-            </div>
 
-            {/* Organization Type */}
-            <div className="flex flex-col gap-2">
-              <Label>
-                Organization Type <span className="text-destructive">*</span>
-              </Label>
-              <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ORGANIZATION_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
-            </div>
+              {/* Organization Type */}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Organization Type <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ORGANIZATION_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Parent Organization */}
-            <div className="flex flex-col gap-2">
-              <Label>Parent Organization</Label>
-              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className={`justify-between font-normal ${
-                      !formData.parentOrganization && "text-muted-foreground"
-                    }`}
-                  >
-                    {formData.parentOrganization
-                      ? PARENT_ORGANIZATIONS.find(org => org.id === formData.parentOrganization)?.name
-                      : "Select parent (optional)"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <div className="border-b p-2">
-                    <Input placeholder="Search..." className="h-8" />
-                  </div>
-                  <div className="max-h-64 overflow-auto p-1">
-                    {PARENT_ORGANIZATIONS.map((org) => (
-                      <div
-                        key={org.id}
-                        className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent rounded"
-                        onClick={() => {
-                          handleChange("parentOrganization", org.id);
-                          setComboboxOpen(false);
-                        }}
+              {/* Parent Organization */}
+              <FormField
+                control={form.control}
+                name="parentOrganization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Organization</FormLabel>
+                    <Popover modal={true} open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={`w-full justify-between font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
+                          >
+                            {field.value
+                              ? PARENT_ORGANIZATIONS.find(org => org.id === field.value)?.name
+                              : "Select parent (optional)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0 isolate">
+                        <Command>
+                          <CommandInput placeholder="Search organizations..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No organization found.</CommandEmpty>
+                            <CommandGroup className="pb-8">
+                              {PARENT_ORGANIZATIONS.map((org) => (
+                                <CommandItem
+                                  key={org.id}
+                                  value={org.name}
+                                  onSelect={() => {
+                                    field.onChange(org.id);
+                                    setComboboxOpen(false);
+                                  }}
+                                >
+                                  {org.name}
+                                  <Check
+                                    className={`ml-auto h-4 w-4 ${
+                                      field.value === org.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Effective Start Date */}
+              <FormField
+                control={form.control}
+                name="effectiveStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Effective Start Date <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => handleStartDateChange(date, field)}
+                        placeholder="Select start date"
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Effective End Date */}
+              <FormField
+                control={form.control}
+                name="effectiveEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Effective End Date <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select end date"
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Status */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>
+                      Status <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="flex flex-row gap-3"
                       >
-                        <Check
-                          className={`h-4 w-4 ${
-                            formData.parentOrganization === org.id ? "opacity-100" : "opacity-0"
-                          }`}
-                        />
-                        {org.name}
-                      </div>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                        {STATUS_OPTIONS.map((status) => (
+                          <FormItem key={status.value} className="flex items-center gap-2">
+                            <FormControl>
+                              <RadioGroupItem value={status.value} />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {status.label}
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {/* Effective Start Date */}
-            <DatePicker
-              label={
-                <>
-                  Effective Start Date <span className="text-destructive">*</span>
-                </>
-              }
-              value={formData.effectiveStartDate}
-              onChange={(date) => handleChange("effectiveStartDate", date)}
-              placeholder="Select start date"
-              className="w-full"
-              error={errors.effectiveStartDate}
-            />
-
-            {/* Effective End Date */}
-            <DatePicker
-              label={
-                <>
-                  Effective End Date <span className="text-destructive">*</span>
-                </>
-              }
-              value={formData.effectiveEndDate}
-              onChange={(date) => handleChange("effectiveEndDate", date)}
-              placeholder="Select end date"
-              className="w-full"
-              error={errors.effectiveEndDate}
-            />
-
-            {/* Status */}
-            <div className="flex flex-col gap-2">
-              <Label>
-                Status <span className="text-destructive">*</span>
-              </Label>
-              <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.status && <p className="text-sm text-destructive">{errors.status}</p>}
-            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button onClick={form.handleSubmit(onSubmit)}>Save</Button>
+            </DialogFooter>
           </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit}>Save</Button>
-          </DialogFooter>
-        </div>
+        </Form>
       </DialogContent>
     </Dialog>
   );

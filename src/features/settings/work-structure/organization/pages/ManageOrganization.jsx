@@ -1,12 +1,17 @@
+import React from "react";
+
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@tabler/icons-react";
 
-import React, { useState } from "react";
+
 import AddOrganizationDialog from "../components/AddOrganizationDialog";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
+import useDialogState from "@/hooks/useDialogState";
+
 
 const ManageOrganizaiton = () => {
-    const [addOrganizationDialogOpen, setAddOrganizationDialogOpenn] = useState(false);
+    // const [addOrganizationDialogOpen, setAddOrganizationDialogOpen] = useState(false);
+    const [open, setOpen] = useDialogState();
     const {showConfirmation, ConfirmationDialog} = useConfirmationDialog();
   return (
     <div className="min-h-screen pt-2 pb-4">
@@ -21,7 +26,7 @@ const ManageOrganizaiton = () => {
               </p>
             </div>
             <Button
-              onClick={() => setAddOrganizationDialogOpenn(true)}
+              onClick={() => setOpen("open")}
             >
                 <IconPlus size={50}/>
                 
@@ -33,8 +38,14 @@ const ManageOrganizaiton = () => {
 
       
       </div>
-      <AddOrganizationDialog open={addOrganizationDialogOpen} onOpenChange={setAddOrganizationDialogOpenn} showConfirmation={showConfirmation}/>
+      <AddOrganizationDialog open={open === "open"} onOpenChange={setOpen} showConfirmation={showConfirmation}/>
       <ConfirmationDialog />
+
+
+
+
+
+     
     </div>
   );
 };
