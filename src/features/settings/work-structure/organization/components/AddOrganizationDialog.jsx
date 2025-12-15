@@ -294,7 +294,7 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0 isolate">
+                      <PopoverContent className="w-[300px] p-0">
                         <Command>
                           <CommandInput placeholder="Search organizations..." className="h-9" />
                           <CommandList>
