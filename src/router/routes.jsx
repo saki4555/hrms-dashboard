@@ -13,6 +13,7 @@ import { PrivateRoute } from "./PrivateRoute";
 import Unauthorized from "@/features/authentication/pages/Unauthorized";
 import AddOrganizationPage from "@/features/core-hr/pages/AddOrganizationPage";
 import ManageOrganizaiton from "@/features/settings/work-structure/organization/pages/ManageOrganization";
+import Positions from "@/features/settings/work-structure/position/pages/Positions";
 
 const AppRoutes = () => {
   return (
@@ -384,6 +385,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute allowedRoles={["Admin", "HR"]}>
               <ManageOrganizaiton />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="settings/work-structure/positions"
+          element={
+            <PrivateRoute allowedRoles={["Admin", "HR"]}>
+              <Positions />
             </PrivateRoute>
           }
         />
