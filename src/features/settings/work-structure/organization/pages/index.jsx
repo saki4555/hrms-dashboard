@@ -9,7 +9,7 @@ import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import useDialogState from "@/hooks/useDialogState";
 
 
-const ManageOrganizaiton = () => {
+const Organizaitons = () => {
     // const [addOrganizationDialogOpen, setAddOrganizationDialogOpen] = useState(false);
     const [open, setOpen] = useDialogState();
     const {showConfirmation, ConfirmationDialog} = useConfirmationDialog();
@@ -50,4 +50,4 @@ const ManageOrganizaiton = () => {
   );
 };
 
-export default ManageOrganizaiton;
+export default Organizaitons;

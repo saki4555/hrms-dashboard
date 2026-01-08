@@ -6,20 +6,25 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/authentication/hooks/useAuth";
-import React from "react";
-import { Outlet } from "react-router";
+import React, { Suspense } from "react";
+import { Outlet, useLocation } from "react-router";
 import { Toaster } from "sonner";
+
 
 const DashboardLayout = () => {
 
   const {user} = useAuth();
+  const location = useLocation();
+  // console.log(location.pathname, "pathname")
   return (
     <SidebarProvider defaultOpen={false}>
       <AppSidebar userRole={user?.role}/>
       <SidebarInset>
         <main className="">
          <DashboardNavbar />
+         <Suspense fallback={<div className="text-2xl font-bold h-[50vh] flex items-center justify-center">Loading...</div>}>
           <Outlet />
+          </Suspense>
         </main>
       </SidebarInset>
       <Toaster richColors position="top-right"/>

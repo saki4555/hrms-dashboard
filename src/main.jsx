@@ -3,12 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 
 import { BrowserRouter } from 'react-router'
-import AppRoutes from './router/routes'
+import AppRoutes from './routes'
 
 import { ThemeProvider } from './components/theme-provider'
 import {
-
-
 
   QueryClient,
   QueryClientProvider,
