@@ -3,17 +3,13 @@ import Login from "@/pages/login";
 import Welcome from "@/pages/welcome";
 import { Route, Routes } from "react-router";
 
-// Core HR Pages
-import EmployeeDetailsPage from "@/features/core-hr/pages/EmployeeDetailsPage";
-import CoreHRPage from "@/features/core-hr/pages/CoreHRPage";
-import EditEmployeePage from "@/features/core-hr/pages/EditEmployeePage";
-import CreateEmployeePage from "@/features/core-hr/pages/CreateEmployeePage";
+
 
 import { PrivateRoute } from "./PrivateRoute";
 import Unauthorized from "@/features/authentication/pages/Unauthorized";
-import AddOrganizationPage from "@/features/core-hr/pages/AddOrganizationPage";
-import ManageOrganizaiton from "@/features/settings/work-structure/organization/pages/ManageOrganization";
-import Positions from "@/features/settings/work-structure/position/pages/Positions";
+
+import CoreHRRoutes from "@/features/core-hr/routes";
+import SettingsRoutes from "@/features/settings/routes";
 
 const AppRoutes = () => {
   return (
@@ -27,7 +23,7 @@ const AppRoutes = () => {
 
       {/* =======================================================================
        *                           PROTECTED ROUTES (LAYOUT WRAPPER)
-       * 
+       *
        *   DashboardLayout is wrapped inside PrivateRoute to ensure only users
        *   with valid session & roles can access the dashboard area.
        * =======================================================================
@@ -35,7 +31,9 @@ const AppRoutes = () => {
       <Route
         path="/"
         element={
-          <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+          <PrivateRoute
+            allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+          >
             <DashboardLayout />
           </PrivateRoute>
         }
@@ -43,73 +41,9 @@ const AppRoutes = () => {
         {/* ============================= DASHBOARD ============================= */}
         <Route index element={<Welcome />} />
 
-        {/* =====================================================================
-         *                              CORE HR MODULE
-         * =====================================================================
-         */}
-        <Route
-          path="core-hr/requisition"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <div>Employee Requisition Page</div>
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="core-hr/employees"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <CoreHRPage />
-            </PrivateRoute>
-          }
-        />
-
-        {/* Employee Create / Edit / Details */}
-        <Route
-          path="core-hr/employee/create-employee"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <CreateEmployeePage />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="core-hr/employee/:empNo"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <EmployeeDetailsPage />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="core-hr/employee/edit/:empNo"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <EditEmployeePage />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="core-hr/lifecycle"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <div>Employment Lifecycle Page</div>
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="core-hr/documents"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <div>Digital Document Management Page</div>
-            </PrivateRoute>
-          }
-        />
+        {/* Feature Routes */}
+        {CoreHRRoutes}
+        {SettingsRoutes}
 
         {/* =====================================================================
          *                        ATTENDANCE MANAGEMENT MODULE
@@ -216,7 +150,9 @@ const AppRoutes = () => {
         <Route
           path="performance/appraisal"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Appraisal Process Page</div>
             </PrivateRoute>
           }
@@ -238,7 +174,9 @@ const AppRoutes = () => {
         <Route
           path="self-service/ess"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Employee Self-Service Page</div>
             </PrivateRoute>
           }
@@ -260,7 +198,9 @@ const AppRoutes = () => {
         <Route
           path="pf/overview"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>PF Management Page</div>
             </PrivateRoute>
           }
@@ -286,7 +226,9 @@ const AppRoutes = () => {
         <Route
           path="loan/management"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Loan & Advance Management Page</div>
             </PrivateRoute>
           }
@@ -312,7 +254,9 @@ const AppRoutes = () => {
         <Route
           path="communication/notifications"
           element={
-            <PrivateRoute allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}>
+            <PrivateRoute
+              allowedRoles={["Admin", "HR", "Supervisor", "Employee"]}
+            >
               <div>Notifications Page</div>
             </PrivateRoute>
           }
@@ -367,35 +311,7 @@ const AppRoutes = () => {
           }
         />
 
-        {/* =====================================================================
-         *                                 SETTINGS
-         * =====================================================================
-         */}
-        <Route
-          path="settings/work-structure"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <AddOrganizationPage />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="settings/work-structure/organization"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <ManageOrganizaiton />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="settings/work-structure/positions"
-          element={
-            <PrivateRoute allowedRoles={["Admin", "HR"]}>
-              <Positions />
-            </PrivateRoute>
-          }
-        />
+        
       </Route>
     </Routes>
   );
