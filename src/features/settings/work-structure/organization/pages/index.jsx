@@ -7,6 +7,7 @@ import { IconPlus } from "@tabler/icons-react";
 import AddOrganizationDialog from "../components/AddOrganizationDialog";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import useDialogState from "@/hooks/useDialogState";
+import SalarySlipPdf from "@/components/salary-slip-pdf";
 
 
 const Organizaitons = () => {
@@ -40,11 +41,7 @@ const Organizaitons = () => {
       </div>
       <AddOrganizationDialog open={open === "open"} onOpenChange={setOpen} showConfirmation={showConfirmation}/>
       <ConfirmationDialog />
-
-
-
-
-
+      <SalarySlipPdf />
      
     </div>
   );
