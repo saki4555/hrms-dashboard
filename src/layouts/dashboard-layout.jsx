@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import DashboardNavbar from "@/components/dashboard-navbar";
+import { PageLoader } from "@/components/loading-spinner";
 import {
   SidebarInset,
   SidebarProvider,
@@ -22,7 +23,7 @@ const DashboardLayout = () => {
       <SidebarInset>
         <main className="">
          <DashboardNavbar />
-         <Suspense fallback={<div className="text-2xl font-bold h-[50vh] flex items-center justify-center">Loading...</div>}>
+         <Suspense fallback={<PageLoader />}>
           <Outlet />
           </Suspense>
         </main>
