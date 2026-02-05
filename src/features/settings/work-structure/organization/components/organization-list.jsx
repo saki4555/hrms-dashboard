@@ -10,10 +10,11 @@ import {
 import {
   ArrowUpDown,
   ChevronDown,
-  MoreHorizontal,
-  UserPlus,
-  Eye,
+  Building2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,9 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -43,40 +41,79 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import CreateEmployeeSheet from "./CreateEmployeeSheet";
-import { useEmployees } from "../hooks/useEmployees";
 import { DataTablePagination } from "@/components/DataTablePagination";
-import { useNavigate } from "react-router";
-import { usePersonTypes } from "../hooks/usePersonTypes";
-import EditEmployeeModal from "./EditEmployeeModal";
+import AddOrganizationDialog from "./AddOrganizationDialog";
 
-import EditEmployeeDrawer from "./EditEmployeeDrawer";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
+import { useDeleteOrganization, useOrganizations } from "../queries";
+import { Spinner } from "@/components/ui/spinner";
+import UpdateOrganizationDialog from "./update-organization-dialog";
+
+const ORGANIZATION_TYPES = [
+  { id: 1, name: "Headquarters" },
+  { id: 2, name: "Branch Office" },
+  { id: 3, name: "Department" },
+  { id: 4, name: "Division" },
+  { id: 5, name: "Subsidiary" },
+  { id: 6, name: "Regional Office" },
+];
 
 const getStatusLabel = (status) => {
-  return status === "1" ? "Active" : "Inactive";
+  return status === 1 ? "Active" : "Inactive";
 };
 
-export default function EmployeeList() {
+const getOrgTypeName = (id) => {
+  const type = ORGANIZATION_TYPES.find((t) => t.id === id);
+  return type ? type.name : "Unknown";
+};
+
+export default function OrganizationList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
 
-  const navigate = useNavigate();
-
-  const { data: employeeData = [], isLoading, isError } = useEmployees();
-  console.log({ employeeData }, "from use employee hook");
-  const { data: personTypes = [], isLoading: personTypesLoading } =
-    usePersonTypes();
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
-  // console.log("Person types", personTypes);
+  const {
+    data: organizationData = [],
+    isLoading,
+    isError,
+  } = useOrganizations();
+  const deleteOrganizationMutation = useDeleteOrganization();
 
-  // console.log({ employeeData }, "from use employee hook");
+  console.log("Organization data:", organizationData);
+
+  const handleEdit = (organization) => {
+    console.log("Edit organization:", organization);
+    setSelectedOrganization(organization);
+    setIsUpdateDialogOpen(true);
+  };
+
+  const handleDelete = async (organization) => {
+    const confirmed = await showConfirmation({
+      title: "Delete organization?",
+      description: `Are you sure you want to delete "${organization.NAME}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+
+    if (confirmed) {
+      try {
+        await deleteOrganizationMutation.mutateAsync(organization.ID);
+        console.log("Organization deleted successfully:", organization);
+        toast.success("Organization deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting organization:", error);
+        toast.error("Failed to delete organization. Please try again.");
+      }
+    }
+  };
 
   const columns = [
     {
@@ -102,83 +139,59 @@ export default function EmployeeList() {
       enableHiding: false,
     },
     {
-      accessorKey: "EMP_NO",
+      accessorKey: "NAME",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Employee No
+            Organization Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("EMP_NO")}</div>
+        <div className="font-medium">{row.getValue("NAME")}</div>
       ),
     },
     {
-      accessorKey: "FIRST_NAME",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const firstName = row.getValue("FIRST_NAME");
-        const lastName = row.original.LAST_NAME;
-        const title = row.original.TITLE;
-        return (
-          <div>
-            {title && (
-              <span className="text-muted-foreground mr-1">{title}</span>
-            )}
-            {firstName} {lastName}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "GENDER",
-      header: "Gender",
-      cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
-    },
-    {
-      accessorKey: "JOIN_DATE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className=""
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Join Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("JOIN_DATE");
-        return <div className="ml-2">{date ? date : "N/A"}</div>;
-      },
-    },
-    {
-      accessorKey: "PERSON_TYPE_ID",
-      header: "Employee Type",
+      accessorKey: "ORG_TYPE_ID",
+      header: "Type",
       cell: ({ row }) => (
         <div className="capitalize">
-          {getPersonTypeName(row.getValue("PERSON_TYPE_ID"))}
+          {getOrgTypeName(row.getValue("ORG_TYPE_ID"))}
         </div>
       ),
       filterFn: (row, id, value) => {
         return value === "all" || row.getValue(id) === value;
+      },
+    },
+    {
+      accessorKey: "LOCATION",
+      header: "Location",
+      cell: ({ row }) => (
+        <div className="max-w-xs truncate">
+          {row.getValue("LOCATION") || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "CREATED_DATE",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Created Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = row.getValue("CREATED_DATE");
+        return <div>{date ? date : "N/A"}</div>;
       },
     },
     {
@@ -187,7 +200,7 @@ export default function EmployeeList() {
       cell: ({ row }) => {
         const status = row.getValue("STATUS");
         return (
-          <Badge variant={status === "1" ? "success" : "destructive"}>
+          <Badge variant={status === 1 ? "success" : "destructive"}>
             {getStatusLabel(status)}
           </Badge>
         );
@@ -198,53 +211,45 @@ export default function EmployeeList() {
     },
     {
       id: "actions",
+      header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const employee = row.original;
+        const organization = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigate(`/core-hr/employee/${employee.EMP_NO}`)}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(employee.EMP_NO)}
-              >
-                Copy Employee ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-           <DropdownMenuItem onClick={() => navigate(`/core-hr/employee/edit/${employee.EMP_NO}`)}>
-                Edit Employee Page
-              </DropdownMenuItem>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleEdit(organization)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span className="sr-only">Edit</span>
+            </Button>
 
-
-              <DropdownMenuItem onClick={() => handleOpenEdit(employee)}>
-                Edit Employee
-              </DropdownMenuItem>
-
-              <DropdownMenuItem className="text-red-600">
-                Deactivate
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => handleDelete(organization)}
+              disabled={deleteOrganizationMutation.isPending}
+            >
+              {deleteOrganizationMutation.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              <span className="sr-only">Delete</span>
+            </Button>
+          </div>
         );
       },
     },
   ];
 
   const table = useReactTable({
-    data: employeeData,
+    data: organizationData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -264,59 +269,16 @@ export default function EmployeeList() {
     },
   });
 
-  const getPersonTypeName = (id) => {
-    const type = personTypes.find((t) => t.PERSON_TYPE_ID === id);
-    return type ? type.PERSON_TYPE : "Unknown";
-  };
-
-  const handleOpenEdit = (employee) => {
-    setSelectedEmployee(employee);
-    setIsEditOpen(true);
-  };
-
-  const handleSave = async (mode, formData) => {
-    console.log("Edit modal saved:", { mode, formData });
-    // Example: ask confirmation? (optional)
-    if (mode === "update") {
-      const confirmed = await showConfirmation({
-        title: "Create new record?",
-        description: "You are about to create a new employee record. Continue?",
-        confirmText: "Proceed",
-        cancelText: "Cancel",
-      });
-      if (!confirmed) {
-        console.log("User cancelled update mode save.");
-        return;
-      }
-    }
-    // For now: just console log; later integrate your state update or API call.
-    setIsEditOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
       <div className="container mx-auto">
-        {/* Header */}
-        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Core HR</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage employee information and records
-              </p>
-            </div>
-            <Button onClick={() => navigate('/core-hr/employee/create-employee')}>Create Employee</Button>
-            <CreateEmployeeSheet />
-          </div>
-        </div>
-
         {/* Data Table */}
         <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
           <div className="space-y-4">
             {/* Filters and Controls */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
-                placeholder="Search employees..."
+                placeholder="Search organizations..."
                 value={globalFilter ?? ""}
                 onChange={(event) => setGlobalFilter(event.target.value)}
                 className="max-w-sm"
@@ -324,36 +286,43 @@ export default function EmployeeList() {
 
               <Select
                 value={
-                  table.getColumn("PERSON_TYPE_ID")?.getFilterValue() || "all"
+                  table
+                    .getColumn("ORG_TYPE_ID")
+                    ?.getFilterValue()
+                    ?.toString() || "all"
                 }
                 onValueChange={(value) =>
                   table
-                    .getColumn("PERSON_TYPE_ID")
-                    ?.setFilterValue(value === "all" ? undefined : value)
+                    .getColumn("ORG_TYPE_ID")
+                    ?.setFilterValue(
+                      value === "all" ? undefined : Number(value),
+                    )
                 }
               >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Employee Type" />
+                  <SelectValue placeholder="Organization Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {personTypes.map((type) => (
-                    <SelectItem
-                      key={type.PERSON_TYPE_ID}
-                      value={type.PERSON_TYPE_ID}
-                    >
-                      {type.PERSON_TYPE}
+                  {ORGANIZATION_TYPES.map((type) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      {type.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
               <Select
-                value={table.getColumn("STATUS")?.getFilterValue() || "all"}
+                value={
+                  table.getColumn("STATUS")?.getFilterValue()?.toString() ||
+                  "all"
+                }
                 onValueChange={(value) =>
                   table
                     .getColumn("STATUS")
-                    ?.setFilterValue(value === "all" ? undefined : value)
+                    ?.setFilterValue(
+                      value === "all" ? undefined : Number(value),
+                    )
                 }
               >
                 <SelectTrigger className="w-[140px]">
@@ -405,9 +374,9 @@ export default function EmployeeList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -425,7 +394,7 @@ export default function EmployeeList() {
                           <TableCell key={cell.id}>
                             {flexRender(
                               cell.column.columnDef.cell,
-                              cell.getContext()
+                              cell.getContext(),
                             )}
                           </TableCell>
                         ))}
@@ -438,9 +407,9 @@ export default function EmployeeList() {
                         className="h-24 text-center"
                       >
                         <div className="flex flex-col items-center justify-center py-8">
-                          <UserPlus className="w-12 h-12 text-muted-foreground mb-2" />
+                          <Building2 className="w-12 h-12 text-muted-foreground mb-2" />
                           <p className="text-muted-foreground">
-                            No employees found
+                            No organizations found
                           </p>
                         </div>
                       </TableCell>
@@ -454,14 +423,24 @@ export default function EmployeeList() {
           </div>
         </div>
       </div>
-      <EditEmployeeModal
-        open={isEditOpen}
-        onOpenChange={setIsEditOpen}
-        employee={selectedEmployee}
-        onSave={handleSave}
-        showConfirmation={showConfirmation} // ← Add this!
+
+      {/* Add Organization Dialog */}
+      <AddOrganizationDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        showConfirmation={showConfirmation}
       />
 
+      {/* Update Organization Dialog */}
+      <UpdateOrganizationDialog
+        open={isUpdateDialogOpen}
+        onOpenChange={setIsUpdateDialogOpen}
+        showConfirmation={showConfirmation}
+        organization={selectedOrganization}
+      />
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog />
     </div>
   );
 }
