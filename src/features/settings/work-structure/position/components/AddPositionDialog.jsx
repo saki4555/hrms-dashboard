@@ -20,13 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -41,61 +35,98 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { DatePicker } from "@/components/DatePicker";
+import { showSubmittedData } from "@/lib/showo-submitted-date";
 
+// Demo data - easy to replace later with API calls
 const ORGANIZATIONS = [
-  { id: "org-1", name: "Corporate Headquarters" },
-  { id: "org-2", name: "North American Division" },
-  { id: "org-3", name: "European Division" },
-  { id: "org-4", name: "Asia Pacific Region" },
-  { id: "org-5", name: "Manufacturing Department" },
-  { id: "org-6", name: "Sales & Marketing" },
-  { id: "org-7", name: "Research & Development" },
-  { id: "org-8", name: "Human Resources" },
-  { id: "org-9", name: "Finance & Accounting" },
-  { id: "org-10", name: "Operations Management" },
+  { id: 1, name: "Corporate Headquarters" },
+  { id: 2, name: "North American Division" },
+  { id: 3, name: "European Division" },
+  { id: 4, name: "Asia Pacific Region" },
+  { id: 5, name: "Manufacturing Department" },
+  { id: 6, name: "Sales & Marketing" },
+  { id: 7, name: "Research & Development" },
+  { id: 8, name: "Human Resources" },
+  { id: 9, name: "Finance & Accounting" },
+  { id: 10, name: "Operations Management" },
 ];
 
-const FUNCTIONS = [
-  { value: "engineering", label: "Engineering" },
-  { value: "sales", label: "Sales" },
-  { value: "marketing", label: "Marketing" },
-  { value: "finance", label: "Finance" },
-  { value: "hr", label: "Human Resources" },
-  { value: "operations", label: "Operations" },
-  { value: "it", label: "Information Technology" },
-  { value: "legal", label: "Legal" },
-  { value: "research", label: "Research & Development" },
-  { value: "customer-service", label: "Customer Service" },
+const POSITIONS = [
+  { id: 1, name: "Senior Software Engineer" },
+  { id: 2, name: "Marketing Manager" },
+  { id: 3, name: "HR Specialist" },
+  { id: 4, name: "Financial Analyst" },
+  { id: 5, name: "Sales Director" },
+  { id: 6, name: "Product Manager" },
+  { id: 7, name: "Data Scientist" },
+  { id: 8, name: "DevOps Engineer" },
+  { id: 9, name: "UX Designer" },
+  { id: 10, name: "Business Analyst" },
+  { id: 11, name: "Project Manager" },
+  { id: 12, name: "Quality Assurance Engineer" },
+  { id: 13, name: "Customer Success Manager" },
+  { id: 14, name: "Operations Coordinator" },
+  { id: 15, name: "Executive Assistant" },
 ];
 
-// Zod schema
+const STATUS_OPTIONS = [
+  { id: 1, label: "Active" },
+  { id: 0, label: "Inactive" },
+];
+
+const getDefaultStartDate = () => new Date();
+const getDefaultEndDate = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + 100);
+  return date;
+};
+
+const getEndDateFromStart = (startDate) => {
+  const endDate = new Date(startDate);
+  endDate.setFullYear(endDate.getFullYear() + 100);
+  return endDate;
+};
+
+// Zod schema matching database fields
 const formSchema = z.object({
-  positionName: z
-    .string()
-    .min(1, "Position name is required")
-    .min(2, "Position name must be at least 2 characters"),
-  organization: z.string().min(1, "Organization is required"),
-  function: z.string().min(1, "Function is required"),
+  positionId: z.number().optional().nullable(),
+  orgId: z.number().optional().nullable(),
   fte: z
     .string()
-    .min(1, "FTE is required")
+    .optional()
     .refine((val) => {
+      if (!val || val === "") return true; // Optional field
       const num = parseFloat(val);
       return !isNaN(num) && num > 0 && num <= 1;
     }, "FTE must be a number between 0 and 1 (e.g., 0.5 for part-time, 1 for full-time)"),
+  effectiveStartDate: z.date().optional().nullable(),
+  effectiveEndDate: z.date().optional().nullable(),
+  status: z.number().default(1),
+}).refine((data) => {
+  if (data.effectiveStartDate && data.effectiveEndDate) {
+    return data.effectiveEndDate > data.effectiveStartDate;
+  }
+  return true;
+}, {
+  message: "End date must be after start date",
+  path: ["effectiveEndDate"],
 });
 
 export default function AddPositionDialog({ open, onOpenChange, showConfirmation }) {
-  const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [orgComboboxOpen, setOrgComboboxOpen] = useState(false);
+  const [positionComboboxOpen, setPositionComboboxOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      positionName: "",
-      organization: "",
-      function: "",
+      positionId: null,
+      orgId: null,
       fte: "1",
+      effectiveStartDate: getDefaultStartDate(),
+      effectiveEndDate: getDefaultEndDate(),
+      status: 1, // Default to Active
     },
   });
 
@@ -108,19 +139,34 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
   if (!isMounted) return null;
 
   const onSubmit = (data) => {
-    const org = ORGANIZATIONS.find(o => o.id === data.organization);
-    
-    const formattedData = {
-      ...data,
-      organizationName: org?.name || "Unknown",
-      fte: parseFloat(data.fte),
+    // Prepare data for backend (sending IDs, not display names)
+    const backendData = {
+      POSITION_ID: data.positionId,
+      ORG_ID: data.orgId,
+      FTE: data.fte ? parseFloat(data.fte) : null,
+      EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split('T')[0],
+      EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split('T')[0],
+      STATUS: data.status,
+      // ACTUAL_COUNT is not in add form - will be managed elsewhere
+      // ID is auto-increment
     };
 
-    console.log("Position Data:", formattedData);
-    alert(`Position Created!\n\nPosition: ${formattedData.positionName}\nOrganization: ${formattedData.organizationName}\nFunction: ${formattedData.function}\nFTE: ${formattedData.fte}`);
+    // For display purposes (showing names instead of IDs)
+    const displayData = {
+      ...backendData,
+      positionName: POSITIONS.find(p => p.id === data.positionId)?.name || "None",
+      organizationName: ORGANIZATIONS.find(o => o.id === data.orgId)?.name || "None",
+      statusName: STATUS_OPTIONS.find(s => s.id === data.status)?.label,
+    };
 
-    form.reset();
-    onOpenChange(false);
+    console.log("Backend Data (IDs):", backendData);
+    console.log("Display Data (Names):", displayData);
+    
+    showSubmittedData(displayData);
+
+    // Uncomment to reset and close after successful submission
+    // form.reset();
+    // onOpenChange(false);
   };
 
   const handleCancel = async () => {
@@ -140,6 +186,16 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
     onOpenChange(false);
   };
 
+  const handleStartDateChange = (date, field) => {
+    field.onChange(date);
+    
+    // Automatically update end date to 100 years from the selected start date
+    if (date) {
+      const newEndDate = getEndDateFromStart(date);
+      form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -157,7 +213,7 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
             </div>
             <div>
               <DialogTitle>Add New Position</DialogTitle>
-              <DialogDescription>Create a new position in the system</DialogDescription>
+              <DialogDescription>Assign a position to an organization</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -165,18 +221,58 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Position Name */}
+              {/* Position */}
               <FormField
                 control={form.control}
-                name="positionName"
+                name="positionId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Position Name <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Senior Software Engineer" {...field} />
-                    </FormControl>
+                    <FormLabel>Position</FormLabel>
+                    <Popover modal={true} open={positionComboboxOpen} onOpenChange={setPositionComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={`w-full justify-between font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
+                          >
+                            {field.value
+                              ? POSITIONS.find(pos => pos.id === field.value)?.name
+                              : "Select position (optional)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search positions..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No position found.</CommandEmpty>
+                            <CommandGroup>
+                              {POSITIONS.map((pos) => (
+                                <CommandItem
+                                  key={pos.id}
+                                  value={pos.name}
+                                  onSelect={() => {
+                                    field.onChange(pos.id);
+                                    setPositionComboboxOpen(false);
+                                  }}
+                                >
+                                  {pos.name}
+                                  <Check
+                                    className={`ml-auto h-4 w-4 ${
+                                      field.value === pos.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -185,13 +281,11 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
               {/* Organization */}
               <FormField
                 control={form.control}
-                name="organization"
+                name="orgId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Organization <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Popover modal={true} open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <FormLabel>Organization</FormLabel>
+                    <Popover modal={true} open={orgComboboxOpen} onOpenChange={setOrgComboboxOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -203,24 +297,24 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                           >
                             {field.value
                               ? ORGANIZATIONS.find(org => org.id === field.value)?.name
-                              : "Select organization"}
+                              : "Select organization (optional)"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[500px] p-0 ">
+                      <PopoverContent className="w-[400px] p-0">
                         <Command>
                           <CommandInput placeholder="Search organizations..." className="h-9" />
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
-                            <CommandGroup className="pb-8">
+                            <CommandGroup>
                               {ORGANIZATIONS.map((org) => (
                                 <CommandItem
                                   key={org.id}
                                   value={org.name}
                                   onSelect={() => {
                                     field.onChange(org.id);
-                                    setComboboxOpen(false);
+                                    setOrgComboboxOpen(false);
                                   }}
                                 >
                                   {org.name}
@@ -241,43 +335,13 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* Function */}
-              <FormField
-                control={form.control}
-                name="function"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Function <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select function" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {FUNCTIONS.map((func) => (
-                          <SelectItem key={func.value} value={func.value}>
-                            {func.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* FTE */}
               <FormField
                 control={form.control}
                 name="fte"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      FTE (Full-Time Equivalent) <span className="text-destructive">*</span>
-                    </FormLabel>
+                    <FormLabel>FTE (Full-Time Equivalent)</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
@@ -287,6 +351,76 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                         placeholder="e.g., 1 for full-time, 0.5 for part-time" 
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Effective Start Date */}
+              <FormField
+                control={form.control}
+                name="effectiveStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Effective Start Date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => handleStartDateChange(date, field)}
+                        placeholder="Select start date"
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Effective End Date */}
+              <FormField
+                control={form.control}
+                name="effectiveEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Effective End Date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select end date"
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Status */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        value={field.value?.toString()}
+                        className="flex flex-row gap-3"
+                      >
+                        {STATUS_OPTIONS.map((status) => (
+                          <FormItem key={status.id} className="flex items-center gap-2">
+                            <FormControl>
+                              <RadioGroupItem value={status.id.toString()} />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {status.label}
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

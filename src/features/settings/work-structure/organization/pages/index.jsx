@@ -8,6 +8,7 @@ import AddOrganizationDialog from "../components/AddOrganizationDialog";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import useDialogState from "@/hooks/useDialogState";
 import SalarySlipPdf from "@/components/salary-slip-pdf";
+import OrganizationList from "../components/organization-list";
 
 
 const Organizaitons = () => {
@@ -39,6 +40,7 @@ const Organizaitons = () => {
 
       
       </div>
+      <OrganizationList />
       <AddOrganizationDialog open={open === "open"} onOpenChange={setOpen} showConfirmation={showConfirmation}/>
       <ConfirmationDialog />
       <SalarySlipPdf />

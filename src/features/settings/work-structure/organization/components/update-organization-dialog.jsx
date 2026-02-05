@@ -44,9 +44,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { showSubmittedData } from "@/lib/showo-submitted-date";
+import { Spinner } from "@/components/ui/spinner";
+import { useUpdateOrganization } from "../queries";
 
-// Demo data - easy to replace later with API calls
+
+// Demo data - replace with your API calls
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
   { id: 2, name: "Branch Office" },
@@ -87,7 +89,7 @@ const COST_CENTERS = [
   { id: 110, name: "CC-010 - Customer Support" },
 ];
 
-// Zod schema matching database fields
+// Zod schema
 const formSchema = z.object({
   name: z
     .string()
@@ -99,13 +101,20 @@ const formSchema = z.object({
   location: z.string().max(200, "Location cannot exceed 200 characters").optional(),
   costCenterId: z.number().optional().nullable(),
   status: z.number().default(1),
-  createdBy: z.number().optional(), // Will be set from logged-in user
+  updatedBy: z.number().optional(),
 });
 
-export default function AddOrganizationDialog({ open, onOpenChange, showConfirmation }) {
+export default function UpdateOrganizationDialog({ 
+  open, 
+  onOpenChange, 
+  showConfirmation, 
+  organization 
+}) {
   const [parentOrgOpen, setParentOrgOpen] = useState(false);
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const updateOrganizationMutation = useUpdateOrganization();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -115,12 +124,27 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       parentOrgId: null,
       location: "",
       costCenterId: null,
-      status: 1, // Default to Active
-      createdBy: undefined, // TODO: Set this from logged-in user context
+      status: 1,
+      updatedBy: undefined,
     },
   });
 
   const { formState: { isDirty } } = form;
+
+  // Populate form when organization changes
+  useEffect(() => {
+    if (organization) {
+      form.reset({
+        name: organization.NAME || "",
+        orgTypeId: organization.ORG_TYPE_ID || undefined,
+        parentOrgId: organization.PARENT_ORG_ID || null,
+        location: organization.LOCATION || "",
+        costCenterId: organization.COST_CENTER_ID || null,
+        status: organization.STATUS ?? 1,
+        updatedBy: undefined, // TODO: Get from user session
+      });
+    }
+  }, [organization, form]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -128,51 +152,44 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
 
   if (!isMounted) return null;
 
- // Replace the onSubmit function
-const onSubmit = async (data) => {
-  try {
-    // Prepare data for backend (sending IDs, not display names)
-    const backendData = {
-      NAME: data.name,
-      ORG_TYPE_ID: data.orgTypeId,
-      PARENT_ORG_ID: data.parentOrgId,
-      LOCATION: data.location || null,
-      COST_CENTER_ID: data.costCenterId,
-      STATUS: data.status,
-      CREATED_BY: data.createdBy || 1, // TODO: Get from user session
-      // CREATED_DATE will be auto-filled by database (SYSTIMESTAMP)
-      // ID is auto-increment, no need to send
-    };
-
-    console.log("Sending to backend:", backendData);
-
-    // Make API call
-    const response = await fetch("https://7b97fwsp-4000.inc1.devtunnels.ms/api/hr-org", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(backendData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  const onSubmit = async (data) => {
+    if (!organization || !organization.ID) {
+      toast.error("Organization ID is missing");
+      return;
     }
 
-    const result = await response.json();
-    console.log("Success:", result);
+    try {
+      // Prepare data for backend
+      const backendData = {
+        NAME: data.name,
+        ORG_TYPE_ID: data.orgTypeId,
+        PARENT_ORG_ID: data.parentOrgId,
+        LOCATION: data.location || null,
+        COST_CENTER_ID: data.costCenterId,
+        STATUS: data.status,
+        UPDATED_BY: data.updatedBy || 1, // TODO: Get from user session
+      };
 
-    // Show success message
-    toast.success("Organization created successfully!");
+      console.log("Updating organization ID:", organization.ID);
+      console.log("Sending to backend:", backendData);
 
-    // Reset form and close dialog
-    form.reset();
-    onOpenChange(false);
-  } catch (error) {
-    console.error("Error creating organization:", error);
-    toast.error("Failed to create organization. Please try again.");
-  }
-};
+      // Use the mutation hook
+      await updateOrganizationMutation.mutateAsync({
+        id: organization.ID,
+        data: backendData,
+      });
+
+      console.log("Organization updated successfully");
+      toast.success("Organization updated successfully!");
+
+      // Reset form and close dialog
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      toast.error(error.message || "Failed to update organization. Please try again.");
+    }
+  };
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {
@@ -191,6 +208,8 @@ const onSubmit = async (data) => {
     onOpenChange(false);
   };
 
+  const isSubmitting = updateOrganizationMutation.isPending;
+
   return (
     <Dialog
       open={open}
@@ -207,8 +226,10 @@ const onSubmit = async (data) => {
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle>Add New Organization</DialogTitle>
-              <DialogDescription>Create a new organization in the system</DialogDescription>
+              <DialogTitle>Update Organization</DialogTitle>
+              <DialogDescription>
+                Edit organization details for "{organization?.NAME}"
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -226,7 +247,11 @@ const onSubmit = async (data) => {
                       Organization Name <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter organization name" {...field} />
+                      <Input 
+                        placeholder="Enter organization name" 
+                        disabled={isSubmitting}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,6 +270,7 @@ const onSubmit = async (data) => {
                     <Select 
                       onValueChange={(value) => field.onChange(Number(value))} 
                       value={field.value?.toString()}
+                      disabled={isSubmitting}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -277,6 +303,7 @@ const onSubmit = async (data) => {
                           <Button
                             variant="outline"
                             role="combobox"
+                            disabled={isSubmitting}
                             className={`w-full justify-between font-normal ${
                               !field.value && "text-muted-foreground"
                             }`}
@@ -294,6 +321,15 @@ const onSubmit = async (data) => {
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
                             <CommandGroup>
+                              <CommandItem
+                                value="clear-selection"
+                                onSelect={() => {
+                                  field.onChange(null);
+                                  setParentOrgOpen(false);
+                                }}
+                              >
+                                <span className="text-muted-foreground">Clear selection</span>
+                              </CommandItem>
                               {PARENT_ORGANIZATIONS.map((org) => (
                                 <CommandItem
                                   key={org.id}
@@ -334,6 +370,7 @@ const onSubmit = async (data) => {
                           <Button
                             variant="outline"
                             role="combobox"
+                            disabled={isSubmitting}
                             className={`w-full justify-between font-normal ${
                               !field.value && "text-muted-foreground"
                             }`}
@@ -351,6 +388,15 @@ const onSubmit = async (data) => {
                           <CommandList>
                             <CommandEmpty>No cost center found.</CommandEmpty>
                             <CommandGroup>
+                              <CommandItem
+                                value="clear-selection"
+                                onSelect={() => {
+                                  field.onChange(null);
+                                  setCostCenterOpen(false);
+                                }}
+                              >
+                                <span className="text-muted-foreground">Clear selection</span>
+                              </CommandItem>
                               {COST_CENTERS.map((cc) => (
                                 <CommandItem
                                   key={cc.id}
@@ -390,6 +436,7 @@ const onSubmit = async (data) => {
                         placeholder="Enter location address or description (optional)"
                         className="resize-none"
                         rows={3}
+                        disabled={isSubmitting}
                         {...field}
                       />
                     </FormControl>
@@ -411,6 +458,7 @@ const onSubmit = async (data) => {
                       <RadioGroup
                         onValueChange={(value) => field.onChange(Number(value))}
                         value={field.value?.toString()}
+                        disabled={isSubmitting}
                         className="flex flex-row gap-3"
                       >
                         {STATUS_OPTIONS.map((status) => (
@@ -432,10 +480,27 @@ const onSubmit = async (data) => {
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button onClick={form.handleSubmit(onSubmit)}>Save</Button>
+              <Button 
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Organization"
+                )}
+              </Button>
             </DialogFooter>
           </div>
         </Form>
