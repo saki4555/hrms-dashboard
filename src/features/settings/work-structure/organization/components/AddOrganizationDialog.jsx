@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -42,88 +43,79 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { DatePicker } from "@/components/DatePicker";
 import { showSubmittedData } from "@/lib/showo-submitted-date";
 
-
+// Demo data - easy to replace later with API calls
 const ORGANIZATION_TYPES = [
-  { value: "headquarters", label: "Headquarters" },
-  { value: "branch", label: "Branch Office" },
-  { value: "department", label: "Department" },
-  { value: "division", label: "Division" },
-  { value: "subsidiary", label: "Subsidiary" },
-  { value: "regional", label: "Regional Office" },
+  { id: 1, name: "Headquarters" },
+  { id: 2, name: "Branch Office" },
+  { id: 3, name: "Department" },
+  { id: 4, name: "Division" },
+  { id: 5, name: "Subsidiary" },
+  { id: 6, name: "Regional Office" },
 ];
 
 const STATUS_OPTIONS = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
+  { id: 1, label: "Active" },
+  { id: 0, label: "Inactive" },
 ];
 
 const PARENT_ORGANIZATIONS = [
-  { id: "org-1", name: "Corporate Headquarters" },
-  { id: "org-2", name: "North American Division" },
-  { id: "org-3", name: "European Division" },
-  { id: "org-4", name: "Asia Pacific Region" },
-  { id: "org-5", name: "Manufacturing Department" },
-  { id: "org-6", name: "Sales & Marketing" },
-  { id: "org-7", name: "Research & Development" },
-  { id: "org-8", name: "Human Resources" },
-  { id: "org-9", name: "Finance & Accounting" },
-  { id: "org-10", name: "Operations Management" },
+  { id: 1, name: "Corporate Headquarters" },
+  { id: 2, name: "North American Division" },
+  { id: 3, name: "European Division" },
+  { id: 4, name: "Asia Pacific Region" },
+  { id: 5, name: "Manufacturing Department" },
+  { id: 6, name: "Sales & Marketing" },
+  { id: 7, name: "Research & Development" },
+  { id: 8, name: "Human Resources" },
+  { id: 9, name: "Finance & Accounting" },
+  { id: 10, name: "Operations Management" },
 ];
 
-const getDefaultStartDate = () => new Date();
-const getDefaultEndDate = () => {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() + 100);
-  return date;
-};
+const COST_CENTERS = [
+  { id: 101, name: "CC-001 - Corporate Services" },
+  { id: 102, name: "CC-002 - IT Infrastructure" },
+  { id: 103, name: "CC-003 - Human Resources" },
+  { id: 104, name: "CC-004 - Finance & Accounting" },
+  { id: 105, name: "CC-005 - Sales Operations" },
+  { id: 106, name: "CC-006 - Marketing" },
+  { id: 107, name: "CC-007 - Research & Development" },
+  { id: 108, name: "CC-008 - Manufacturing" },
+  { id: 109, name: "CC-009 - Logistics" },
+  { id: 110, name: "CC-010 - Customer Support" },
+];
 
-const getEndDateFromStart = (startDate) => {
-  const endDate = new Date(startDate);
-  endDate.setFullYear(endDate.getFullYear() + 100);
-  return endDate;
-};
-
-// Zod schema
+// Zod schema matching database fields
 const formSchema = z.object({
-  organizationId: z
-    .string()
-    .min(1, "Organization ID is required")
-    .regex(/^[A-Z0-9-]+$/i, "Only letters, numbers, and hyphens allowed"),
   name: z
     .string()
     .min(1, "Organization name is required")
-    .min(2, "Name must be at least 2 characters"),
-  type: z.string().min(1, "Organization type is required"),
-  parentOrganization: z.string().optional(),
-  effectiveStartDate: z.date({
-    required_error: "Effective start date is required",
-  }),
-  effectiveEndDate: z.date({
-    required_error: "Effective end date is required",
-  }),
-  status: z.string().min(1, "Status is required"),
-}).refine((data) => data.effectiveEndDate > data.effectiveStartDate, {
-  message: "End date must be after start date",
-  path: ["effectiveEndDate"],
+    .min(2, "Name must be at least 2 characters")
+    .max(200, "Name cannot exceed 200 characters"),
+  orgTypeId: z.number().optional().nullable(),
+  parentOrgId: z.number().optional().nullable(),
+  location: z.string().max(200, "Location cannot exceed 200 characters").optional(),
+  costCenterId: z.number().optional().nullable(),
+  status: z.number().default(1),
+  createdBy: z.number().optional(), // Will be set from logged-in user
 });
 
 export default function AddOrganizationDialog({ open, onOpenChange, showConfirmation }) {
-  const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [parentOrgOpen, setParentOrgOpen] = useState(false);
+  const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      organizationId: "",
       name: "",
-      type: "",
-      parentOrganization: "",
-      effectiveStartDate: getDefaultStartDate(),
-      effectiveEndDate: getDefaultEndDate(),
-      status: "active",
+      orgTypeId: undefined,
+      parentOrgId: null,
+      location: "",
+      costCenterId: null,
+      status: 1, // Default to Active
+      createdBy: undefined, // TODO: Set this from logged-in user context
     },
   });
 
@@ -136,18 +128,34 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
   if (!isMounted) return null;
 
   const onSubmit = (data) => {
-    const parentOrg = PARENT_ORGANIZATIONS.find(org => org.id === data.parentOrganization);
-    
-    const formattedData = {
-      ...data,
-      parentOrganizationName: parentOrg?.name || "None",
-      effectiveStartDate: data.effectiveStartDate.toISOString().split('T')[0],
-      effectiveEndDate: data.effectiveEndDate.toISOString().split('T')[0],
+    // Prepare data for backend (sending IDs, not display names)
+    const backendData = {
+      NAME: data.name,
+      ORG_TYPE_ID: data.orgTypeId,
+      PARENT_ORG_ID: data.parentOrgId,
+      LOCATION: data.location || null,
+      COST_CENTER_ID: data.costCenterId,
+      STATUS: data.status,
+      CREATED_BY: data.createdBy || 1, // TODO: Get from user session
+      // CREATED_DATE will be auto-filled by database (SYSTIMESTAMP)
+      // ID is auto-increment, no need to send
     };
 
-    console.log("Organization Data:", formattedData);
-    showSubmittedData(formattedData);
+    // For display purposes (showing names instead of IDs)
+    const displayData = {
+      ...backendData,
+      orgTypeName: ORGANIZATION_TYPES.find(t => t.id === data.orgTypeId)?.name,
+      parentOrgName: PARENT_ORGANIZATIONS.find(o => o.id === data.parentOrgId)?.name || "None",
+      costCenterName: COST_CENTERS.find(c => c.id === data.costCenterId)?.name || "None",
+      statusName: STATUS_OPTIONS.find(s => s.id === data.status)?.label,
+    };
 
+    console.log("Backend Data (IDs):", backendData);
+    console.log("Display Data (Names):", displayData);
+    
+    showSubmittedData(displayData);
+
+    // Uncomment to reset and close after successful submission
     // form.reset();
     // onOpenChange(false);
   };
@@ -167,16 +175,6 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
 
     form.reset();
     onOpenChange(false);
-  };
-
-  const handleStartDateChange = (date, field) => {
-    field.onChange(date);
-    
-    // Automatically update end date to 100 years from the selected start date
-    if (date) {
-      const newEndDate = getEndDateFromStart(date);
-      form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
-    }
   };
 
   return (
@@ -204,27 +202,6 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Organization ID */}
-              <FormField
-                control={form.control}
-                name="organizationId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Organization ID <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., ORG-001"
-                        className="font-mono"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* Organization Name */}
               <FormField
                 control={form.control}
@@ -245,13 +222,16 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
               {/* Organization Type */}
               <FormField
                 control={form.control}
-                name="type"
+                name="orgTypeId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
                       Organization Type <span className="text-destructive">*</span>
                     </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      onValueChange={(value) => field.onChange(Number(value))} 
+                      value={field.value?.toString()}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select type" />
@@ -259,8 +239,8 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                       </FormControl>
                       <SelectContent>
                         {ORGANIZATION_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                          <SelectItem key={type.id} value={type.id.toString()}>
+                            {type.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -273,11 +253,11 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
               {/* Parent Organization */}
               <FormField
                 control={form.control}
-                name="parentOrganization"
+                name="parentOrgId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Parent Organization</FormLabel>
-                    <Popover modal={true} open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <Popover modal={true} open={parentOrgOpen} onOpenChange={setParentOrgOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -299,14 +279,14 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                           <CommandInput placeholder="Search organizations..." className="h-9" />
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
-                            <CommandGroup className="pb-8">
+                            <CommandGroup>
                               {PARENT_ORGANIZATIONS.map((org) => (
                                 <CommandItem
                                   key={org.id}
                                   value={org.name}
                                   onSelect={() => {
                                     field.onChange(org.id);
-                                    setComboboxOpen(false);
+                                    setParentOrgOpen(false);
                                   }}
                                 >
                                   {org.name}
@@ -327,43 +307,76 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                 )}
               />
 
-              {/* Effective Start Date */}
+              {/* Cost Center */}
               <FormField
                 control={form.control}
-                name="effectiveStartDate"
+                name="costCenterId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Effective Start Date <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={(date) => handleStartDateChange(date, field)}
-                        placeholder="Select start date"
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <FormLabel>Cost Center</FormLabel>
+                    <Popover modal={true} open={costCenterOpen} onOpenChange={setCostCenterOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={`w-full justify-between font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
+                          >
+                            {field.value
+                              ? COST_CENTERS.find(cc => cc.id === field.value)?.name
+                              : "Select cost center (optional)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[350px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search cost centers..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No cost center found.</CommandEmpty>
+                            <CommandGroup>
+                              {COST_CENTERS.map((cc) => (
+                                <CommandItem
+                                  key={cc.id}
+                                  value={cc.name}
+                                  onSelect={() => {
+                                    field.onChange(cc.id);
+                                    setCostCenterOpen(false);
+                                  }}
+                                >
+                                  {cc.name}
+                                  <Check
+                                    className={`ml-auto h-4 w-4 ${
+                                      field.value === cc.id ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Effective End Date */}
+              {/* Location - Full Width */}
               <FormField
                 control={form.control}
-                name="effectiveEndDate"
+                name="location"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Effective End Date <span className="text-destructive">*</span>
-                    </FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select end date"
-                        className="w-full"
+                      <Textarea 
+                        placeholder="Enter location address or description (optional)"
+                        className="resize-none"
+                        rows={3}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -376,20 +389,20 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
+                  <FormItem className="space-y-3 md:col-span-2">
                     <FormLabel>
                       Status <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        value={field.value?.toString()}
                         className="flex flex-row gap-3"
                       >
                         {STATUS_OPTIONS.map((status) => (
-                          <FormItem key={status.value} className="flex items-center gap-2">
+                          <FormItem key={status.id} className="flex items-center gap-2">
                             <FormControl>
-                              <RadioGroupItem value={status.value} />
+                              <RadioGroupItem value={status.id.toString()} />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">
                               {status.label}
