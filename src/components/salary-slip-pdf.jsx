@@ -543,7 +543,7 @@ export default function SalarySlipPdf() {
       });
 
       // Step 3: Send to backend API
-      const response = await fetch("http://localhost:4000/api/send-whatsapp", {
+      const response = await fetch("https://ntmfpv16-4000.inc1.devtunnels.ms/api/send-whatsapp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

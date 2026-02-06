@@ -47,7 +47,6 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdateOrganization } from "../queries";
 
-
 // Demo data - replace with your API calls
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
