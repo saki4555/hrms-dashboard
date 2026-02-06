@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -44,7 +43,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { showSubmittedData } from "@/lib/showo-submitted-date";
+import { Spinner } from "@/components/ui/spinner";
+import { useCreateOrganization } from "../queries";
 
 // Demo data - easy to replace later with API calls
 const ORGANIZATION_TYPES = [
@@ -54,11 +54,6 @@ const ORGANIZATION_TYPES = [
   { id: 4, name: "Division" },
   { id: 5, name: "Subsidiary" },
   { id: 6, name: "Regional Office" },
-];
-
-const STATUS_OPTIONS = [
-  { id: 1, label: "Active" },
-  { id: 0, label: "Inactive" },
 ];
 
 const PARENT_ORGANIZATIONS = [
@@ -98,7 +93,6 @@ const formSchema = z.object({
   parentOrgId: z.number().optional().nullable(),
   location: z.string().max(200, "Location cannot exceed 200 characters").optional(),
   costCenterId: z.number().optional().nullable(),
-  status: z.number().default(1),
   createdBy: z.number().optional(), // Will be set from logged-in user
 });
 
@@ -106,6 +100,8 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
   const [parentOrgOpen, setParentOrgOpen] = useState(false);
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const createOrganizationMutation = useCreateOrganization();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -115,7 +111,6 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       parentOrgId: null,
       location: "",
       costCenterId: null,
-      status: 1, // Default to Active
       createdBy: undefined, // TODO: Set this from logged-in user context
     },
   });
@@ -128,51 +123,36 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
 
   if (!isMounted) return null;
 
- // Replace the onSubmit function
-const onSubmit = async (data) => {
-  try {
-    // Prepare data for backend (sending IDs, not display names)
-    const backendData = {
-      NAME: data.name,
-      ORG_TYPE_ID: data.orgTypeId,
-      PARENT_ORG_ID: data.parentOrgId,
-      LOCATION: data.location || null,
-      COST_CENTER_ID: data.costCenterId,
-      STATUS: data.status,
-      CREATED_BY: data.createdBy || 1, // TODO: Get from user session
-      // CREATED_DATE will be auto-filled by database (SYSTIMESTAMP)
-      // ID is auto-increment, no need to send
-    };
+  const onSubmit = async (data) => {
+    try {
+      // Prepare data for backend (sending IDs, not display names)
+      const backendData = {
+        NAME: data.name,
+        ORG_TYPE_ID: data.orgTypeId,
+        PARENT_ORG_ID: data.parentOrgId,
+        LOCATION: data.location || null,
+        COST_CENTER_ID: data.costCenterId,
+        STATUS: 1, // Always set to Active (1) when creating
+        CREATED_BY: data.createdBy || 1, // TODO: Get from user session
+        // CREATED_DATE will be auto-filled by database (SYSTIMESTAMP)
+        // ID is auto-increment, no need to send
+      };
 
-    console.log("Sending to backend:", backendData);
+      console.log("Sending to backend:", backendData);
 
-    // Make API call
-    const response = await fetch("https://7b97fwsp-4000.inc1.devtunnels.ms/api/hr-org", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(backendData),
-    });
+      await createOrganizationMutation.mutateAsync(backendData);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Show success message
+      toast.success("Organization created successfully!");
+
+      // Reset form and close dialog
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error creating organization:", error);
+      toast.error(error?.message || "Failed to create organization. Please try again.");
     }
-
-    const result = await response.json();
-    console.log("Success:", result);
-
-    // Show success message
-    toast.success("Organization created successfully!");
-
-    // Reset form and close dialog
-    form.reset();
-    onOpenChange(false);
-  } catch (error) {
-    console.error("Error creating organization:", error);
-    toast.error("Failed to create organization. Please try again.");
-  }
-};
+  };
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {
@@ -397,45 +377,25 @@ const onSubmit = async (data) => {
                   </FormItem>
                 )}
               />
-
-              {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem className="space-y-3 md:col-span-2">
-                    <FormLabel>
-                      Status <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => field.onChange(Number(value))}
-                        value={field.value?.toString()}
-                        className="flex flex-row gap-3"
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <FormItem key={status.id} className="flex items-center gap-2">
-                            <FormControl>
-                              <RadioGroupItem value={status.id.toString()} />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              {status.label}
-                            </FormLabel>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button onClick={form.handleSubmit(onSubmit)}>Save</Button>
+              <Button 
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={createOrganizationMutation.isPending}
+              >
+                {createOrganizationMutation.isPending ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Creating...
+                  </>
+                ) : (
+                  "Save Organization"
+                )}
+              </Button>
             </DialogFooter>
           </div>
         </Form>

@@ -10,7 +10,7 @@ import {
 import {
   ArrowUpDown,
   ChevronDown,
-  Building2,
+  Briefcase,
   Pencil,
   Trash2,
   AlertCircle,
@@ -29,14 +29,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
   Table,
   TableBody,
   TableCell,
@@ -48,70 +40,48 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useDeleteOrganization, useOrganizations } from "../queries";
+
 import { Spinner } from "@/components/ui/spinner";
-import UpdateOrganizationDialog from "./update-organization-dialog";
-import AddOrganizationDialog from "./AddOrganizationDialog";
+import AddPositionDialog from "./AddPositionDialog";
 import { IconPlus } from "@tabler/icons-react";
-
-const ORGANIZATION_TYPES = [
-  { id: 1, name: "Headquarters" },
-  { id: 2, name: "Branch Office" },
-  { id: 3, name: "Department" },
-  { id: 4, name: "Division" },
-  { id: 5, name: "Subsidiary" },
-  { id: 6, name: "Regional Office" },
-];
-
-const getOrgTypeName = (id) => {
-  const type = ORGANIZATION_TYPES.find((t) => t.id === id);
-  return type ? type.name : "Unknown";
-};
+import { useDeletePosition, usePositions } from "../queries";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
   
   const date = new Date(dateString);
   
-  // Format: Feb 5, 2026 at 12:45 PM
-  return format(date, 'MMM d, yyyy \'at\' h:mm a');
+  // Format: Feb 5, 2026
+  return format(date, 'MMM d, yyyy');
 };
 
-export default function OrganizationList() {
+export default function PositionList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   const {
-    data: organizationData = [],
+    data: positionData = [],
     isLoading,
     isError,
     error,
     refetch,
     isFetching,
-  } = useOrganizations();
+  } = usePositions();
   
-  const deleteOrganizationMutation = useDeleteOrganization();
+  const deletePositionMutation = useDeletePosition();
 
-  console.log("Organization data:", organizationData);
+  console.log("Position data:", positionData);
 
-  const handleEdit = (organization) => {
-    console.log("Edit organization:", organization);
-    setSelectedOrganization(organization);
-    setIsUpdateDialogOpen(true);
-  };
-
-  const handleDelete = async (organization) => {
+  const handleDelete = async (position) => {
     const confirmed = await showConfirmation({
-      title: "Delete organization?",
-      description: `Are you sure you want to delete "${organization.NAME}"? This action cannot be undone.`,
+      title: "Delete position?",
+      description: `Are you sure you want to delete this position assignment? This action cannot be undone.`,
       confirmText: "Delete",
       cancelText: "Cancel",
       variant: "destructive",
@@ -119,12 +89,12 @@ export default function OrganizationList() {
 
     if (confirmed) {
       try {
-        await deleteOrganizationMutation.mutateAsync(organization.ID);
-        console.log("Organization deleted successfully:", organization);
-        toast.success("Organization deleted successfully!");
+        await deletePositionMutation.mutateAsync(position.ID);
+        console.log("Position deleted successfully:", position);
+        toast.success("Position deleted successfully!");
       } catch (error) {
-        console.error("Error deleting organization:", error);
-        toast.error(error?.message || "Failed to delete organization. Please try again.");
+        console.error("Error deleting position:", error);
+        toast.error(error?.message || "Failed to delete position. Please try again.");
       }
     }
   };
@@ -157,58 +127,66 @@ export default function OrganizationList() {
       enableHiding: false,
     },
     {
-      accessorKey: "NAME",
+      accessorKey: "POSITION_ID",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Organization Name
+            Position
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("NAME")}</div>
+        <div className="font-medium">{row.getValue("POSITION_ID")}</div>
       ),
     },
     {
-      accessorKey: "ORG_TYPE_ID",
-      header: "Type",
+      accessorKey: "ORG_ID",
+      header: "Organization",
       cell: ({ row }) => (
-        <div className="capitalize">
-          {getOrgTypeName(row.getValue("ORG_TYPE_ID"))}
-        </div>
+        <div>{row.getValue("ORG_ID") || "N/A"}</div>
       ),
-      filterFn: (row, id, value) => {
-        return value === "all" || row.getValue(id) === value;
-      },
     },
     {
-      accessorKey: "LOCATION",
-      header: "Location",
+      accessorKey: "FTE",
+      header: "FTE",
       cell: ({ row }) => (
-        <div className="max-w-xs truncate">
-          {row.getValue("LOCATION") || "N/A"}
-        </div>
+        <div>{row.getValue("FTE") || "N/A"}</div>
       ),
     },
     {
-      accessorKey: "CREATED_DATE",
+      accessorKey: "ACTUAL_COUNT",
+      header: "Actual Count",
+      cell: ({ row }) => (
+        <div>{row.getValue("ACTUAL_COUNT") || 0}</div>
+      ),
+    },
+    {
+      accessorKey: "EFFECTIVE_START_DATE",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created Date
+            Start Date
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
       cell: ({ row }) => {
-        const date = row.getValue("CREATED_DATE");
+        const date = row.getValue("EFFECTIVE_START_DATE");
+        return <div>{formatDate(date)}</div>;
+      },
+    },
+    {
+      accessorKey: "EFFECTIVE_END_DATE",
+      header: "End Date",
+      cell: ({ row }) => {
+        const date = row.getValue("EFFECTIVE_END_DATE");
         return <div>{formatDate(date)}</div>;
       },
     },
@@ -217,7 +195,7 @@ export default function OrganizationList() {
       header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const organization = row.original;
+        const position = row.original;
 
         return (
           <div className="flex items-center gap-2">
@@ -225,7 +203,7 @@ export default function OrganizationList() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => handleEdit(organization)}
+              onClick={() => {/* TODO: Add edit functionality */}}
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -235,10 +213,10 @@ export default function OrganizationList() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(organization)}
-              disabled={deleteOrganizationMutation.isPending}
+              onClick={() => handleDelete(position)}
+              disabled={deletePositionMutation.isPending}
             >
-              {deleteOrganizationMutation.isPending ? (
+              {deletePositionMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : (
                 <Trash2 className="h-4 w-4" />
@@ -252,7 +230,7 @@ export default function OrganizationList() {
   ];
 
   const table = useReactTable({
-    data: organizationData,
+    data: positionData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -281,14 +259,14 @@ export default function OrganizationList() {
             <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+                  <h1 className="text-2xl md:text-2xl font-bold">Positions</h1>
                   <p className="text-muted-foreground mt-1">
-                    Manage organization information and records
+                    Manage position assignments and records
                   </p>
                 </div>
                 <Button disabled>
                   <IconPlus size={20} className="mr-2" />
-                  Add Organization 
+                  Add Position 
                 </Button>
               </div>
             </div>
@@ -297,7 +275,7 @@ export default function OrganizationList() {
           <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
             <div className="flex flex-col items-center justify-center py-16">
               <Spinner className="h-12 w-12 mb-4" />
-              <p className="text-muted-foreground">Loading organizations...</p>
+              <p className="text-muted-foreground">Loading positions...</p>
             </div>
           </div>
         </div>
@@ -314,14 +292,14 @@ export default function OrganizationList() {
             <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+                  <h1 className="text-2xl md:text-2xl font-bold">Positions</h1>
                   <p className="text-muted-foreground mt-1">
-                    Manage organization information and records
+                    Manage position assignments and records
                   </p>
                 </div>
                 <Button onClick={() => setIsAddDialogOpen(true)}>
                   <IconPlus size={20} className="mr-2" />
-                  Add Organization 
+                  Add Position 
                 </Button>
               </div>
             </div>
@@ -330,9 +308,9 @@ export default function OrganizationList() {
           <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error Loading Organizations</AlertTitle>
+              <AlertTitle>Error Loading Positions</AlertTitle>
               <AlertDescription className="mt-2 flex flex-col gap-2">
-                <p>{error?.message || "Failed to load organizations. Please try again."}</p>
+                <p>{error?.message || "Failed to load positions. Please try again."}</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -367,9 +345,9 @@ export default function OrganizationList() {
           <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+                <h1 className="text-2xl md:text-2xl font-bold">Positions</h1>
                 <p className="text-muted-foreground mt-1">
-                  Manage organization information and records
+                  Manage position assignments and records
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -384,7 +362,7 @@ export default function OrganizationList() {
                 </Button>
                 <Button onClick={() => setIsAddDialogOpen(true)}>
                   <IconPlus size={20} className="mr-2" />
-                  Add Organization 
+                  Add Position 
                 </Button>
               </div>
             </div>
@@ -395,39 +373,11 @@ export default function OrganizationList() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
-                placeholder="Search organizations..."
+                placeholder="Search positions..."
                 value={globalFilter ?? ""}
                 onChange={(event) => setGlobalFilter(event.target.value)}
                 className="max-w-sm"
               />
-
-              <Select
-                value={
-                  table
-                    .getColumn("ORG_TYPE_ID")
-                    ?.getFilterValue()
-                    ?.toString() || "all"
-                }
-                onValueChange={(value) =>
-                  table
-                    .getColumn("ORG_TYPE_ID")
-                    ?.setFilterValue(
-                      value === "all" ? undefined : Number(value),
-                    )
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Organization Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {ORGANIZATION_TYPES.map((type) => (
-                    <SelectItem key={type.id} value={type.id.toString()}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -500,9 +450,9 @@ export default function OrganizationList() {
                         className="h-24 text-center"
                       >
                         <div className="flex flex-col items-center justify-center py-8">
-                          <Building2 className="w-12 h-12 text-muted-foreground mb-2" />
+                          <Briefcase className="w-12 h-12 text-muted-foreground mb-2" />
                           <p className="text-muted-foreground">
-                            No organizations found
+                            No positions found
                           </p>
                         </div>
                       </TableCell>
@@ -517,17 +467,10 @@ export default function OrganizationList() {
         </div>
       </div>
 
-      <AddOrganizationDialog
+      <AddPositionDialog
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen} 
         showConfirmation={showConfirmation}
-      />
-
-      <UpdateOrganizationDialog
-        open={isUpdateDialogOpen}
-        onOpenChange={setIsUpdateDialogOpen}
-        showConfirmation={showConfirmation}
-        organization={selectedOrganization}
       />
 
       <ConfirmationDialog />

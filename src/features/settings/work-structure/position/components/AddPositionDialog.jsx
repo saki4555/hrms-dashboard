@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -36,7 +36,9 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { DatePicker } from "@/components/DatePicker";
-import { showSubmittedData } from "@/lib/showo-submitted-date";
+import { Spinner } from "@/components/ui/spinner";
+import { useCreatePosition } from "../queries";
+
 
 // Demo data - easy to replace later with API calls
 const ORGANIZATIONS = [
@@ -70,11 +72,6 @@ const POSITIONS = [
   { id: 15, name: "Executive Assistant" },
 ];
 
-const STATUS_OPTIONS = [
-  { id: 1, label: "Active" },
-  { id: 0, label: "Inactive" },
-];
-
 const getDefaultStartDate = () => new Date();
 const getDefaultEndDate = () => {
   const date = new Date();
@@ -102,7 +99,6 @@ const formSchema = z.object({
     }, "FTE must be a number between 0 and 1 (e.g., 0.5 for part-time, 1 for full-time)"),
   effectiveStartDate: z.date().optional().nullable(),
   effectiveEndDate: z.date().optional().nullable(),
-  status: z.number().default(1),
 }).refine((data) => {
   if (data.effectiveStartDate && data.effectiveEndDate) {
     return data.effectiveEndDate > data.effectiveStartDate;
@@ -118,6 +114,8 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
   const [positionComboboxOpen, setPositionComboboxOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
+  const createPositionMutation = useCreatePosition();
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -126,7 +124,6 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
       fte: "1",
       effectiveStartDate: getDefaultStartDate(),
       effectiveEndDate: getDefaultEndDate(),
-      status: 1, // Default to Active
     },
   });
 
@@ -138,35 +135,33 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
 
   if (!isMounted) return null;
 
-  const onSubmit = (data) => {
-    // Prepare data for backend (sending IDs, not display names)
-    const backendData = {
-      POSITION_ID: data.positionId,
-      ORG_ID: data.orgId,
-      FTE: data.fte ? parseFloat(data.fte) : null,
-      EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split('T')[0],
-      EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split('T')[0],
-      STATUS: data.status,
-      // ACTUAL_COUNT is not in add form - will be managed elsewhere
-      // ID is auto-increment
-    };
+  const onSubmit = async (data) => {
+    try {
+      // Prepare data for backend (sending IDs, not display names)
+      const backendData = {
+        POSITION_ID: data.positionId,
+        ORG_ID: data.orgId,
+        FTE: data.fte ? parseFloat(data.fte) : null,
+        ACTUAL_COUNT: 0, // Default to 0
+        EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split('T')[0],
+        EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split('T')[0],
+        STATUS: 1, // Always set to Active (1) when creating
+      };
 
-    // For display purposes (showing names instead of IDs)
-    const displayData = {
-      ...backendData,
-      positionName: POSITIONS.find(p => p.id === data.positionId)?.name || "None",
-      organizationName: ORGANIZATIONS.find(o => o.id === data.orgId)?.name || "None",
-      statusName: STATUS_OPTIONS.find(s => s.id === data.status)?.label,
-    };
+      console.log("Sending to backend:", backendData);
 
-    console.log("Backend Data (IDs):", backendData);
-    console.log("Display Data (Names):", displayData);
-    
-    showSubmittedData(displayData);
+      await createPositionMutation.mutateAsync(backendData);
 
-    // Uncomment to reset and close after successful submission
-    // form.reset();
-    // onOpenChange(false);
+      // Show success message
+      toast.success("Position created successfully!");
+
+      // Reset form and close dialog
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error creating position:", error);
+      toast.error(error?.message || "Failed to create position. Please try again.");
+    }
   };
 
   const handleCancel = async () => {
@@ -335,28 +330,6 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* FTE */}
-              <FormField
-                control={form.control}
-                name="fte"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>FTE (Full-Time Equivalent)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.1" 
-                        min="0" 
-                        max="1" 
-                        placeholder="e.g., 1 for full-time, 0.5 for part-time" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* Effective Start Date */}
               <FormField
                 control={form.control}
@@ -397,30 +370,22 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* Status */}
+              {/* FTE - Full Width */}
               <FormField
                 control={form.control}
-                name="status"
+                name="fte"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Status</FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>FTE (Full-Time Equivalent)</FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => field.onChange(Number(value))}
-                        value={field.value?.toString()}
-                        className="flex flex-row gap-3"
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <FormItem key={status.id} className="flex items-center gap-2">
-                            <FormControl>
-                              <RadioGroupItem value={status.id.toString()} />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              {status.label}
-                            </FormLabel>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
+                      <Input 
+                        type="number" 
+                        step="0.1" 
+                        min="0" 
+                        max="1" 
+                        placeholder="e.g., 1 for full-time, 0.5 for part-time" 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -432,7 +397,19 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button onClick={form.handleSubmit(onSubmit)}>Save</Button>
+              <Button 
+                onClick={form.handleSubmit(onSubmit)}
+                disabled={createPositionMutation.isPending}
+              >
+                {createPositionMutation.isPending ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Creating...
+                  </>
+                ) : (
+                  "Save Position"
+                )}
+              </Button>
             </DialogFooter>
           </div>
         </Form>
