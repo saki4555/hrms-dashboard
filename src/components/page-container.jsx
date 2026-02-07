@@ -3,7 +3,12 @@ import { cn } from '@/lib/utils'
 
 const PageContainer = ({ children, className }) => {
   return (
-    <div className={cn('pl-2', className)}>
+    <div
+      className={cn(
+        'h-full  px-3 py-3',
+        className
+      )}
+    >
       {children}
     </div>
   )

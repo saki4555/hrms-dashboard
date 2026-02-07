@@ -36,7 +36,6 @@ export const NAV_ITEMS = [
           {
             title: "Overview",
             url: "/",
-            subItemIcon: IconChartBar,
             roles: ["Admin", "HR", "Supervisor", "Employee"],
           },
         ],
@@ -50,25 +49,21 @@ export const NAV_ITEMS = [
           {
             title: "Employee Requisition",
             url: "/core-hr/requisition",
-            subItemIcon: IconUserPlus,
             roles: ["Admin", "HR"],
           },
           {
             title: "Employee Management",
             url: "/core-hr/employees",
-            subItemIcon: IconUsers,
             roles: ["Admin", "HR"],
           },
           {
             title: "Employment Lifecycle",
             url: "/core-hr/lifecycle",
-            subItemIcon: IconLifebuoy,
             roles: ["Admin", "HR"],
           },
           {
             title: "Digital Document Management",
             url: "/core-hr/documents",
-            subItemIcon: IconFiles,
             roles: ["Admin", "HR"],
           },
         ],
@@ -81,31 +76,26 @@ export const NAV_ITEMS = [
           {
             title: "Setup",
             url: "/attendance/setup",
-            subItemIcon: IconSettingsAutomation,
             roles: ["Admin", "HR"],
           },
           {
             title: "Employee Assignment",
             url: "/attendance/assignment",
-            subItemIcon: IconClipboardList,
             roles: ["Admin", "HR"],
           },
           {
             title: "Work Schedule",
             url: "/attendance/schedule",
-            subItemIcon: IconCalendar,
             roles: ["Admin", "HR", "Supervisor"],
           },
           {
             title: "Attendance Data",
             url: "/attendance/data",
-            subItemIcon: IconDatabase,
             roles: ["Admin", "HR"],
           },
           {
             title: "Attendance Reports",
             url: "/attendance/reports",
-            subItemIcon: IconReport,
             roles: ["Admin", "HR", "Supervisor"],
           },
         ],
@@ -124,25 +114,21 @@ export const NAV_ITEMS = [
           {
             title: "Configuration",
             url: "/payroll/configuration",
-            subItemIcon: IconSettings,
             roles: ["Admin"],
           },
           {
             title: "Payroll Processing",
             url: "/payroll/processing",
-            subItemIcon: IconBuildingBank,
             roles: ["Admin", "HR"],
           },
           {
             title: "Approvals",
             url: "/payroll/approvals",
-            subItemIcon: IconCheck,
             roles: ["Admin", "HR"],
           },
           {
             title: "Output",
             url: "/payroll/output",
-            subItemIcon: IconFileExport,
             roles: ["Admin", "HR"],
           },
         ],
@@ -161,19 +147,16 @@ export const NAV_ITEMS = [
           {
             title: "Setup",
             url: "/performance/setup",
-            subItemIcon: IconSettings,
             roles: ["Admin", "HR"],
           },
           {
             title: "Appraisal Process",
             url: "/performance/appraisal",
-            subItemIcon: IconTrophy,
             roles: ["Admin", "HR", "Supervisor", "Employee"],
           },
           {
             title: "Reports",
             url: "/performance/reports",
-            subItemIcon: IconReport,
             roles: ["Admin", "HR"],
           },
         ],
@@ -192,19 +175,16 @@ export const NAV_ITEMS = [
           {
             title: "Organization",
             url: "/settings/work-structure/organization",
-            subItemIcon: IconBuilding,
             roles: ["Admin", "HR"],
           },
           {
             title: "Positions",
             url: "/settings/work-structure/positions",
-            subItemIcon: IconBriefcase,
             roles: ["Admin", "HR"],
           },
           {
             title: "Units",
             url: "/settings/work-structure/units",
-            subItemIcon: IconSitemap,
             roles: ["Admin", "HR"],
           },
         ],
@@ -223,25 +203,21 @@ export const NAV_ITEMS = [
           {
             title: "General Reports",
             url: "/reports/general",
-            subItemIcon: IconFileText,
             roles: ["Admin", "HR"],
           },
           {
             title: "Attendance Reports",
             url: "/reports/attendance",
-            subItemIcon: IconCalendar,
             roles: ["Admin", "HR"],
           },
           {
             title: "Payroll Reports",
             url: "/reports/payroll",
-            subItemIcon: IconBuildingBank,
             roles: ["Admin", "HR"],
           },
           {
             title: "HR Analytics Dashboard",
             url: "/reports/analytics",
-            subItemIcon: IconChartBar,
             roles: ["Admin", "HR"],
           },
         ],

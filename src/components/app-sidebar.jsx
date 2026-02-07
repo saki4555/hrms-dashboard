@@ -27,6 +27,7 @@ import { NavUser } from "./nav-user";
 
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/constants/nav-items";
+import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
 
 /* -------------------------------------------------------------------------- */
 /*                           UPDATED NAV CONFIG (WITH LABELS)                 */
@@ -85,15 +86,15 @@ export function AppSidebar({ userRole, ...props }) {
                         >
                           <SidebarMenuButton
                             tooltip={item.title}
-                            className={cn("truncate")}
+                            className="truncate"
                           >
                             {item.icon && (
                               <item.icon className="text-foreground/90" />
                             )}
                             <span>{item.title}</span>
-                            <ChevronRight
-                              size={10}
-                              className="ml-auto text-foreground/90 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                            <IconCaretRightFilled
+                              
+                              className="ml-auto  text-foreground/90 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                             />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -113,9 +114,9 @@ export function AppSidebar({ userRole, ...props }) {
                                     isActive={!!isSubActive}
                                   >
                                     <Link to={sub.url}>
-                                      {sub.subItemIcon && (
+                                      {/* {sub.subItemIcon && (
                                         <sub.subItemIcon className="text-foreground/90" />
-                                      )}
+                                      )} */}
                                       <span>{sub.title}</span>
                                     </Link>
                                     

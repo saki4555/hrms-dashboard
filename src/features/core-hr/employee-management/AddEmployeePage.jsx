@@ -1,24 +1,15 @@
 import React, { useState } from "react";
 import {
   BriefcaseIcon,
-  HomeIcon,
   IdCard,
-  MapPinIcon,
-  Plus,
   UserPlus,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -29,15 +20,13 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import axios from "axios";
-import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   MARITAL_STATUS_OPTIONS,
   REG_DISABILITY_OPTIONS,
@@ -46,11 +35,23 @@ import { DatePicker } from "@/components/DatePicker";
 import { usePersonTypes } from "../hooks/usePersonTypes";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Spinner } from "@/components/ui/spinner";
+import { useCreateEmployee } from "./queries";
 
 const employeeSchema = z.object({
+  // Employee Number
+  empNo: z
+    .string({
+      required_error: "Employee number is required",
+      invalid_type_error: "Employee number must be a string",
+    })
+    .min(1, "Employee number is required")
+    .trim(),
+
   // Basic Information
   title: z
     .string({
+      required_error: "Title is required",
       invalid_type_error: "Title must be a string",
     })
     .min(1, "Title is required")
@@ -61,7 +62,7 @@ const employeeSchema = z.object({
       required_error: "First name is required",
       invalid_type_error: "First name must be a string",
     })
-    .min(1, "First name cannot be empty")
+    .min(1, "First name is required")
     .trim(),
 
   lastName: z
@@ -69,7 +70,7 @@ const employeeSchema = z.object({
       required_error: "Last name is required",
       invalid_type_error: "Last name must be a string",
     })
-    .min(1, "Last name cannot be empty")
+    .min(1, "Last name is required")
     .trim(),
 
   fathersName: z
@@ -77,27 +78,39 @@ const employeeSchema = z.object({
       required_error: "Father's name is required",
       invalid_type_error: "Father's name must be a string",
     })
-    .min(1, "Father's name cannot be empty")
+    .min(1, "Father's name is required")
     .trim(),
 
-  fathersNameB: z.string().trim().optional(),
+  fathersNameB: z
+    .string({
+      required_error: "Father's name (Bangla) is required",
+      invalid_type_error: "Father's name (Bangla) must be a string",
+    })
+    .min(1, "Father's name (Bangla) is required")
+    .trim(),
 
   mothersName: z
     .string({
       required_error: "Mother's name is required",
       invalid_type_error: "Mother's name must be a string",
     })
-    .min(1, "Mother's name cannot be empty")
+    .min(1, "Mother's name is required")
     .trim(),
 
-  mothersNameB: z.string().trim().optional(),
+  mothersNameB: z
+    .string({
+      required_error: "Mother's name (Bangla) is required",
+      invalid_type_error: "Mother's name (Bangla) must be a string",
+    })
+    .min(1, "Mother's name (Bangla) is required")
+    .trim(),
 
   gender: z
     .string({
       required_error: "Gender is required",
       invalid_type_error: "Gender must be a string",
     })
-    .min(1, "Gender is Required")
+    .min(1, "Gender is required")
     .trim(),
 
   dateOfBirth: z.date({
@@ -105,14 +118,62 @@ const employeeSchema = z.object({
     invalid_type_error: "Invalid date format for date of birth",
   }),
 
-  // Optional Personal Information
-  nid: z.string().trim().optional(),
-  birthRegNo: z.string().trim().optional(),
-  townOfBirth: z.string().trim().optional(),
-  regionOfBirth: z.string().trim().optional(),
-  countryOfBirth: z.string().trim().optional(),
-  maritalStatus: z.string().trim().optional(),
-  nationality: z.string().trim().optional(),
+  // Personal Information
+  nid: z
+    .string({
+      required_error: "NID is required",
+      invalid_type_error: "NID must be a string",
+    })
+    .min(1, "NID is required")
+    .trim(),
+
+  birthRegNo: z
+    .string({
+      required_error: "Birth registration number is required",
+      invalid_type_error: "Birth registration number must be a string",
+    })
+    .min(1, "Birth registration number is required")
+    .trim(),
+
+  townOfBirth: z
+    .string({
+      required_error: "Town of birth is required",
+      invalid_type_error: "Town of birth must be a string",
+    })
+    .min(1, "Town of birth is required")
+    .trim(),
+
+  regionOfBirth: z
+    .string({
+      required_error: "Region of birth is required",
+      invalid_type_error: "Region of birth must be a string",
+    })
+    .min(1, "Region of birth is required")
+    .trim(),
+
+  countryOfBirth: z
+    .string({
+      required_error: "Country of birth is required",
+      invalid_type_error: "Country of birth must be a string",
+    })
+    .min(1, "Country of birth is required")
+    .trim(),
+
+  maritalStatus: z
+    .string({
+      required_error: "Marital status is required",
+      invalid_type_error: "Marital status must be a string",
+    })
+    .min(1, "Marital status is required")
+    .trim(),
+
+  nationality: z
+    .string({
+      required_error: "Nationality is required",
+      invalid_type_error: "Nationality must be a string",
+    })
+    .min(1, "Nationality is required")
+    .trim(),
 
   // Employment Information
   joinDate: z.date({
@@ -128,55 +189,32 @@ const employeeSchema = z.object({
     .min(1, "Person type is required")
     .trim(),
 
-  regDisability: z.string().trim().optional(),
-  effectiveStartDate: z.date().optional(),
-
-  // Present Address
-  presentAddressType: z.string().trim().optional(),
-
-  presentAddress1: z
+  regDisability: z
     .string({
-      required_error: "Present address is required",
-      invalid_type_error: "Present address must be a string",
+      required_error: "Registered disability is required",
+      invalid_type_error: "Registered disability must be a string",
     })
-    .min(1, "Present address cannot be empty")
+    .min(1, "Registered disability is required")
     .trim(),
 
-  presentAddress1B: z.string().trim().optional(),
-  presentCountry: z.string().trim().optional(),
-  presentRegion: z.string().trim().optional(),
-  presentDistrict: z.string().trim().optional(),
-  presentUpazilla: z.string().trim().optional(),
-  presentUnions: z.string().trim().optional(),
-  presentArea: z.string().trim().optional(),
+  effectiveStartDate: z.date({
+    required_error: "Effective start date is required",
+    invalid_type_error: "Invalid date format for effective start date",
+  }),
 
-  // Permanent Address
-  permanentAddressType: z.string().trim().optional(),
-
-  permanentAddress1: z
-    .string({
-      required_error: "Permanent address is required",
-      invalid_type_error: "Permanent address must be a string",
-    })
-    .min(1, "Permanent address cannot be empty")
-    .trim(),
-
-  permanentAddress1B: z.string().trim().optional(),
-  permanentCountry: z.string().trim().optional(),
-  permanentRegion: z.string().trim().optional(),
-  permanentDistrict: z.string().trim().optional(),
-  permanentUpazilla: z.string().trim().optional(),
-  permanentUnions: z.string().trim().optional(),
-  permanentArea: z.string().trim().optional(),
+  effectiveEndDate: z.date().optional(),
 });
 
-export default function CreateEmployeePage() {
-
+export default function AddEmployeePage() {
   const { data: personTypes = [] } = usePersonTypes();
+  const createEmployeeMutation = useCreateEmployee();
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
+      empNo: "",
       title: "",
       firstName: "",
       lastName: "",
@@ -194,126 +232,71 @@ export default function CreateEmployeePage() {
       nationality: "",
       personTypeId: "",
       regDisability: "",
-      presentAddressType: "",
-      presentAddress1: "",
-      presentAddress1B: "",
-      presentCountry: "",
-      presentRegion: "",
-      presentDistrict: "",
-      presentUpazilla: "",
-      presentUnions: "",
-      presentArea: "",
-      permanentAddressType: "",
-      permanentAddress1: "",
-      permanentAddress1B: "",
-      permanentCountry: "",
-      permanentRegion: "",
-      permanentDistrict: "",
-      permanentUpazilla: "",
-      permanentUnions: "",
-      permanentArea: "",
     },
   });
 
   const onSubmit = async (data) => {
+    console.log("Form submitted!", data);
+
     try {
-      // Format dates using date-fns to avoid timezone issues
+      // Reset status
+      setSubmitStatus(null);
+      setStatusMessage("");
+
+      // Format dates using date-fns
       const formatDate = (date) => {
-        return date ? format(date, "yyyy-MM-dd") : "";
+        return date ? format(date, "yyyy-MM-dd") : null;
       };
 
-      // Build addresses array
-      const addresses = [];
-
-      // Add present address if any field is filled
-      if (
-        data.presentAddress1 ||
-        data.presentCountry ||
-        data.presentRegion ||
-        data.presentDistrict ||
-        data.presentUpazilla ||
-        data.presentArea
-      ) {
-        addresses.push({
-          ADDRESS_TYPE_ID: 1, // Present address type
-          ADDRESS1: data.presentAddress1 || "",
-          ADDRESS1_B: data.presentAddress1B || "",
-          COUNTRY: data.presentCountry || "",
-          REGION: data.presentRegion || "",
-          DISTRICT: data.presentDistrict || "",
-          UPAZILLA: data.presentUpazilla || "",
-          UNIONS: data.presentUnions || "",
-          AREA: data.presentArea || "",
-          LAST_UPDATE_BY: 101,
-        });
-      }
-
-      // Add permanent address if any field is filled
-      if (
-        data.permanentAddress1 ||
-        data.permanentCountry ||
-        data.permanentRegion ||
-        data.permanentDistrict ||
-        data.permanentUpazilla ||
-        data.permanentArea
-      ) {
-        addresses.push({
-          ADDRESS_TYPE_ID: 2, // Permanent address type
-          ADDRESS1: data.permanentAddress1 || "",
-          ADDRESS1_B: data.permanentAddress1B || "",
-          COUNTRY: data.permanentCountry || "",
-          REGION: data.permanentRegion || "",
-          DISTRICT: data.permanentDistrict || "",
-          UPAZILLA: data.permanentUpazilla || "",
-          UNIONS: data.permanentUnions || "",
-          AREA: data.permanentArea || "",
-          LAST_UPDATE_BY: 101,
-        });
-      }
-
       const payload = {
+        EMP_NO: data.empNo,
         TITLE: data.title,
         FIRST_NAME: data.firstName,
         LAST_NAME: data.lastName,
         FATHERS_NAME: data.fathersName,
-        FATHERS_NAME_B: data.fathersNameB || "",
-        MOTHERS_NAME: data.mothersName || "",
-        MOTHERS_NAME_B: data.mothersNameB || "",
+        FATHERS_NAME_B: data.fathersNameB,
+        MOTHERS_NAME: data.mothersName,
+        MOTHERS_NAME_B: data.mothersNameB,
         GENDER: data.gender,
         DATE_OF_BIRTH: formatDate(data.dateOfBirth),
-        NID: data.nid || "",
-        BIRTH_REG_NO: data.birthRegNo || "",
-        TOWN_OF_BIRTH: data.townOfBirth || "",
-        REGION_OF_BIRTH: data.regionOfBirth || "",
-        COUNTRY_OF_BIRTH: data.countryOfBirth || "",
-
-        MARRITIAL_STATUS: data.maritalStatus,
-        NATIONALITY: data.nationality || "",
-        REG_DISABILITY: data.regDisability || "",
-        EFFECTIVE_START_DATE: data.effectiveStartDate || "",
-
+        NID: data.nid,
+        BIRTH_REG_NO: data.birthRegNo,
+        TOWN_OF_BIRTH: data.townOfBirth,
+        REGION_OF_BIRTH: data.regionOfBirth,
+        COUNTRY_OF_BIRTH: data.countryOfBirth,
+        MARRITIAL_STATUS: parseInt(data.maritalStatus),
+        NATIONALITY: data.nationality,
         JOIN_DATE: formatDate(data.joinDate),
         PERSON_TYPE_ID: parseInt(data.personTypeId),
-        LAST_UPDATE_BY: 101,
-        ADDRESSES: addresses,
+        REG_DISABILITY: parseInt(data.regDisability),
+        EFFECTIVE_START_DATE: formatDate(data.effectiveStartDate),
+        EFFECTIVEEND_DATE: data.effectiveEndDate ? formatDate(data.effectiveEndDate) : null,
       };
 
-      console.log(payload, "payload");
+      console.log("Sending to backend:", payload);
 
-      const res = await axios.post("/api/insert_employee.php", payload, {
-        headers: {
-          Authorization: "Bearer 123456",
-        },
-      });
+      await createEmployeeMutation.mutateAsync(payload);
 
-      console.log("Employee Added:", res.data);
-      toast.success("Employee added successfully!");
-      
+      // Show success message
+      setSubmitStatus("success");
+      setStatusMessage("Employee created successfully!");
+
+      // Reset form
       form.reset();
     } catch (error) {
-      console.error("Error adding employee:", error.response?.data || error);
-      toast.error("Failed to add employee");
+      console.error("Error creating employee:", error);
+      setSubmitStatus("error");
+      setStatusMessage(
+        error?.message || "Failed to create employee. Please try again.",
+      );
     }
+  };
+
+  // Add this to check form errors
+  const handleFormError = (errors) => {
+    console.log("Form validation errors:", errors);
+    setSubmitStatus("error");
+    setStatusMessage("Please fill in all required fields correctly.");
   };
 
   return (
@@ -326,7 +309,10 @@ export default function CreateEmployeePage() {
           <span className="font-medium">Create Employee</span>
         </h1>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, handleFormError)}
+            className=""
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               {/* left column */}
               <div className="space-y-6">
@@ -443,7 +429,7 @@ export default function CreateEmployeePage() {
                             name="fathersNameB"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Father's Name (Bangla)</FormLabel>
+                                <FormLabel>Father's Name (Bangla) *</FormLabel>
                                 <FormControl>
                                   <Input placeholder="পিতার নাম" {...field} />
                                 </FormControl>
@@ -460,7 +446,7 @@ export default function CreateEmployeePage() {
                             name="mothersName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Mother's Name</FormLabel>
+                                <FormLabel>Mother's Name *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter mother's name"
@@ -477,7 +463,7 @@ export default function CreateEmployeePage() {
                             name="mothersNameB"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Mother's Name (Bangla)</FormLabel>
+                                <FormLabel>Mother's Name (Bangla) *</FormLabel>
                                 <FormControl>
                                   <Input placeholder="মাতার নাম" {...field} />
                                 </FormControl>
@@ -547,7 +533,7 @@ export default function CreateEmployeePage() {
                             name="nid"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>NID</FormLabel>
+                                <FormLabel>NID *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter NID number"
@@ -567,7 +553,7 @@ export default function CreateEmployeePage() {
                             name="birthRegNo"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Birth Registration No</FormLabel>
+                                <FormLabel>Birth Registration No *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter birth reg. no"
@@ -584,7 +570,7 @@ export default function CreateEmployeePage() {
                             name="townOfBirth"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Town of Birth</FormLabel>
+                                <FormLabel>Town of Birth *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter town of birth"
@@ -604,7 +590,7 @@ export default function CreateEmployeePage() {
                             name="regionOfBirth"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Region of Birth</FormLabel>
+                                <FormLabel>Region of Birth *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter region"
@@ -621,7 +607,7 @@ export default function CreateEmployeePage() {
                             name="countryOfBirth"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Country of Birth</FormLabel>
+                                <FormLabel>Country of Birth *</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter country"
@@ -640,7 +626,7 @@ export default function CreateEmployeePage() {
                           name="maritalStatus"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Marital Status</FormLabel>
+                              <FormLabel>Marital Status *</FormLabel>
                               <FormControl>
                                 <RadioGroup
                                   onValueChange={field.onChange}
@@ -676,7 +662,7 @@ export default function CreateEmployeePage() {
                           name="nationality"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Nationality</FormLabel>
+                              <FormLabel>Nationality *</FormLabel>
                               <FormControl>
                                 <Input
                                   placeholder="Enter nationality"
@@ -691,152 +677,15 @@ export default function CreateEmployeePage() {
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-                {/* Address Information - Present */}
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="bg-card/70 p-4 rounded-md shadow-md border"
-                >
-                  <AccordionItem value="present">
-                    <AccordionTrigger className="text-lg font-medium flex items-center gap-2">
-                      <span className="p-1 rounded-sm shadow-sm bg-primary/10 text-primary">
-                        <MapPinIcon className="w-5 h-5 text-primary" />
-                      </span>
-                      Address Information (Present)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="presentAddress1"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Address Line 1</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter address" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentAddress1B"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Address Line 1 (Bangla)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="ঠিকানা" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentCountry"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Country</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter country" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentRegion"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Region</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter region" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentDistrict"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>District</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter district"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentUpazilla"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Upazilla</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter upazilla"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentUnions"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unions</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter unions" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="presentArea"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Area/Village</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter area/village"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
               </div>
+
               {/* right column */}
               <div className="space-y-6">
                 {/* Employment Information */}
                 <Accordion
                   type="single"
                   collapsible
+                  defaultValue="employment"
                   className="bg-card/70 p-4 rounded-md shadow-sm border"
                 >
                   <AccordionItem value="employment">
@@ -848,6 +697,24 @@ export default function CreateEmployeePage() {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4">
+                        {/* Employee Number */}
+                        <FormField
+                          control={form.control}
+                          name="empNo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Employee Number *</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter employee number"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         {/* Join Date & Effective Start Date */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField
@@ -873,7 +740,7 @@ export default function CreateEmployeePage() {
                             name="effectiveStartDate"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Effective Start Date</FormLabel>
+                                <FormLabel>Effective Start Date *</FormLabel>
                                 <FormControl>
                                   <DatePicker
                                     value={field.value}
@@ -886,6 +753,25 @@ export default function CreateEmployeePage() {
                             )}
                           />
                         </div>
+
+                        {/* Effective End Date */}
+                        <FormField
+                          control={form.control}
+                          name="effectiveEndDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Effective End Date</FormLabel>
+                              <FormControl>
+                                <DatePicker
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Select effective end date (optional)"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
                         {/* Person Type - Radio Group */}
                         <FormField
@@ -929,7 +815,7 @@ export default function CreateEmployeePage() {
                           name="regDisability"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Registered Disability</FormLabel>
+                              <FormLabel>Registered Disability *</FormLabel>
                               <FormControl>
                                 <RadioGroup
                                   onValueChange={field.onChange}
@@ -962,152 +848,67 @@ export default function CreateEmployeePage() {
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-                {/* Address Information - Permanent */}
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="bg-card/70 p-4 rounded-md shadow-sm border"
-                >
-                  <AccordionItem value="permanent">
-                    <AccordionTrigger className="text-lg font-medium flex items-center gap-2">
-                      <span className="p-1 rounded-sm shadow-sm bg-primary/10 text-primary">
-                        <HomeIcon className="w-5 h-5 text-primary" />
-                      </span>
-                      Address Information (Permanent)
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="permanentAddress1"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Address Line 1</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter address" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentAddress1B"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Address Line 1 (Bangla)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="ঠিকানা" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentCountry"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Country</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter country" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentRegion"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Region</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter region" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentDistrict"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>District</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter district"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentUpazilla"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Upazilla</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter upazilla"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentUnions"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unions</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter unions" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="permanentArea"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Area/Village</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter area/village"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
               </div>
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end gap-3 mt-6">
-            
-              <Button type="submit">Submit</Button>
+            <div className="flex flex-col items-end gap-3 mt-6">
+              {/* Show validation errors summary */}
+              {Object.keys(form.formState.errors).length > 0 && (
+                <Alert variant="destructive" className="w-full">
+                  <AlertDescription className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4" />
+                    <div>
+                      <p className="font-medium">
+                        Please fix the following errors:
+                      </p>
+                      <ul className="list-disc list-inside mt-1 text-sm">
+                        {Object.entries(form.formState.errors).map(
+                          ([key, error]) => (
+                            <li key={key}>{error.message}</li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {submitStatus && (
+                <Alert
+                  variant={
+                    submitStatus === "success" ? "default" : "destructive"
+                  }
+                  className="w-full md:w-auto"
+                >
+                  <AlertDescription className="flex items-center gap-2">
+                    {submitStatus === "success" ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    {statusMessage}
+                    {submitStatus === "success" && (
+                      <a
+                        href="http://localhost:5173/core-hr/employees"
+                        className="ml-2 underline font-medium hover:no-underline"
+                      >
+                        View Employees
+                      </a>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+              <Button type="submit" disabled={createEmployeeMutation.isPending}>
+                {createEmployeeMutation.isPending ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Employee"
+                )}
+              </Button>
             </div>
           </form>
         </Form>

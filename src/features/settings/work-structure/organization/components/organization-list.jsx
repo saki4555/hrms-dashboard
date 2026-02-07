@@ -10,11 +10,11 @@ import {
 import {
   ArrowUpDown,
   ChevronDown,
-  Building2,
   Pencil,
   Trash2,
   AlertCircle,
   RefreshCw,
+  Building2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -53,6 +53,13 @@ import { Spinner } from "@/components/ui/spinner";
 import UpdateOrganizationDialog from "./update-organization-dialog";
 import AddOrganizationDialog from "./AddOrganizationDialog";
 import { IconPlus } from "@tabler/icons-react";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import PageContainer from "@/components/page-container";
 
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
@@ -70,11 +77,11 @@ const getOrgTypeName = (id) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
-  
+
   const date = new Date(dateString);
-  
+
   // Format: Feb 5, 2026 at 12:45 PM
-  return format(date, 'MMM d, yyyy \'at\' h:mm a');
+  return format(date, "MMM d, yyyy 'at' h:mm a");
 };
 
 export default function OrganizationList() {
@@ -97,7 +104,7 @@ export default function OrganizationList() {
     refetch,
     isFetching,
   } = useOrganizations();
-  
+
   const deleteOrganizationMutation = useDeleteOrganization();
 
   console.log("Organization data:", organizationData);
@@ -124,7 +131,9 @@ export default function OrganizationList() {
         toast.success("Organization deleted successfully!");
       } catch (error) {
         console.error("Error deleting organization:", error);
-        toast.error(error?.message || "Failed to delete organization. Please try again.");
+        toast.error(
+          error?.message || "Failed to delete organization. Please try again.",
+        );
       }
     }
   };
@@ -275,32 +284,38 @@ export default function OrganizationList() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="container mx-auto">
-          <div className="px-1">
-            <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Manage organization information and records
-                  </p>
+      <div className="">
+        
+          
+    
+              <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h1 className="text-2xl md:text-2xl font-bold">
+                      Organization
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                      Manage organization information and records
+                    </p>
+                  </div>
+                  <Button disabled>
+                    <IconPlus size={20} className="mr-2" />
+                    Add Organization
+                  </Button>
                 </div>
-                <Button disabled>
-                  <IconPlus size={20} className="mr-2" />
-                  Add Organization 
-                </Button>
+              </div>
+            
+
+            <div className="bg-card rounded-lg shadow-sm p-4 ">
+              <div className="flex flex-col items-center justify-center py-16">
+                <Spinner className="h-12 w-12 mb-4" />
+                <p className="text-muted-foreground">
+                  Loading organizations...
+                </p>
               </div>
             </div>
-          </div>
-
-          <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
-            <div className="flex flex-col items-center justify-center py-16">
-              <Spinner className="h-12 w-12 mb-4" />
-              <p className="text-muted-foreground">Loading organizations...</p>
-            </div>
-          </div>
-        </div>
+          
+       
       </div>
     );
   }
@@ -308,34 +323,35 @@ export default function OrganizationList() {
   // Error State
   if (isError) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="container mx-auto">
-          <div className="px-1">
-            <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Manage organization information and records
-                  </p>
-                </div>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <IconPlus size={20} className="mr-2" />
-                  Add Organization 
-                </Button>
+      <div className="">
+        
+          <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+                <p className="text-muted-foreground mt-1">
+                  Manage organization information and records
+                </p>
               </div>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <IconPlus size={20} className="mr-2" />
+                Add Organization
+              </Button>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+          <div className="bg-card rounded-lg shadow-sm p-4 ">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error Loading Organizations</AlertTitle>
               <AlertDescription className="mt-2 flex flex-col gap-2">
-                <p>{error?.message || "Failed to load organizations. Please try again."}</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <p>
+                  {error?.message ||
+                    "Failed to load organizations. Please try again."}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleRefetch}
                   disabled={isFetching}
                   className="w-fit"
@@ -355,43 +371,43 @@ export default function OrganizationList() {
               </AlertDescription>
             </Alert>
           </div>
-        </div>
+        
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="container mx-auto">
-        <div className="px-1">
-          <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
-                <p className="text-muted-foreground mt-1">
-                  Manage organization information and records
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={handleRefetch}
-                  disabled={isFetching}
-                  title="Refresh data"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <IconPlus size={20} className="mr-2" />
-                  Add Organization 
-                </Button>
-              </div>
+    <div className="">
+     
+        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage organization information and records
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefetch}
+                disabled={isFetching}
+                title="Refresh data"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+                />
+              </Button>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
+                <IconPlus size={20} className="mr-2" />
+                Add Organization
+              </Button>
             </div>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+        <div className="bg-card rounded-md shadow-sm p-4 ">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
@@ -499,12 +515,16 @@ export default function OrganizationList() {
                         colSpan={columns.length}
                         className="h-24 text-center"
                       >
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <Building2 className="w-12 h-12 text-muted-foreground mb-2" />
-                          <p className="text-muted-foreground">
-                            No organizations found
-                          </p>
-                        </div>
+                        <Empty>
+                          <EmptyHeader>
+                            {" "}
+                            <EmptyMedia variant="icon">
+                              {" "}
+                              <Building2Icon />
+                            </EmptyMedia>
+                            <EmptyTitle>No Organizations Found</EmptyTitle>
+                          </EmptyHeader>
+                        </Empty>
                       </TableCell>
                     </TableRow>
                   )}
@@ -515,22 +535,20 @@ export default function OrganizationList() {
             <DataTablePagination table={table} />
           </div>
         </div>
-      </div>
 
-      <AddOrganizationDialog
-        open={isAddDialogOpen} 
-        onOpenChange={setIsAddDialogOpen} 
-        showConfirmation={showConfirmation}
-      />
-
-      <UpdateOrganizationDialog
-        open={isUpdateDialogOpen}
-        onOpenChange={setIsUpdateDialogOpen}
-        showConfirmation={showConfirmation}
-        organization={selectedOrganization}
-      />
-
-      <ConfirmationDialog />
+        <AddOrganizationDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          showConfirmation={showConfirmation}
+        />
+        <UpdateOrganizationDialog
+          open={isUpdateDialogOpen}
+          onOpenChange={setIsUpdateDialogOpen}
+          showConfirmation={showConfirmation}
+          organization={selectedOrganization}
+        />
+        <ConfirmationDialog />
+     
     </div>
   );
 }

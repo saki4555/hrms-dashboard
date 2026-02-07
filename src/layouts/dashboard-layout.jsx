@@ -20,7 +20,7 @@ const DashboardLayout = () => {
   return (
     <SidebarProvider defaultOpen={false}>
       <AppSidebar userRole={user?.role}/>
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <main className="">
          <DashboardNavbar />
          <Suspense fallback={<PageLoader />}>

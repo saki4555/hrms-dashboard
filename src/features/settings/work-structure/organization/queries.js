@@ -20,6 +20,7 @@ const getOrganizations = async () => {
     const jsonData = await res.json();
     console.log("Parsed JSON:", jsonData);
     return jsonData.data || jsonData;
+
   } catch (error) {
     console.error("Error fetching organizations:", error);
     throw error;

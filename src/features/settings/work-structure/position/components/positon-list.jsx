@@ -15,6 +15,7 @@ import {
   Trash2,
   AlertCircle,
   RefreshCw,
+  BriefcaseIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -43,8 +44,11 @@ import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 
 import { Spinner } from "@/components/ui/spinner";
 import AddPositionDialog from "./AddPositionDialog";
+
 import { IconPlus } from "@tabler/icons-react";
 import { useDeletePosition, usePositions } from "../queries";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import UpdatePositionDialog from "./update-position-dialog";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
@@ -62,6 +66,8 @@ export default function PositionList() {
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
@@ -77,6 +83,11 @@ export default function PositionList() {
   const deletePositionMutation = useDeletePosition();
 
   console.log("Position data:", positionData);
+
+  const handleEdit = (position) => {
+    setSelectedPosition(position);
+    setIsUpdateDialogOpen(true);
+  };
 
   const handleDelete = async (position) => {
     const confirmed = await showConfirmation({
@@ -203,7 +214,7 @@ export default function PositionList() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => {/* TODO: Add edit functionality */}}
+              onClick={() => handleEdit(position)}
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -253,9 +264,8 @@ export default function PositionList() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="container mx-auto">
-          <div className="px-1">
+      <div className="">
+          
             <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -270,15 +280,15 @@ export default function PositionList() {
                 </Button>
               </div>
             </div>
-          </div>
+          
 
-          <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+          <div className="bg-card rounded-lg shadow-sm p-4">
             <div className="flex flex-col items-center justify-center py-16">
               <Spinner className="h-12 w-12 mb-4" />
               <p className="text-muted-foreground">Loading positions...</p>
             </div>
           </div>
-        </div>
+      
       </div>
     );
   }
@@ -286,9 +296,9 @@ export default function PositionList() {
   // Error State
   if (isError) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="container mx-auto">
-          <div className="px-1">
+      <div className="">
+       
+          
             <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -303,9 +313,9 @@ export default function PositionList() {
                 </Button>
               </div>
             </div>
-          </div>
+        
 
-          <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+          <div className="bg-card rounded-lg shadow-sm p-4 ">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error Loading Positions</AlertTitle>
@@ -333,15 +343,15 @@ export default function PositionList() {
               </AlertDescription>
             </Alert>
           </div>
-        </div>
+        
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="container mx-auto">
-        <div className="px-1">
+    <div className="">
+      
+       
           <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -367,9 +377,9 @@ export default function PositionList() {
               </div>
             </div>
           </div>
-        </div>
+        
 
-        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+        <div className="bg-card rounded-lg shadow-sm p-4">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <Input
@@ -449,12 +459,19 @@ export default function PositionList() {
                         colSpan={columns.length}
                         className="h-24 text-center"
                       >
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <Briefcase className="w-12 h-12 text-muted-foreground mb-2" />
-                          <p className="text-muted-foreground">
-                            No positions found
-                          </p>
-                        </div>
+                       
+
+
+                        <Empty>
+                          <EmptyHeader>
+                           
+                            <EmptyMedia variant="icon">
+                            
+                             <BriefcaseIcon />
+                            </EmptyMedia>
+                            <EmptyTitle>No Positions Found</EmptyTitle>
+                          </EmptyHeader>
+                        </Empty>
                       </TableCell>
                     </TableRow>
                   )}
@@ -465,12 +482,19 @@ export default function PositionList() {
             <DataTablePagination table={table} />
           </div>
         </div>
-      </div>
+      
 
       <AddPositionDialog
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen} 
         showConfirmation={showConfirmation}
+      />
+
+      <UpdatePositionDialog
+        open={isUpdateDialogOpen} 
+        onOpenChange={setIsUpdateDialogOpen} 
+        showConfirmation={showConfirmation}
+        position={selectedPosition}
       />
 
       <ConfirmationDialog />
