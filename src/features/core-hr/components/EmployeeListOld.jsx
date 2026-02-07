@@ -57,7 +57,7 @@ const getStatusLabel = (status) => {
   return status === "1" ? "Active" : "Inactive";
 };
 
-export default function EmployeeList() {
+export default function EmployeeListOld() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});

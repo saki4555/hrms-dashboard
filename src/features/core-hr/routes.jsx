@@ -5,10 +5,11 @@ import { PrivateRoute } from "@/routes/PrivateRoute";
 import { Route } from "react-router";
 import { ROLES } from "@/constants/roles";
 import { lazy } from "react";
+import Employees from "./employee-management";
 
 
 const CoreHRPage = lazy(() => import("./pages"))
-const CreateEmployeePage = lazy(() => import("./pages/CreateEmployeePage"))
+const AddEmployeePage = lazy(() => import("./employee-management/AddEmployeePage"))
 const EditEmployeePage = lazy(() => import("./pages/EditEmployeePage"));
 const EmployeeDetailsPage = lazy(() => import("./pages/EmployeeDetailsPage"))
 
@@ -26,16 +27,16 @@ const CoreHRRoutes = (
       path="core-hr/employees"
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
-          <CoreHRPage />
+          <Employees />
         </PrivateRoute>
       }
     />
     
     <Route
-      path="core-hr/employee/create-employee"
+      path="core-hr/employees/add"
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
-          <CreateEmployeePage />
+          <AddEmployeePage />
         </PrivateRoute>
       }
     />
