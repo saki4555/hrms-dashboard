@@ -6,7 +6,7 @@ const employeesQueryKeys = {
   detail: (id) => [...employeesQueryKeys.all, 'detail', id],
 };
 
-const API_BASE_URL = 'https://ntmfpv16-4000.inc1.devtunnels.ms/api/hr-employee';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/hr-employee`;
 
 const getEmployees = async () => {
   try {
