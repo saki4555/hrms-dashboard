@@ -15,6 +15,7 @@ import {
   AlertCircle,
   RefreshCw,
   Users,
+  FileTextIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -60,7 +61,6 @@ import {
 import { useNavigate } from "react-router";
 import UpdateEmployeeSheet from "./update-employee-sheet";
 
-
 const GENDER_OPTIONS = [
   { value: "all", label: "All Genders" },
   { value: "Male", label: "Male" },
@@ -79,9 +79,9 @@ const formatDate = (dateString) => {
 
 const formatSimpleDate = (dateString) => {
   if (!dateString) return "N/A";
-  
+
   const date = new Date(dateString);
-  
+
   // Format: Feb 5, 2026
   return format(date, "MMM d, yyyy");
 };
@@ -178,7 +178,6 @@ export default function EmployeeList() {
         return (
           <Button
             variant="ghost"
-            
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Employee ID
@@ -192,7 +191,8 @@ export default function EmployeeList() {
     },
     {
       id: "fullName",
-      accessorFn: (row) => `${row.TITLE || ""} ${row.FIRST_NAME} ${row.LAST_NAME}`.trim(),
+      accessorFn: (row) =>
+        `${row.TITLE || ""} ${row.FIRST_NAME} ${row.LAST_NAME}`.trim(),
       header: ({ column }) => {
         return (
           <Button
@@ -219,9 +219,7 @@ export default function EmployeeList() {
     {
       accessorKey: "GENDER",
       header: "Gender",
-      cell: ({ row }) => (
-        <div>{row.getValue("GENDER") || "N/A"}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
       filterFn: (row, id, value) => {
         return value === "all" || row.getValue(id) === value;
       },
@@ -248,17 +246,13 @@ export default function EmployeeList() {
       accessorKey: "NID",
       header: "NID",
       cell: ({ row }) => (
-        <div className="max-w-xs truncate">
-          {row.getValue("NID") || "N/A"}
-        </div>
+        <div className="max-w-xs truncate">{row.getValue("NID") || "N/A"}</div>
       ),
     },
     {
       accessorKey: "NATIONALITY",
       header: "Nationality",
-      cell: ({ row }) => (
-        <div>{row.getValue("NATIONALITY") || "N/A"}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue("NATIONALITY") || "N/A"}</div>,
     },
     {
       accessorKey: "JOIN_DATE",
@@ -287,7 +281,7 @@ export default function EmployeeList() {
         return <Badge variant="outline">{typeId || "N/A"}</Badge>;
       },
     },
-   
+
     {
       accessorKey: "CREATION_DATE",
       header: ({ column }) => {
@@ -338,6 +332,20 @@ export default function EmployeeList() {
                 <Trash2 className="h-4 w-4" />
               )}
               <span className="sr-only">Delete</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 "
+              onClick={() =>
+                navigate(
+                  `/core-hr/employee-management/employee-details/${employee.PERSON_ID}`
+                )
+              }
+            >
+              <FileTextIcon className="w-4 h-4" />
+              <span className="sr-only">Details</span>
             </Button>
           </div>
         );
@@ -491,10 +499,7 @@ export default function EmployeeList() {
 
             <Select
               value={
-                table
-                  .getColumn("GENDER")
-                  ?.getFilterValue()
-                  ?.toString() || "all"
+                table.getColumn("GENDER")?.getFilterValue()?.toString() || "all"
               }
               onValueChange={(value) =>
                 table
@@ -544,7 +549,7 @@ export default function EmployeeList() {
 
           <div className="overflow-hidden rounded-md border">
             <Table>
-              <TableHeader >
+              <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (

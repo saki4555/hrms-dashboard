@@ -6,7 +6,8 @@ const positionsQueryKeys = {
   detail: (id) => [...positionsQueryKeys.all, 'detail', id],
 };
 
-const API_BASE_URL = 'https://ntmfpv16-4000.inc1.devtunnels.ms/api/hr-org-position';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/hr-org-position`
+
 
 const getPositions = async () => {
   try {

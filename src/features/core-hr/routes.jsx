@@ -41,7 +41,7 @@ const CoreHRRoutes = (
       }
     />
     <Route
-      path="core-hr/employee/:empNo"
+      path="core-hr/employee-management/employee-details/:empNo"
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <EmployeeDetailsPage />

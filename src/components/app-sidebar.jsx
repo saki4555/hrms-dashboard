@@ -94,7 +94,7 @@ export function AppSidebar({ userRole, ...props }) {
                             <span>{item.title}</span>
                             <IconCaretRightFilled
                               
-                              className="ml-auto  text-foreground/90 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                              className="ml-auto  text-foreground/80 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                             />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
