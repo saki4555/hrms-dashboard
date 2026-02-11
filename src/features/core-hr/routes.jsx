@@ -1,17 +1,17 @@
 import { PrivateRoute } from "@/routes/PrivateRoute";
 
-
-
 import { Route } from "react-router";
 import { ROLES } from "@/constants/roles";
 import { lazy } from "react";
 import Employees from "./employee-management";
+import EmployeeTypes from "./employee-types";
 
-
-const CoreHRPage = lazy(() => import("./pages"))
-const AddEmployeePage = lazy(() => import("./employee-management/AddEmployeePage"))
+const CoreHRPage = lazy(() => import("./pages"));
+const AddEmployeePage = lazy(
+  () => import("./employee-management/AddEmployeePage"),
+);
 const EditEmployeePage = lazy(() => import("./pages/EditEmployeePage"));
-const EmployeeDetailsPage = lazy(() => import("./pages/EmployeeDetailsPage"))
+const EmployeeDetailsPage = lazy(() => import("./pages/EmployeeDetailsPage"));
 
 const CoreHRRoutes = (
   <>
@@ -31,7 +31,7 @@ const CoreHRRoutes = (
         </PrivateRoute>
       }
     />
-    
+
     <Route
       path="core-hr/employees/add"
       element={
@@ -73,8 +73,17 @@ const CoreHRRoutes = (
         </PrivateRoute>
       }
     />
+
+    {/* //! others (not in doc) */}
+    <Route
+      path="core-hr/employee-types"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <EmployeeTypes />
+        </PrivateRoute>
+      }
+    />
   </>
 );
-
 
 export default CoreHRRoutes;
