@@ -2,8 +2,6 @@ import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -16,7 +14,7 @@ import {
   Trash2,
   AlertCircle,
   RefreshCw,
-  Building2Icon,
+  UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -31,14 +29,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
   Table,
   TableBody,
   TableCell,
@@ -50,79 +40,71 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useDeleteOrganization, useOrganizations } from "../queries";
+
 import { Spinner } from "@/components/ui/spinner";
-import UpdateOrganizationDialog from "./update-organization-dialog";
-import AddOrganizationDialog from "./AddOrganizationDialog";
+
 import { IconPlus } from "@tabler/icons-react";
+import { useDeletePersonType, usePersonTypes } from "./queries";
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import PageContainer from "@/components/page-container";
-import CustomDataTableToolbar from "@/components/custom-temp/custom-data-table-toolbar";
-import CustomDataTableColumnHeader from "@/components/custom-temp/custom-data-table-column-header";
-
-const ORGANIZATION_TYPES = [
-  { id: 1, name: "Headquarters" },
-  { id: 2, name: "Branch Office" },
-  { id: 3, name: "Department" },
-  { id: 4, name: "Division" },
-  { id: 5, name: "Subsidiary" },
-  { id: 6, name: "Regional Office" },
-];
-
-const getOrgTypeName = (id) => {
-  const type = ORGANIZATION_TYPES.find((t) => t.id === id);
-  return type ? type.name : "Unknown";
-};
+import AddPersonTypeDialog from "./add-person-type-dialog";
+import UpdatePersonTypeDialog from "./update-person-type-dialog";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
 
   const date = new Date(dateString);
 
-  // Format: Feb 5, 2026 at 12:45 PM
-  return format(date, "MMM d, yyyy 'at' h:mm a");
+  // Format: Feb 5, 2026
+  return format(date, "MMM d, yyyy");
 };
 
-export default function OrganizationListTwo() {
+export default function PersonTypeList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [selectedOrganization, setSelectedOrganization] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [selectedPersonType, setSelectedPersonType] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   const {
-    data: organizationData = [],
+    data: personTypeData = [],
     isLoading,
     isError,
     error,
     refetch,
     isFetching,
-  } = useOrganizations();
+  } = usePersonTypes();
 
-  const deleteOrganizationMutation = useDeleteOrganization();
+  console.log("person types", personTypeData);
 
-  console.log("Organization data:", organizationData);
+  const deletePersonTypeMutation = useDeletePersonType();
 
-  const handleEdit = (organization) => {
-    console.log("Edit organization:", organization);
-    setSelectedOrganization(organization);
+  console.log("Person Type data:", personTypeData);
+
+  const handleAdd = () => {
+    console.log("Opening add dialog");
+    setIsAddDialogOpen(true);
+  };
+
+  const handleEdit = (personType) => {
+    console.log("Edit person type:", personType);
+    setSelectedPersonType(personType);
     setIsUpdateDialogOpen(true);
   };
 
-  const handleDelete = async (organization) => {
+  const handleDelete = async (personType) => {
     const confirmed = await showConfirmation({
-      title: "Delete organization?",
-      description: `Are you sure you want to delete "${organization.NAME}"? This action cannot be undone.`,
+      title: "Delete person type?",
+      description: `Are you sure you want to delete "${personType.PERSON_TYPE}"? This action cannot be undone.`,
       confirmText: "Delete",
       cancelText: "Cancel",
       variant: "destructive",
@@ -130,13 +112,13 @@ export default function OrganizationListTwo() {
 
     if (confirmed) {
       try {
-        await deleteOrganizationMutation.mutateAsync(organization.ID);
-        console.log("Organization deleted successfully:", organization);
-        toast.success("Organization deleted successfully!");
+        await deletePersonTypeMutation.mutateAsync(personType.PERSON_TYPE_ID);
+        console.log("Person type deleted successfully:", personType);
+        toast.success("Person type deleted successfully!");
       } catch (error) {
-        console.error("Error deleting organization:", error);
+        console.error("Error deleting person type:", error);
         toast.error(
-          error?.message || "Failed to delete organization. Please try again.",
+          error?.message || "Failed to delete person type. Please try again."
         );
       }
     }
@@ -170,59 +152,71 @@ export default function OrganizationListTwo() {
       enableHiding: false,
     },
     {
-      accessorKey: "NAME",
-      header: ({ column }) => {
-        // return (
-        //   <Button
-        //     variant="ghost"
-        //     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        //   >
-        //     Organization Name
-        //     <ArrowUpDown className="ml-2 h-4 w-4" />
-        //   </Button>
-        // );
-        return (<CustomDataTableColumnHeader column={column} title="Organization Name"/>)
-      },
-      cell: ({ row }) => (
-        <div className="font-medium ps-2">{row.getValue("NAME")}</div>
-      ),
-    },
-    {
-      accessorKey: "ORG_TYPE_ID",
-      header: "Type",
-      cell: ({ row }) => (
-        <div className="capitalize">
-          {getOrgTypeName(row.getValue("ORG_TYPE_ID"))}
-        </div>
-      ),
-      filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-    },
-    {
-      accessorKey: "LOCATION",
-      header: "Location",
-      cell: ({ row }) => (
-        <div className="max-w-xs truncate">
-          {row.getValue("LOCATION") || "N/A"}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "CREATED_DATE",
+      accessorKey: "PERSON_TYPE_ID",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Created Date
+            ID
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("PERSON_TYPE_ID")}</div>
+      ),
+    },
+    {
+      accessorKey: "PERSON_TYPE",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Person Type
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("PERSON_TYPE")}</div>
+      ),
+    },
+    {
+      accessorKey: "DESCRIPTION",
+      header: "Description",
+      cell: ({ row }) => (
+        <div className="max-w-md truncate">
+          {row.getValue("DESCRIPTION") || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "EFFECTIVE_START_DATE",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Start Date
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
       cell: ({ row }) => {
-        const date = row.getValue("CREATED_DATE");
+        const date = row.getValue("EFFECTIVE_START_DATE");
+        return <div>{formatDate(date)}</div>;
+      },
+    },
+    {
+      accessorKey: "EFFECTIVE_END_DATE",
+      header: "End Date",
+      cell: ({ row }) => {
+        const date = row.getValue("EFFECTIVE_END_DATE");
         return <div>{formatDate(date)}</div>;
       },
     },
@@ -231,7 +225,7 @@ export default function OrganizationListTwo() {
       header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const organization = row.original;
+        const personType = row.original;
 
         return (
           <div className="flex items-center gap-2">
@@ -239,7 +233,7 @@ export default function OrganizationListTwo() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => handleEdit(organization)}
+              onClick={() => handleEdit(personType)}
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -249,10 +243,10 @@ export default function OrganizationListTwo() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(organization)}
-              disabled={deleteOrganizationMutation.isPending}
+              onClick={() => handleDelete(personType)}
+              disabled={deletePersonTypeMutation.isPending}
             >
-              {deleteOrganizationMutation.isPending ? (
+              {deletePersonTypeMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : (
                 <Trash2 className="h-4 w-4" />
@@ -266,7 +260,7 @@ export default function OrganizationListTwo() {
   ];
 
   const table = useReactTable({
-    data: organizationData,
+    data: personTypeData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -275,8 +269,6 @@ export default function OrganizationListTwo() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     state: {
@@ -295,22 +287,22 @@ export default function OrganizationListTwo() {
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+              <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
               <p className="text-muted-foreground mt-1">
-                Manage organization information and records
+                Manage employee person type categories
               </p>
             </div>
             <Button disabled>
               <IconPlus size={20} className="mr-2" />
-              Add Organization
+              Add Person Type
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4 ">
+        <div className="bg-card rounded-lg shadow-sm p-4">
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner className="h-12 w-12 mb-4" />
-            <p className="text-muted-foreground">Loading organizations...</p>
+            <p className="text-muted-foreground">Loading person types...</p>
           </div>
         </div>
       </div>
@@ -324,14 +316,14 @@ export default function OrganizationListTwo() {
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+              <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
               <p className="text-muted-foreground mt-1">
-                Manage organization information and records
+                Manage employee person type categories
               </p>
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={handleAdd}>
               <IconPlus size={20} className="mr-2" />
-              Add Organization
+              Add Person Type
             </Button>
           </div>
         </div>
@@ -339,11 +331,11 @@ export default function OrganizationListTwo() {
         <div className="bg-card rounded-lg shadow-sm p-4 ">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Organizations</AlertTitle>
+            <AlertTitle>Error Loading Person Types</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
               <p>
                 {error?.message ||
-                  "Failed to load organizations. Please try again."}
+                  "Failed to load person types. Please try again."}
               </p>
               <Button
                 variant="outline"
@@ -373,12 +365,12 @@ export default function OrganizationListTwo() {
 
   return (
     <div className="">
-      <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+      <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+            <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
             <p className="text-muted-foreground mt-1">
-              Manage organization information and records
+              Manage employee person type categories
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -393,42 +385,64 @@ export default function OrganizationListTwo() {
                 className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
               />
             </Button>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={handleAdd}>
               <IconPlus size={20} className="mr-2" />
-              Add Organization
+              Add Person Type
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="bg-card rounded-md shadow-sm p-4 ">
+      <div className="bg-card rounded-lg shadow-sm p-4">
         <div className="space-y-4">
-          <CustomDataTableToolbar
-            table={table}
-            searchPlaceholder="Search organizations..."
-            filters={[
-              {
-                columnId: "ORG_TYPE_ID",
-                title: "Type",
-                options: ORGANIZATION_TYPES.map((type) => ({
-                  label: type.name,
-                  value: type.id, // Remove .toString() - keep it as a number
-                })),
-              },
-            ]}
-          />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Input
+              placeholder="Search person types..."
+              value={globalFilter ?? ""}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+            />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id.replace(/_/g, " ")}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="h-12 px-4 font-medium">
+                      <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext(),
+                              header.getContext()
                             )}
                       </TableHead>
                     ))}
@@ -444,10 +458,10 @@ export default function OrganizationListTwo() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="h-16 px-4">
+                        <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext(),
+                            cell.getContext()
                           )}
                         </TableCell>
                       ))}
@@ -461,12 +475,10 @@ export default function OrganizationListTwo() {
                     >
                       <Empty>
                         <EmptyHeader>
-                          {" "}
                           <EmptyMedia variant="icon">
-                            {" "}
-                            <Building2Icon />
+                            <UserCog />
                           </EmptyMedia>
-                          <EmptyTitle>No Organizations Found</EmptyTitle>
+                          <EmptyTitle>No Person Types Found</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -480,17 +492,20 @@ export default function OrganizationListTwo() {
         </div>
       </div>
 
-      <AddOrganizationDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+      {/* Person Type Dialogs */}
+      <AddPersonTypeDialog
+        open={isAddDialogOpen} 
+        onOpenChange={setIsAddDialogOpen} 
         showConfirmation={showConfirmation}
       />
-      <UpdateOrganizationDialog
-        open={isUpdateDialogOpen}
-        onOpenChange={setIsUpdateDialogOpen}
+
+      <UpdatePersonTypeDialog
+        open={isUpdateDialogOpen} 
+        onOpenChange={setIsUpdateDialogOpen} 
         showConfirmation={showConfirmation}
-        organization={selectedOrganization}
+        personType={selectedPersonType}
       />
+
       <ConfirmationDialog />
     </div>
   );

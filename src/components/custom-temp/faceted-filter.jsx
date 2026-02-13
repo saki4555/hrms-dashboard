@@ -80,15 +80,20 @@ export function DataTableFacetedFilter({ column, title, options }) {
                   <CommandItem
                     key={option.value}
                     onSelect={() => {
+                      // Create a new array from current filter values
+                      const currentFilters = column?.getFilterValue() || []
+                      let newFilters
+                      
                       if (isSelected) {
-                        selectedValues.delete(option.value)
+                        // Remove the value
+                        newFilters = currentFilters.filter(v => v !== option.value)
                       } else {
-                        selectedValues.add(option.value)
+                        // Add the value
+                        newFilters = [...currentFilters, option.value]
                       }
 
-                      const filterValues = Array.from(selectedValues)
                       column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined
+                        newFilters.length ? newFilters : undefined
                       )
                     }}
                   >

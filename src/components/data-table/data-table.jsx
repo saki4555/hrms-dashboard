@@ -52,7 +52,7 @@ export function DataTable(
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                    className={cn("bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted")}
+                   
                       key={cell.id}
                       style={{
                         ...getColumnPinningStyle({ column: cell.column }),

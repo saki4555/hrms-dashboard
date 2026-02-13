@@ -1,11 +1,12 @@
 import PageContainer from "@/components/page-container";
+import PersonTypeList from "./person-type-list";
 
-import { PersonTypesList } from "./person-types-list";
+
 
 
 const EmployeeTypes = () => {
   return (
-    <PageContainer><PersonTypesList />
+    <PageContainer><PersonTypeList />
 
     
     </PageContainer>
