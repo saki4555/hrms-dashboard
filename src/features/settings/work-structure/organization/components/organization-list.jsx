@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {  useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -17,7 +17,6 @@ import {
   Building2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -59,30 +57,15 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import PageContainer from "@/components/page-container";
-
-const ORGANIZATION_TYPES = [
-  { id: 1, name: "Headquarters" },
-  { id: 2, name: "Branch Office" },
-  { id: 3, name: "Department" },
-  { id: 4, name: "Division" },
-  { id: 5, name: "Subsidiary" },
-  { id: 6, name: "Regional Office" },
-];
-
-const getOrgTypeName = (id) => {
-  const type = ORGANIZATION_TYPES.find((t) => t.id === id);
-  return type ? type.name : "Unknown";
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
-
-  const date = new Date(dateString);
-
-  // Format: Feb 5, 2026 at 12:45 PM
-  return format(date, "MMM d, yyyy 'at' h:mm a");
-};
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Link } from "react-router";
 
 export default function OrganizationList() {
   const [sorting, setSorting] = useState([]);
@@ -108,6 +91,18 @@ export default function OrganizationList() {
   const deleteOrganizationMutation = useDeleteOrganization();
 
   console.log("Organization data:", organizationData);
+
+  // Get unique organization types from the data
+  const organizationTypes = Array.from(
+    new Map(
+      organizationData
+        .filter((org) => org.ORG_TYPE && org.ORG_TYPE_ID)
+        .map((org) => [
+          org.ORG_TYPE_ID,
+          { id: org.ORG_TYPE_ID, name: org.ORG_TYPE },
+        ]),
+    ).values(),
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const handleEdit = (organization) => {
     console.log("Edit organization:", organization);
@@ -183,16 +178,24 @@ export default function OrganizationList() {
       ),
     },
     {
-      accessorKey: "ORG_TYPE_ID",
+      accessorKey: "ORG_TYPE",
       header: "Type",
       cell: ({ row }) => (
-        <div className="capitalize">
-          {getOrgTypeName(row.getValue("ORG_TYPE_ID"))}
-        </div>
+        <div className="capitalize">{row.getValue("ORG_TYPE") || "N/A"}</div>
       ),
       filterFn: (row, id, value) => {
-        return value === "all" || row.getValue(id) === value;
+        return value === "all" || row.original.ORG_TYPE_ID === value;
       },
+    },
+    {
+      accessorKey: "PARENT_ORG_NAME",
+      header: "Parent Organization",
+      cell: ({ row }) => <div>{row.getValue("PARENT_ORG_NAME") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "COST_CENTER_NAME",
+      header: "Cost Center",
+      cell: ({ row }) => <div>{row.getValue("COST_CENTER_NAME") || "N/A"}</div>,
     },
     {
       accessorKey: "LOCATION",
@@ -202,24 +205,6 @@ export default function OrganizationList() {
           {row.getValue("LOCATION") || "N/A"}
         </div>
       ),
-    },
-    {
-      accessorKey: "CREATED_DATE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Created Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("CREATED_DATE");
-        return <div>{formatDate(date)}</div>;
-      },
     },
     {
       id: "actions",
@@ -285,37 +270,27 @@ export default function OrganizationList() {
   if (isLoading) {
     return (
       <div className="">
-        
-          
-    
-              <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl md:text-2xl font-bold">
-                      Organization
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                      Manage organization information and records
-                    </p>
-                  </div>
-                  <Button disabled>
-                    <IconPlus size={20} className="mr-2" />
-                    Add Organization
-                  </Button>
-                </div>
-              </div>
-            
-
-            <div className="bg-card rounded-lg shadow-sm p-4 ">
-              <div className="flex flex-col items-center justify-center py-16">
-                <Spinner className="h-12 w-12 mb-4" />
-                <p className="text-muted-foreground">
-                  Loading organizations...
-                </p>
-              </div>
+        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage organization information and records
+              </p>
             </div>
-          
-       
+            <Button disabled>
+              <IconPlus size={20} className="mr-2" />
+              Add Organization
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-lg shadow-sm p-4 ">
+          <div className="flex flex-col items-center justify-center py-16">
+            <Spinner className="h-12 w-12 mb-4" />
+            <p className="text-muted-foreground">Loading organizations...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -324,62 +299,7 @@ export default function OrganizationList() {
   if (isError) {
     return (
       <div className="">
-        
-          <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
-                <p className="text-muted-foreground mt-1">
-                  Manage organization information and records
-                </p>
-              </div>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <IconPlus size={20} className="mr-2" />
-                Add Organization
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-card rounded-lg shadow-sm p-4 ">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error Loading Organizations</AlertTitle>
-              <AlertDescription className="mt-2 flex flex-col gap-2">
-                <p>
-                  {error?.message ||
-                    "Failed to load organizations. Please try again."}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefetch}
-                  disabled={isFetching}
-                  className="w-fit"
-                >
-                  {isFetching ? (
-                    <>
-                      <Spinner className="mr-2 h-4 w-4" />
-                      Retrying...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Retry
-                    </>
-                  )}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        
-      </div>
-    );
-  }
-
-  return (
-    <div className="">
-     
-        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-2xl font-bold">Organization</h1>
@@ -387,168 +307,249 @@ export default function OrganizationList() {
                 Manage organization information and records
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <IconPlus size={20} className="mr-2" />
+              Add Organization
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-lg shadow-sm p-4 ">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Organizations</AlertTitle>
+            <AlertDescription className="mt-2 flex flex-col gap-2">
+              <p>
+                {error?.message ||
+                  "Failed to load organizations. Please try again."}
+              </p>
               <Button
                 variant="outline"
-                size="icon"
+                size="sm"
                 onClick={handleRefetch}
                 disabled={isFetching}
-                title="Refresh data"
+                className="w-fit"
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-                />
+                {isFetching ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
+                )}
               </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <IconPlus size={20} className="mr-2" />
-                Add Organization
-              </Button>
-            </div>
-          </div>
+            </AlertDescription>
+          </Alert>
         </div>
+      </div>
+    );
+  }
 
-        <div className="bg-card rounded-md shadow-sm p-4 ">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                placeholder="Search organizations..."
-                value={globalFilter ?? ""}
-                onChange={(event) => setGlobalFilter(event.target.value)}
-                className="max-w-sm"
+  return (
+    <div className="">
+      <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-0.5">
+           
+           
+
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight ">
+              Organization
+            </h1>
+             <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/">Dashboard</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>Work Structure</BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Organization</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+
+            {/* <p className="text-sm text-muted-foreground leading-snug">
+        Manage organization information and records
+      </p> */}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRefetch}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
               />
 
-              <Select
-                value={
-                  table
-                    .getColumn("ORG_TYPE_ID")
-                    ?.getFilterValue()
-                    ?.toString() || "all"
-                }
-                onValueChange={(value) =>
-                  table
-                    .getColumn("ORG_TYPE_ID")
-                    ?.setFilterValue(
-                      value === "all" ? undefined : Number(value),
-                    )
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Organization Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {ORGANIZATION_TYPES.map((type) => (
-                    <SelectItem key={type.id} value={type.id.toString()}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <span className="sr-only">Refresh data</span>
+            </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="ml-auto">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id.replace(/_/g, " ")}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="overflow-hidden rounded-md border">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        <Empty>
-                          <EmptyHeader>
-                            {" "}
-                            <EmptyMedia variant="icon">
-                              {" "}
-                              <Building2Icon />
-                            </EmptyMedia>
-                            <EmptyTitle>No Organizations Found</EmptyTitle>
-                          </EmptyHeader>
-                        </Empty>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            <DataTablePagination table={table} />
+            {/* 1. Icon size 16: Matches text-sm font size perfectly. 
+           Anything larger (like 20) makes the button look "top-heavy."
+      */}
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <IconPlus />
+              Add Organization
+            </Button>
           </div>
         </div>
+      </div>
 
-        <AddOrganizationDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          showConfirmation={showConfirmation}
-        />
-        <UpdateOrganizationDialog
-          open={isUpdateDialogOpen}
-          onOpenChange={setIsUpdateDialogOpen}
-          showConfirmation={showConfirmation}
-          organization={selectedOrganization}
-        />
-        <ConfirmationDialog />
+      <div className="bg-card rounded-md shadow-sm p-4 ">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Input
+              placeholder="Search organizations..."
+              value={globalFilter ?? ""}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+            />
+
+            <Select
+              value={
+                table.getColumn("ORG_TYPE")?.getFilterValue()?.toString() ||
+                "all"
+              }
+              onValueChange={(value) =>
+                table
+                  .getColumn("ORG_TYPE")
+                  ?.setFilterValue(value === "all" ? undefined : Number(value))
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Organization Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {organizationTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id.toString()}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id.replace(/_/g, " ")}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="h-12 px-4 font-medium"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="h-16 px-4">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Building2Icon />
+                          </EmptyMedia>
+                          <EmptyTitle>No Organizations Found</EmptyTitle>
+                        </EmptyHeader>
+                      </Empty>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DataTablePagination table={table} />
+        </div>
+      </div>
+
+      {
+        isAddDialogOpen && <AddOrganizationDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        showConfirmation={showConfirmation}
+      />
+      }
+      
+      
+     {
+      isUpdateDialogOpen &&  <UpdateOrganizationDialog
+        open={isUpdateDialogOpen}
+        onOpenChange={setIsUpdateDialogOpen}
+        showConfirmation={showConfirmation}
+        organization={selectedOrganization}
+      />
+     }
      
+      <ConfirmationDialog />
     </div>
   );
 }

@@ -126,6 +126,9 @@ export default function AddOrganizationDialog({
     useHrLocations();
   console.log("Locations data:", locations);
 
+  const showLoading = orgLoading || orgTypesLoading || locationsLoading;
+  console.log("showLoading", showLoading);
+
   const createOrganizationMutation = useCreateOrganization();
 
   const form = useForm({
@@ -211,7 +214,15 @@ export default function AddOrganizationDialog({
         }
       }}
     >
+      
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
+        {
+        showLoading && (
+          <div className="flex text-xl font-bold items-center justify-center w-full h-full">
+            Loading....
+          </div>
+        )
+      }
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">

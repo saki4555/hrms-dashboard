@@ -7,7 +7,7 @@ const Organizaitons = () => {
   return (
     <PageContainer>
       <OrganizationList />
-      <OrganizationListTwo />
+      {/* <OrganizationListTwo /> */}
       {/* <OrganizationListThree /> */}
     </PageContainer>
   );
