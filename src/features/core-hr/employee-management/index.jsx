@@ -3,9 +3,12 @@ import EmployeeList from "./employee-list";
 
 
 
+
 const Employees = () => {
   return (
-    <PageContainer><EmployeeList /></PageContainer>
+    <PageContainer><EmployeeList />
+    
+    </PageContainer>
     
   );
 };
