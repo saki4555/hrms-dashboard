@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -29,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -45,35 +43,9 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Spinner } from "@/components/ui/spinner";
-import { useUpdateOrganization } from "../queries";
-
-// Demo data - replace with your API calls
-const ORGANIZATION_TYPES = [
-  { id: 1, name: "Headquarters" },
-  { id: 2, name: "Branch Office" },
-  { id: 3, name: "Department" },
-  { id: 4, name: "Division" },
-  { id: 5, name: "Subsidiary" },
-  { id: 6, name: "Regional Office" },
-];
-
-const STATUS_OPTIONS = [
-  { id: 1, label: "Active" },
-  { id: 0, label: "Inactive" },
-];
-
-const PARENT_ORGANIZATIONS = [
-  { id: 1, name: "Corporate Headquarters" },
-  { id: 2, name: "North American Division" },
-  { id: 3, name: "European Division" },
-  { id: 4, name: "Asia Pacific Region" },
-  { id: 5, name: "Manufacturing Department" },
-  { id: 6, name: "Sales & Marketing" },
-  { id: 7, name: "Research & Development" },
-  { id: 8, name: "Human Resources" },
-  { id: 9, name: "Finance & Accounting" },
-  { id: 10, name: "Operations Management" },
-];
+import { useUpdateOrganization, useOrganizations } from "../queries";
+import { useOrgTypes } from "../../organization-types/queries";
+import { useHrLocations } from "../../locations/queries";
 
 const COST_CENTERS = [
   { id: 101, name: "CC-001 - Corporate Services" },
@@ -97,21 +69,34 @@ const formSchema = z.object({
     .max(200, "Name cannot exceed 200 characters"),
   orgTypeId: z.number().optional().nullable(),
   parentOrgId: z.number().optional().nullable(),
-  location: z.string().max(200, "Location cannot exceed 200 characters").optional(),
+  location: z
+    .string()
+    .max(200, "Location cannot exceed 200 characters")
+    .optional(),
   costCenterId: z.number().optional().nullable(),
-  status: z.number().default(1),
+  status: z.number(), // Added back
   updatedBy: z.number().optional(),
 });
 
-export default function UpdateOrganizationDialog({ 
-  open, 
-  onOpenChange, 
-  showConfirmation, 
-  organization 
+export default function UpdateOrganizationDialog({
+  open,
+  onOpenChange,
+  showConfirmation,
+  organization,
 }) {
   const [parentOrgOpen, setParentOrgOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  console.log("organization", organization);
+
+  // Fetch data
+  const { data: organizationData = [], isLoading: orgLoading } =
+    useOrganizations();
+  const { data: organizationTypes = [], isLoading: orgTypesLoading } =
+    useOrgTypes();
+  const { data: locations = [], isLoading: locationsLoading } =
+    useHrLocations();
 
   const updateOrganizationMutation = useUpdateOrganization();
 
@@ -123,12 +108,14 @@ export default function UpdateOrganizationDialog({
       parentOrgId: null,
       location: "",
       costCenterId: null,
-      status: 1,
+      status: 1, // Added back
       updatedBy: undefined,
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   // Populate form when organization changes
   useEffect(() => {
@@ -139,7 +126,7 @@ export default function UpdateOrganizationDialog({
         parentOrgId: organization.PARENT_ORG_ID || null,
         location: organization.LOCATION || "",
         costCenterId: organization.COST_CENTER_ID || null,
-        status: organization.STATUS ?? 1,
+        status: organization.STATUS ?? 1, // Added back
         updatedBy: undefined, // TODO: Get from user session
       });
     }
@@ -165,8 +152,9 @@ export default function UpdateOrganizationDialog({
         PARENT_ORG_ID: data.parentOrgId,
         LOCATION: data.location || null,
         COST_CENTER_ID: data.costCenterId,
-        STATUS: data.status,
+        STATUS: data.status || 1,
         UPDATED_BY: data.updatedBy || 1, // TODO: Get from user session
+        // STATUS is not included - it's managed by soft delete functionality
       };
 
       console.log("Updating organization ID:", organization.ID);
@@ -186,7 +174,9 @@ export default function UpdateOrganizationDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Error updating organization:", error);
-      toast.error(error.message || "Failed to update organization. Please try again.");
+      toast.error(
+        error.message || "Failed to update organization. Please try again.",
+      );
     }
   };
 
@@ -194,7 +184,8 @@ export default function UpdateOrganizationDialog({
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description: "You have unsaved changes. Are you sure you want to close without saving?",
+        description:
+          "You have unsaved changes. Are you sure you want to close without saving?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -243,13 +234,14 @@ export default function UpdateOrganizationDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Organization Name <span className="text-destructive">*</span>
+                      Organization Name{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter organization name" 
+                      <Input
+                        placeholder="Enter organization name"
                         disabled={isSubmitting}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -264,10 +256,11 @@ export default function UpdateOrganizationDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Organization Type <span className="text-destructive">*</span>
+                      Organization Type{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(Number(value))} 
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
                       value={field.value?.toString()}
                       disabled={isSubmitting}
                     >
@@ -277,9 +270,9 @@ export default function UpdateOrganizationDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {ORGANIZATION_TYPES.map((type) => (
-                          <SelectItem key={type.id} value={type.id.toString()}>
-                            {type.name}
+                        {organizationTypes.map((type) => (
+                          <SelectItem key={type.ID} value={type.ID.toString()}>
+                            {type.ORG_TYPE}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -296,7 +289,11 @@ export default function UpdateOrganizationDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Parent Organization</FormLabel>
-                    <Popover modal={true} open={parentOrgOpen} onOpenChange={setParentOrgOpen}>
+                    <Popover
+                      modal={true}
+                      open={parentOrgOpen}
+                      onOpenChange={setParentOrgOpen}
+                    >
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -308,7 +305,9 @@ export default function UpdateOrganizationDialog({
                             }`}
                           >
                             {field.value
-                              ? PARENT_ORGANIZATIONS.find(org => org.id === field.value)?.name
+                              ? organizationData.find(
+                                  (org) => org.ID === field.value,
+                                )?.NAME
                               : "Select parent (optional)"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
@@ -316,7 +315,10 @@ export default function UpdateOrganizationDialog({
                       </PopoverTrigger>
                       <PopoverContent className="w-[300px] p-0">
                         <Command>
-                          <CommandInput placeholder="Search organizations..." className="h-9" />
+                          <CommandInput
+                            placeholder="Search organizations..."
+                            className="h-9"
+                          />
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
                             <CommandGroup>
@@ -327,21 +329,25 @@ export default function UpdateOrganizationDialog({
                                   setParentOrgOpen(false);
                                 }}
                               >
-                                <span className="text-muted-foreground">Clear selection</span>
+                                <span className="text-muted-foreground">
+                                  Clear selection
+                                </span>
                               </CommandItem>
-                              {PARENT_ORGANIZATIONS.map((org) => (
+                              {organizationData.map((org) => (
                                 <CommandItem
-                                  key={org.id}
-                                  value={org.name}
+                                  key={org.ID}
+                                  value={org.NAME}
                                   onSelect={() => {
-                                    field.onChange(org.id);
+                                    field.onChange(org.ID);
                                     setParentOrgOpen(false);
                                   }}
                                 >
-                                  {org.name}
+                                  {org.NAME}
                                   <Check
                                     className={`ml-auto h-4 w-4 ${
-                                      field.value === org.id ? "opacity-100" : "opacity-0"
+                                      field.value === org.ID
+                                        ? "opacity-100"
+                                        : "opacity-0"
                                     }`}
                                   />
                                 </CommandItem>
@@ -360,10 +366,101 @@ export default function UpdateOrganizationDialog({
               <FormField
                 control={form.control}
                 name="costCenterId"
+                render={({ field }) => {
+                  // Filter organizations where ORG_TYPE_ID is 24 (Cost Center)
+                  const costCenterOrgs = organizationData.filter(
+                    (org) => org.ORG_TYPE_ID === 24,
+                  );
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Cost Center</FormLabel>
+                      <Popover
+                        modal={true}
+                        open={costCenterOpen}
+                        onOpenChange={setCostCenterOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              disabled={isSubmitting}
+                              className={`w-full justify-between font-normal ${
+                                !field.value && "text-muted-foreground"
+                              }`}
+                            >
+                              {field.value
+                                ? costCenterOrgs.find(
+                                    (cc) => cc.ID === field.value,
+                                  )?.NAME
+                                : "Select cost center (optional)"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[350px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Search cost centers..."
+                              className="h-9"
+                            />
+                            <CommandList>
+                              <CommandEmpty>No cost center found.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="clear-selection"
+                                  onSelect={() => {
+                                    field.onChange(null);
+                                    setCostCenterOpen(false);
+                                  }}
+                                >
+                                  <span className="text-muted-foreground">
+                                    Clear selection
+                                  </span>
+                                </CommandItem>
+                                {costCenterOrgs.map((cc) => (
+                                  <CommandItem
+                                    key={cc.ID}
+                                    value={cc.NAME}
+                                    onSelect={() => {
+                                      field.onChange(cc.ID);
+                                      setCostCenterOpen(false);
+                                    }}
+                                  >
+                                    {cc.NAME}
+                                    <Check
+                                      className={`ml-auto h-4 w-4 ${
+                                        field.value === cc.ID
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* Location - Full Width */}
+              <FormField
+                control={form.control}
+                name="location"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost Center</FormLabel>
-                    <Popover modal={true} open={costCenterOpen} onOpenChange={setCostCenterOpen}>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Location</FormLabel>
+                    <Popover
+                      modal={true}
+                      open={locationOpen}
+                      onOpenChange={setLocationOpen}
+                    >
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -374,41 +471,46 @@ export default function UpdateOrganizationDialog({
                               !field.value && "text-muted-foreground"
                             }`}
                           >
-                            {field.value
-                              ? COST_CENTERS.find(cc => cc.id === field.value)?.name
-                              : "Select cost center (optional)"}
+                            {field.value || "Select location (optional)"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[350px] p-0">
+                      <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Search cost centers..." className="h-9" />
+                          <CommandInput
+                            placeholder="Search locations..."
+                            className="h-9"
+                          />
                           <CommandList>
-                            <CommandEmpty>No cost center found.</CommandEmpty>
+                            <CommandEmpty>No location found.</CommandEmpty>
                             <CommandGroup>
                               <CommandItem
                                 value="clear-selection"
                                 onSelect={() => {
-                                  field.onChange(null);
-                                  setCostCenterOpen(false);
+                                  field.onChange("");
+                                  setLocationOpen(false);
                                 }}
                               >
-                                <span className="text-muted-foreground">Clear selection</span>
+                                <span className="text-muted-foreground">
+                                  Clear selection
+                                </span>
                               </CommandItem>
-                              {COST_CENTERS.map((cc) => (
+                              {locations.map((loc) => (
                                 <CommandItem
-                                  key={cc.id}
-                                  value={cc.name}
+                                  key={loc.ID}
+                                  value={loc.LOCATION_NAME}
                                   onSelect={() => {
-                                    field.onChange(cc.id);
-                                    setCostCenterOpen(false);
+                                    field.onChange(loc.LOCATION_NAME);
+                                    setLocationOpen(false);
                                   }}
                                 >
-                                  {cc.name}
+                                  {loc.LOCATION_NAME}
                                   <Check
                                     className={`ml-auto h-4 w-4 ${
-                                      field.value === cc.id ? "opacity-100" : "opacity-0"
+                                      field.value === loc.LOCATION_NAME
+                                        ? "opacity-100"
+                                        : "opacity-0"
                                     }`}
                                   />
                                 </CommandItem>
@@ -422,72 +524,18 @@ export default function UpdateOrganizationDialog({
                   </FormItem>
                 )}
               />
-
-              {/* Location - Full Width */}
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter location address or description (optional)"
-                        className="resize-none"
-                        rows={3}
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem className="space-y-3 md:col-span-2">
-                    <FormLabel>
-                      Status <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => field.onChange(Number(value))}
-                        value={field.value?.toString()}
-                        disabled={isSubmitting}
-                        className="flex flex-row gap-3"
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <FormItem key={status.id} className="flex items-center gap-2">
-                            <FormControl>
-                              <RadioGroupItem value={status.id.toString()} />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
-                              {status.label}
-                            </FormLabel>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={isSubmitting}
               >
