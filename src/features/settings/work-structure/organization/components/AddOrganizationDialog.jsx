@@ -44,7 +44,9 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateOrganization } from "../queries";
+import { useCreateOrganization, useOrganizations } from "../queries";
+import { useOrgTypeById, useOrgTypes } from "../../organization-types/queries";
+import { useHrLocations } from "../../locations/queries";
 
 // Demo data - easy to replace later with API calls
 const ORGANIZATION_TYPES = [
@@ -91,15 +93,38 @@ const formSchema = z.object({
     .max(200, "Name cannot exceed 200 characters"),
   orgTypeId: z.number().optional().nullable(),
   parentOrgId: z.number().optional().nullable(),
-  location: z.string().max(200, "Location cannot exceed 200 characters").optional(),
+  location: z
+    .string()
+    .max(200, "Location cannot exceed 200 characters")
+    .optional(),
   costCenterId: z.number().optional().nullable(),
   createdBy: z.number().optional(), // Will be set from logged-in user
 });
 
-export default function AddOrganizationDialog({ open, onOpenChange, showConfirmation }) {
+export default function AddOrganizationDialog({
+  open,
+  onOpenChange,
+  showConfirmation,
+}) {
   const [parentOrgOpen, setParentOrgOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+   const {
+      data: organizationData = [],
+      isLoading: orgLoading,
+    } = useOrganizations();
+
+  console.log("Organization data:", organizationData);
+
+  const { data: organizationTypes = [], isLoading: orgTypesLoading } =
+    useOrgTypes();
+  console.log("Organization types data:", organizationTypes);
+
+  const { data: locations = [], isLoading: locationsLoading } =
+    useHrLocations();
+  console.log("Locations data:", locations);
 
   const createOrganizationMutation = useCreateOrganization();
 
@@ -115,7 +140,9 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   useEffect(() => {
     setIsMounted(true);
@@ -139,6 +166,7 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       };
 
       console.log("Sending to backend:", backendData);
+      
 
       await createOrganizationMutation.mutateAsync(backendData);
 
@@ -150,7 +178,9 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating organization:", error);
-      toast.error(error?.message || "Failed to create organization. Please try again.");
+      toast.error(
+        error?.message || "Failed to create organization. Please try again.",
+      );
     }
   };
 
@@ -158,7 +188,8 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description: "You have unsaved changes. Are you sure you want to close without saving?",
+        description:
+          "You have unsaved changes. Are you sure you want to close without saving?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -188,7 +219,9 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
             </div>
             <div>
               <DialogTitle>Add New Organization</DialogTitle>
-              <DialogDescription>Create a new organization in the system</DialogDescription>
+              <DialogDescription>
+                Create a new organization in the system
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -203,7 +236,8 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Organization Name <span className="text-destructive">*</span>
+                      Organization Name{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="Enter organization name" {...field} />
@@ -220,10 +254,11 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Organization Type <span className="text-destructive">*</span>
+                      Organization Type{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(Number(value))} 
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
                       value={field.value?.toString()}
                     >
                       <FormControl>
@@ -232,9 +267,9 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {ORGANIZATION_TYPES.map((type) => (
-                          <SelectItem key={type.id} value={type.id.toString()}>
-                            {type.name}
+                        {organizationTypes.map((type) => (
+                          <SelectItem key={type.ID} value={type.ID.toString()}>
+                            {type.ORG_TYPE}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -245,145 +280,205 @@ export default function AddOrganizationDialog({ open, onOpenChange, showConfirma
               />
 
               {/* Parent Organization */}
-              <FormField
-                control={form.control}
-                name="parentOrgId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Parent Organization</FormLabel>
-                    <Popover modal={true} open={parentOrgOpen} onOpenChange={setParentOrgOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={`w-full justify-between font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
-                          >
-                            {field.value
-                              ? PARENT_ORGANIZATIONS.find(org => org.id === field.value)?.name
-                              : "Select parent (optional)"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Search organizations..." className="h-9" />
-                          <CommandList>
-                            <CommandEmpty>No organization found.</CommandEmpty>
-                            <CommandGroup>
-                              {PARENT_ORGANIZATIONS.map((org) => (
-                                <CommandItem
-                                  key={org.id}
-                                  value={org.name}
-                                  onSelect={() => {
-                                    field.onChange(org.id);
-                                    setParentOrgOpen(false);
-                                  }}
-                                >
-                                  {org.name}
-                                  <Check
-                                    className={`ml-auto h-4 w-4 ${
-                                      field.value === org.id ? "opacity-100" : "opacity-0"
-                                    }`}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+<FormField
+  control={form.control}
+  name="parentOrgId"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Parent Organization</FormLabel>
+      <Popover
+        modal={true}
+        open={parentOrgOpen}
+        onOpenChange={setParentOrgOpen}
+      >
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant="outline"
+              role="combobox"
+              className={`w-full justify-between font-normal ${
+                !field.value && "text-muted-foreground"
+              }`}
+            >
+              {field.value
+                ? organizationData.find(
+                    (org) => org.ID === field.value,
+                  )?.NAME
+                : "Select parent (optional)"}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-[300px] p-0">
+          <Command>
+            <CommandInput
+              placeholder="Search organizations..."
+              className="h-9"
+            />
+            <CommandList>
+              <CommandEmpty>No organization found.</CommandEmpty>
+              <CommandGroup>
+                {organizationData.map((org) => (
+                  <CommandItem
+                    key={org.ID}
+                    value={org.NAME}
+                    onSelect={() => {
+                      field.onChange(org.ID);
+                      setParentOrgOpen(false);
+                    }}
+                  >
+                    {org.NAME}
+                    <Check
+                      className={`ml-auto h-4 w-4 ${
+                        field.value === org.ID
+                          ? "opacity-100"
+                          : "opacity-0"
+                      }`}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
-              {/* Cost Center */}
-              <FormField
-                control={form.control}
-                name="costCenterId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost Center</FormLabel>
-                    <Popover modal={true} open={costCenterOpen} onOpenChange={setCostCenterOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={`w-full justify-between font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
-                          >
-                            {field.value
-                              ? COST_CENTERS.find(cc => cc.id === field.value)?.name
-                              : "Select cost center (optional)"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[350px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Search cost centers..." className="h-9" />
-                          <CommandList>
-                            <CommandEmpty>No cost center found.</CommandEmpty>
-                            <CommandGroup>
-                              {COST_CENTERS.map((cc) => (
-                                <CommandItem
-                                  key={cc.id}
-                                  value={cc.name}
-                                  onSelect={() => {
-                                    field.onChange(cc.id);
-                                    setCostCenterOpen(false);
-                                  }}
-                                >
-                                  {cc.name}
-                                  <Check
-                                    className={`ml-auto h-4 w-4 ${
-                                      field.value === cc.id ? "opacity-100" : "opacity-0"
-                                    }`}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
+             {/* Cost Center */}
+<FormField
+  control={form.control}
+  name="costCenterId"
+  render={({ field }) => {
+    // Filter organizations where ORG_TYPE_ID is 24 (Cost Center)
+    const costCenterOrgs = organizationData.filter(org => org.ORG_TYPE_ID === 24);
+    
+    return (
+      <FormItem>
+        <FormLabel>Cost Center</FormLabel>
+        <Popover
+          modal={true}
+          open={costCenterOpen}
+          onOpenChange={setCostCenterOpen}
+        >
+          <PopoverTrigger asChild>
+            <FormControl>
+              <Button
+                variant="outline"
+                role="combobox"
+                className={`w-full justify-between font-normal ${
+                  !field.value && "text-muted-foreground"
+                }`}
+              >
+                {field.value
+                  ? costCenterOrgs.find((cc) => cc.ID === field.value)?.NAME
+                  : "Select cost center (optional)"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </FormControl>
+          </PopoverTrigger>
+          <PopoverContent className="w-[350px] p-0">
+            <Command>
+              <CommandInput
+                placeholder="Search cost centers..."
+                className="h-9"
               />
-
-              {/* Location - Full Width */}
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter location address or description (optional)"
-                        className="resize-none"
-                        rows={3}
-                        {...field}
+              <CommandList>
+                <CommandEmpty>No cost center found.</CommandEmpty>
+                <CommandGroup>
+                  {costCenterOrgs.map((cc) => (
+                    <CommandItem
+                      key={cc.ID}
+                      value={cc.NAME}
+                      onSelect={() => {
+                        field.onChange(cc.ID);
+                        setCostCenterOpen(false);
+                      }}
+                    >
+                      {cc.NAME}
+                      <Check
+                        className={`ml-auto h-4 w-4 ${
+                          field.value === cc.ID
+                            ? "opacity-100"
+                            : "opacity-0"
+                        }`}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
+
+             {/* Location - Full Width */}
+<FormField
+  control={form.control}
+  name="location"
+  render={({ field }) => (
+    <FormItem className="md:col-span-2">
+      <FormLabel>Location</FormLabel>
+      <Popover modal={true} open={locationOpen} onOpenChange={setLocationOpen}>
+        <PopoverTrigger asChild>
+          <FormControl>
+            <Button
+              variant="outline"
+              role="combobox"
+              className={`w-full justify-between font-normal ${
+                !field.value && "text-muted-foreground"
+              }`}
+            >
+              {field.value || "Select location (optional)"}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </FormControl>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0">
+          <Command>
+            <CommandInput placeholder="Search locations..." className="h-9" />
+            <CommandList>
+              <CommandEmpty>No location found.</CommandEmpty>
+              <CommandGroup>
+                {locations.map((loc) => (
+                  <CommandItem
+                    key={loc.ID}
+                    value={loc.LOCATION_NAME}
+                    onSelect={() => {
+                      field.onChange(loc.LOCATION_NAME);
+                      setLocationOpen(false);
+                    }}
+                  >
+                    {loc.LOCATION_NAME}
+                    <Check
+                      className={`ml-auto h-4 w-4 ${
+                        field.value === loc.LOCATION_NAME ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={createOrganizationMutation.isPending}
               >
