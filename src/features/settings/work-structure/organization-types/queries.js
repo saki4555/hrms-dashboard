@@ -20,6 +20,9 @@ const getOrgTypes = async () => {
     const jsonData = await res.json();
     console.log("Parsed JSON:", jsonData);
 
+    // Add 3-second delay to simulate network latency
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
     return jsonData.data || jsonData;
   } catch (error) {
     console.error("Error fetching org types:", error);

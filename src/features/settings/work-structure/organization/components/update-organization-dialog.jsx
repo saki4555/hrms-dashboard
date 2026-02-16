@@ -98,6 +98,9 @@ export default function UpdateOrganizationDialog({
   const { data: locations = [], isLoading: locationsLoading } =
     useHrLocations();
 
+
+
+
   const updateOrganizationMutation = useUpdateOrganization();
 
   const form = useForm({
@@ -209,6 +212,7 @@ export default function UpdateOrganizationDialog({
         }
       }}
     >
+      
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -337,6 +341,7 @@ export default function UpdateOrganizationDialog({
                                 <CommandItem
                                   key={org.ID}
                                   value={org.NAME}
+                                  disabled={organization.ID === org.ID}
                                   onSelect={() => {
                                     field.onChange(org.ID);
                                     setParentOrgOpen(false);
