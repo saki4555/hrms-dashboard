@@ -351,8 +351,8 @@ export default function OrganizationList() {
 
   return (
     <div className="">
-      <div className="bg-card rounded-md shadow-sm p-4 mb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-card  rounded-md shadow-sm p-4 mb-4">
+        <div className="flex  flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
            
            
@@ -405,7 +405,7 @@ export default function OrganizationList() {
         </div>
       </div>
 
-      <div className="bg-card rounded-md shadow-sm p-4 ">
+      <div className="bg-card  rounded-md shadow-sm p-4 ">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Input

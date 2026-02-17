@@ -6,7 +6,7 @@ import PositionListTwo from "../components/position-list-two";
 const Positions = () => {
   return (
     <PageContainer><PositionList />
-    <PositionListTwo />
+    {/* <PositionListTwo /> */}
 
     
     </PageContainer>

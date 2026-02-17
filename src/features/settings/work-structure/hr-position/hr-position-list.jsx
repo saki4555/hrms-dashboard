@@ -8,6 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
+  ArrowUpDown,
   ChevronDown,
   Pencil,
   Trash2,
@@ -36,18 +37,31 @@ import {
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-
 import { Spinner } from "@/components/ui/spinner";
-import AddPositionDialog from "./AddPositionDialog";
-
 import { IconPlus } from "@tabler/icons-react";
-import { useDeletePosition, usePositions } from "../queries";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import UpdatePositionDialog from "./update-position-dialog";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Link } from "react-router";
 
-export default function PositionList() {
+import { useDeletePosition, usePositions } from "./queries";
+import AddHRPositionDialog from "./add-hr-position-dialog";
+import UpdateHRPositionDialog from "./update-hr-position-dialog";
+
+
+export default function HRPositionList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -77,8 +91,8 @@ export default function PositionList() {
 
   const handleDelete = async (position) => {
     const confirmed = await showConfirmation({
-      title: "Delete position?",
-      description: `Are you sure you want to delete this position assignment? This action cannot be undone.`,
+      title: "Delete HR position?",
+      description: `Are you sure you want to delete "${position.TITLE}"? This action cannot be undone.`,
       confirmText: "Delete",
       cancelText: "Cancel",
       variant: "destructive",
@@ -86,10 +100,12 @@ export default function PositionList() {
 
     if (confirmed) {
       try {
-        await deletePositionMutation.mutateAsync(position.ID);
-        toast.success("Position deleted successfully!");
+        await deletePositionMutation.mutateAsync(position.POSITION_ID);
+        toast.success("HR position deleted successfully!");
       } catch (error) {
-        toast.error(error?.message || "Failed to delete position. Please try again.");
+        toast.error(
+          error?.message || "Failed to delete HR position. Please try again.",
+        );
       }
     }
   };
@@ -118,38 +134,37 @@ export default function PositionList() {
       enableHiding: false,
     },
     {
-      accessorKey: "POSITION_TITLE",
-      header: "Position Title",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("POSITION_TITLE") || "N/A"}</div>
+      accessorKey: "TITLE",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Position Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
       ),
-    },
-    {
-      accessorKey: "ORG_NAME",
-      header: "Organization",
       cell: ({ row }) => (
-        <div>{row.getValue("ORG_NAME") || "N/A"}</div>
-      ),
-    },
-    {
-      accessorKey: "FTE",
-      header: "FTE",
-      cell: ({ row }) => (
-        <div>{row.getValue("FTE") ?? "N/A"}</div>
-      ),
-    },
-    {
-      accessorKey: "ACTUAL_COUNT",
-      header: "Actual Count",
-      cell: ({ row }) => (
-        <div>{row.getValue("ACTUAL_COUNT") ?? 0}</div>
+        <div className="font-medium">{row.getValue("TITLE")}</div>
       ),
     },
     {
       accessorKey: "GRADE",
       header: "Grade",
+      cell: ({ row }) => <div>{row.getValue("GRADE") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "LEVELS",
+      header: "Levels",
+      cell: ({ row }) => <div>{row.getValue("LEVELS") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "NOTES",
+      header: "Notes",
       cell: ({ row }) => (
-        <div>{row.getValue("GRADE") || "N/A"}</div>
+        <div className="max-w-xs truncate text-muted-foreground">
+          {row.getValue("NOTES") || "N/A"}
+        </div>
       ),
     },
     {
@@ -212,54 +227,61 @@ export default function PositionList() {
     },
   });
 
+  // Loading State
   if (isLoading) {
     return (
       <div>
-        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Positions</h1>
-              <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                HR Positions
+              </h1>
             </div>
             <Button disabled>
-              <IconPlus size={20} className="mr-2" />
-              Add Position
+              <IconPlus />
+              Add HR Position
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4">
+        <div className="bg-card rounded-md shadow-sm p-4">
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner className="h-12 w-12 mb-4" />
-            <p className="text-muted-foreground">Loading positions...</p>
+            <p className="text-muted-foreground">Loading HR positions...</p>
           </div>
         </div>
       </div>
     );
   }
 
+  // Error State
   if (isError) {
     return (
       <div>
-        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Positions</h1>
-              <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                HR Positions
+              </h1>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
-              <IconPlus size={20} className="mr-2" />
-              Add Position
+              <IconPlus />
+              Add HR Position
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4">
+        <div className="bg-card rounded-md shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Positions</AlertTitle>
+            <AlertTitle>Error Loading HR Positions</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
-              <p>{error?.message || "Failed to load positions. Please try again."}</p>
+              <p>
+                {error?.message ||
+                  "Failed to load HR positions. Please try again."}
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -268,9 +290,15 @@ export default function PositionList() {
                 className="w-fit"
               >
                 {isFetching ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
                 ) : (
-                  <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
                 )}
               </Button>
             </AlertDescription>
@@ -282,31 +310,52 @@ export default function PositionList() {
 
   return (
     <div>
-      <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+      {/* Header */}
+      <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Positions</h1>
-            <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+          <div className="space-y-0.5">
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+              HR Positions
+            </h1>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/">Dashboard</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>Work Structure</BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>HR Positions</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="icon"
               onClick={() => refetch()}
               disabled={isFetching}
-              title="Refresh data"
             >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+              <span className="sr-only">Refresh data</span>
             </Button>
+
             <Button onClick={() => setIsAddDialogOpen(true)}>
-              <IconPlus size={20} className="mr-2" />
-              Add Position
+              <IconPlus />
+              Add HR Position
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="bg-card rounded-lg shadow-sm p-4">
+      {/* Table */}
+      <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
@@ -331,7 +380,9 @@ export default function PositionList() {
                       key={col.id}
                       className="capitalize"
                       checked={col.getIsVisible()}
-                      onCheckedChange={(value) => col.toggleVisibility(!!value)}
+                      onCheckedChange={(value) =>
+                        col.toggleVisibility(!!value)
+                      }
                     >
                       {col.id.replace(/_/g, " ")}
                     </DropdownMenuCheckboxItem>
@@ -346,10 +397,16 @@ export default function PositionList() {
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        className="h-12 px-4 font-medium"
+                      >
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -359,23 +416,32 @@ export default function PositionList() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        <TableCell key={cell.id} className="h-16 px-4">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">
                             <BriefcaseIcon />
                           </EmptyMedia>
-                          <EmptyTitle>No Positions Found</EmptyTitle>
+                          <EmptyTitle>No HR Positions Found</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -389,18 +455,22 @@ export default function PositionList() {
         </div>
       </div>
 
-      <AddPositionDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        showConfirmation={showConfirmation}
-      />
+      {isAddDialogOpen && (
+        <AddHRPositionDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          showConfirmation={showConfirmation}
+        />
+      )}
 
-      <UpdatePositionDialog
-        open={isUpdateDialogOpen}
-        onOpenChange={setIsUpdateDialogOpen}
-        showConfirmation={showConfirmation}
-        position={selectedPosition}
-      />
+      {isUpdateDialogOpen && (
+        <UpdateHRPositionDialog
+          open={isUpdateDialogOpen}
+          onOpenChange={setIsUpdateDialogOpen}
+          showConfirmation={showConfirmation}
+          position={selectedPosition}
+        />
+      )}
 
       <ConfirmationDialog />
     </div>

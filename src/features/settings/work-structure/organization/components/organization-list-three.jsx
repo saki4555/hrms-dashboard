@@ -30,6 +30,7 @@ import { Spinner } from "@/components/ui/spinner";
 import UpdateOrganizationDialog from "./update-organization-dialog";
 import AddOrganizationDialog from "./AddOrganizationDialog";
 import { IconPlus } from "@tabler/icons-react";
+import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
 
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
@@ -398,6 +399,7 @@ export default function OrganizationListThree() {
       <div className="bg-card rounded-md shadow-sm p-4">
         <DataTable table={table}>
           <DataTableToolbar table={table} />
+          
         </DataTable>
 
         {table.getRowModel().rows?.length === 0 && (

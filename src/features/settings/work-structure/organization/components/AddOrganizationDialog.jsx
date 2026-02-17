@@ -58,31 +58,7 @@ const ORGANIZATION_TYPES = [
   { id: 6, name: "Regional Office" },
 ];
 
-const PARENT_ORGANIZATIONS = [
-  { id: 1, name: "Corporate Headquarters" },
-  { id: 2, name: "North American Division" },
-  { id: 3, name: "European Division" },
-  { id: 4, name: "Asia Pacific Region" },
-  { id: 5, name: "Manufacturing Department" },
-  { id: 6, name: "Sales & Marketing" },
-  { id: 7, name: "Research & Development" },
-  { id: 8, name: "Human Resources" },
-  { id: 9, name: "Finance & Accounting" },
-  { id: 10, name: "Operations Management" },
-];
 
-const COST_CENTERS = [
-  { id: 101, name: "CC-001 - Corporate Services" },
-  { id: 102, name: "CC-002 - IT Infrastructure" },
-  { id: 103, name: "CC-003 - Human Resources" },
-  { id: 104, name: "CC-004 - Finance & Accounting" },
-  { id: 105, name: "CC-005 - Sales Operations" },
-  { id: 106, name: "CC-006 - Marketing" },
-  { id: 107, name: "CC-007 - Research & Development" },
-  { id: 108, name: "CC-008 - Manufacturing" },
-  { id: 109, name: "CC-009 - Logistics" },
-  { id: 110, name: "CC-010 - Customer Support" },
-];
 
 // Zod schema matching database fields
 const formSchema = z.object({
