@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { addYears, format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -27,38 +28,28 @@ import { DatePicker } from "@/components/DatePicker";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdatePersonType } from "./queries";
 
-const getEndDateFromStart = (startDate) => {
-  const endDate = new Date(startDate);
-  endDate.setFullYear(endDate.getFullYear() + 100);
-  return endDate;
-};
+const formSchema = z
+  .object({
+    personType: z.string().min(1, "Person Type name is required"),
+    description: z.string().optional().or(z.literal("")),
+    effectiveStartDate: z.string().min(1, "Start date is required"),
+    effectiveEndDate: z.string().min(1, "End date is required"),
+  })
+  .refine(
+    (data) =>
+      new Date(data.effectiveEndDate) > new Date(data.effectiveStartDate),
+    {
+      message: "End date must be after start date",
+      path: ["effectiveEndDate"],
+    },
+  );
 
-// Zod schema matching database fields
-const formSchema = z.object({
-  personType: z.string().min(1, "Person Type name is required"),
-  description: z.string().optional(),
-  effectiveStartDate: z.date({
-    required_error: "Start date is required",
-  }),
-  effectiveEndDate: z.date().optional().nullable(),
-}).refine((data) => {
-  if (data.effectiveStartDate && data.effectiveEndDate) {
-    return data.effectiveEndDate > data.effectiveStartDate;
-  }
-  return true;
-}, {
-  message: "End date must be after start date",
-  path: ["effectiveEndDate"],
-});
-
-export default function UpdatePersonTypeDialog({ 
-  open, 
-  onOpenChange, 
-  showConfirmation, 
-  personType 
+export default function UpdatePersonTypeDialog({
+  open,
+  onOpenChange,
+  showConfirmation,
+  personType,
 }) {
-  const [isMounted, setIsMounted] = useState(false);
-
   const updatePersonTypeMutation = useUpdatePersonType();
 
   const form = useForm({
@@ -66,68 +57,68 @@ export default function UpdatePersonTypeDialog({
     defaultValues: {
       personType: "",
       description: "",
-      effectiveStartDate: null,
-      effectiveEndDate: null,
+      effectiveStartDate: "",
+      effectiveEndDate: "",
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
-  // Populate form when personType changes
+  // Populate form when personType data changes
   useEffect(() => {
     if (personType) {
       form.reset({
         personType: personType.PERSON_TYPE || "",
         description: personType.DESCRIPTION || "",
-        effectiveStartDate: personType.EFFECTIVE_START_DATE 
-          ? new Date(personType.EFFECTIVE_START_DATE) 
-          : null,
-        effectiveEndDate: personType.EFFECTIVE_END_DATE 
-          ? new Date(personType.EFFECTIVE_END_DATE) 
-          : null,
+        effectiveStartDate: personType.EFFECTIVE_START_DATE
+          ? format(new Date(personType.EFFECTIVE_START_DATE), "yyyy-MM-dd")
+          : "",
+        effectiveEndDate: personType.EFFECTIVE_END_DATE
+          ? format(new Date(personType.EFFECTIVE_END_DATE), "yyyy-MM-dd")
+          : "",
       });
     }
   }, [personType, form]);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // Auto-set end date to +100 years when start date changes
+  // isDirty guard prevents overwriting existing end date on initial population
+  const startDate = form.watch("effectiveStartDate");
 
-  if (!isMounted) return null;
+  useEffect(() => {
+    if (startDate && isDirty) {
+      const endDate = format(addYears(new Date(startDate), 100), "yyyy-MM-dd");
+      form.setValue("effectiveEndDate", endDate, { shouldDirty: true });
+    }
+  }, [startDate]);
 
   const onSubmit = async (data) => {
-    if (!personType || !personType.PERSON_TYPE_ID) {
+    if (!personType?.PERSON_TYPE_ID) {
       toast.error("Person Type ID is missing");
       return;
     }
 
     try {
-      // Prepare data for backend
       const backendData = {
         PERSON_TYPE: data.personType,
         DESCRIPTION: data.description || null,
-        EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split('T')[0],
-        EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split('T')[0],
+        EFFECTIVE_START_DATE: data.effectiveStartDate,
+        EFFECTIVE_END_DATE: data.effectiveEndDate,
       };
 
-      console.log("Updating person type ID:", personType.PERSON_TYPE_ID);
-      console.log("Sending to backend:", backendData);
-
-      // Use the mutation hook
       await updatePersonTypeMutation.mutateAsync({
         id: personType.PERSON_TYPE_ID,
         data: backendData,
       });
 
-      console.log("Person type updated successfully");
       toast.success("Person type updated successfully!");
-
-      // Reset form and close dialog
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating person type:", error);
-      toast.error(error?.message || "Failed to update person type. Please try again.");
+      toast.error(
+        error?.message || "Failed to update person type. Please try again.",
+      );
     }
   };
 
@@ -135,7 +126,8 @@ export default function UpdatePersonTypeDialog({
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description: "You have unsaved changes. Are you sure you want to close without saving?",
+        description:
+          "You have unsaved changes. Are you sure you want to close without saving?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -148,28 +140,16 @@ export default function UpdatePersonTypeDialog({
     onOpenChange(false);
   };
 
-  const handleStartDateChange = (date, field) => {
-    field.onChange(date);
-    
-    // Automatically update end date to 100 years from the selected start date
-    if (date) {
-      const newEndDate = getEndDateFromStart(date);
-      form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
-    }
-  };
-
   const isSubmitting = updatePersonTypeMutation.isPending;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          handleCancel();
-        }
+        if (!isOpen) handleCancel();
       }}
     >
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -178,7 +158,7 @@ export default function UpdatePersonTypeDialog({
             <div>
               <DialogTitle>Update Person Type</DialogTitle>
               <DialogDescription>
-                Edit person type category details
+                Edit details for "{personType?.PERSON_TYPE}"
               </DialogDescription>
             </div>
           </div>
@@ -186,7 +166,8 @@ export default function UpdatePersonTypeDialog({
 
         <Form {...form}>
           <div className="space-y-5">
-            {/* Display Person Type ID (Read-only) */}
+
+            {/* Read-only ID badge */}
             {personType && (
               <div className="bg-muted/50 p-3 rounded-md">
                 <p className="text-sm text-muted-foreground">Person Type ID</p>
@@ -194,40 +175,22 @@ export default function UpdatePersonTypeDialog({
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
+
               {/* Person Type Name */}
               <FormField
                 control={form.control}
                 name="personType"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
-                    <FormLabel>Person Type <span className="text-destructive">*</span></FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="e.g., Full-Time Employee" 
-                        disabled={isSubmitting}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Effective Start Date */}
-              <FormField
-                control={form.control}
-                name="effectiveStartDate"
-                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Effective Start Date <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Person Type <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={(date) => handleStartDateChange(date, field)}
-                        placeholder="Select start date"
-                        className="w-full"
+                      <Input
+                        placeholder="e.g. Full-Time Employee"
                         disabled={isSubmitting}
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -235,41 +198,70 @@ export default function UpdatePersonTypeDialog({
                 )}
               />
 
-              {/* Effective End Date */}
-              <FormField
-                control={form.control}
-                name="effectiveEndDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Effective End Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select end date"
-                        className="w-full"
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Dates - side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="effectiveStartDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Start Date <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          className="w-full"
+                          placeholder="Select start date"
+                          disabled={isSubmitting}
+                          value={field.value ? new Date(field.value) : undefined}
+                          onChange={(date) =>
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Description - Full Width */}
+                <FormField
+                  control={form.control}
+                  name="effectiveEndDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        End Date <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          className="w-full"
+                          placeholder="Select end date"
+                          disabled={isSubmitting}
+                          value={field.value ? new Date(field.value) : undefined}
+                          onChange={(date) =>
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Description */}
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter description (optional)" 
-                        className="resize-none"
-                        rows={3}
+                      <Textarea
+                        placeholder="Enter description (optional)"
+                        className="resize-none min-h-[100px]"
                         disabled={isSubmitting}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -279,15 +271,15 @@ export default function UpdatePersonTypeDialog({
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={isSubmitting}
               >

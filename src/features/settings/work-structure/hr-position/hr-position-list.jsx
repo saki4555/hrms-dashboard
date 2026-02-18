@@ -399,7 +399,7 @@ export default function HRPositionList() {
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className="h-12 px-4 font-medium"
+                        
                       >
                         {header.isPlaceholder
                           ? null
@@ -421,7 +421,7 @@ export default function HRPositionList() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="h-16 px-4">
+                        <TableCell key={cell.id} >
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),

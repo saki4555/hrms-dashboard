@@ -74,7 +74,7 @@ const CoreHRRoutes = (
       }
     />
 
-    {/* //! others (not in doc) */}
+    {/* //! others (not in doc's hrms menu) */}
     <Route
       path="core-hr/employee-types"
       element={
@@ -83,6 +83,7 @@ const CoreHRRoutes = (
         </PrivateRoute>
       }
     />
+    
   </>
 );
 

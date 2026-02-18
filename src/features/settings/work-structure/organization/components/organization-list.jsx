@@ -50,7 +50,7 @@ import { useDeleteOrganization, useOrganizations } from "../queries";
 import { Spinner } from "@/components/ui/spinner";
 import UpdateOrganizationDialog from "./update-organization-dialog";
 import AddOrganizationDialog from "./AddOrganizationDialog";
-import { IconPlus } from "@tabler/icons-react";
+import { IconCircleDashedPlus, IconCirclePlus, IconCirclePlus2, IconCirclePlusFilled, IconEdit, IconEditCircle, IconPlus, IconRefresh } from "@tabler/icons-react";
 import {
   Empty,
   EmptyHeader,
@@ -66,6 +66,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router";
+import { getColumnPinningStyle } from "@/lib/data-table";
 
 export default function OrganizationList() {
   const [sorting, setSorting] = useState([]);
@@ -221,7 +222,7 @@ export default function OrganizationList() {
               className="h-8 w-8"
               onClick={() => handleEdit(organization)}
             >
-              <Pencil className="h-4 w-4" />
+              <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
             </Button>
 
@@ -279,6 +280,7 @@ export default function OrganizationList() {
               </p>
             </div>
             <Button disabled>
+              
               <IconPlus size={20} className="mr-2" />
               Add Organization
             </Button>
@@ -390,15 +392,15 @@ export default function OrganizationList() {
               <RefreshCw
                 className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
               />
+            
 
               <span className="sr-only">Refresh data</span>
             </Button>
 
-            {/* 1. Icon size 16: Matches text-sm font size perfectly. 
-           Anything larger (like 20) makes the button look "top-heavy."
-      */}
+            
             <Button onClick={() => setIsAddDialogOpen(true)}>
-              <IconPlus />
+              <IconCircleDashedPlus />
+              
               Add Organization
             </Button>
           </div>
@@ -475,7 +477,7 @@ export default function OrganizationList() {
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className="h-12 px-4 font-medium"
+                       
                       >
                         {header.isPlaceholder
                           ? null
@@ -497,7 +499,7 @@ export default function OrganizationList() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="h-16 px-4">
+                        <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),

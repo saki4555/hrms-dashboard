@@ -25,6 +25,14 @@ import {
 import { Briefcase } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreatePosition } from "./queries";
+import { useGrades } from "../hr-grade/queries";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   title: z
@@ -48,7 +56,13 @@ const formSchema = z.object({
     .or(z.literal("")),
 });
 
-export default function AddHRPositionDialog({ open, onOpenChange, showConfirmation }) {
+export default function AddHRPositionDialog({
+  open,
+  onOpenChange,
+  showConfirmation,
+}) {
+  const { data: grades = [], isLoading: isGradesLoading } = useGrades();
+  console.log("Grades:", grades);
   const createPositionMutation = useCreatePosition();
 
   const form = useForm({
@@ -61,7 +75,9 @@ export default function AddHRPositionDialog({ open, onOpenChange, showConfirmati
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   useEffect(() => {
     if (open) {
@@ -86,7 +102,9 @@ export default function AddHRPositionDialog({ open, onOpenChange, showConfirmati
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(error?.message || "Failed to create HR position. Please try again.");
+      toast.error(
+        error?.message || "Failed to create HR position. Please try again.",
+      );
     }
   };
 
@@ -133,7 +151,6 @@ export default function AddHRPositionDialog({ open, onOpenChange, showConfirmati
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
               {/* Title - full width */}
               <FormField
                 control={form.control}
@@ -144,23 +161,48 @@ export default function AddHRPositionDialog({ open, onOpenChange, showConfirmati
                       Position Title <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                      <Input
+                        placeholder="e.g. Senior Software Engineer"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Grade */}
+              {/* grade */}
+
               <FormField
                 control={form.control}
                 name="grade"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Grade</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. G5" {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isGradesLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              isGradesLoading
+                                ? "Loading grades..."
+                                : "Select a grade"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {grades.map((grade) => (
+                          <SelectItem key={grade.ID} value={grade.GRADE}>
+                            {grade.GRADE}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -423,7 +423,7 @@ export default function OrganizationListTwo() {
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="h-12 px-4 font-medium">
+                      <TableHead key={header.id} >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -444,7 +444,7 @@ export default function OrganizationListTwo() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="h-16 px-4">
+                        <TableCell key={cell.id} >
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),

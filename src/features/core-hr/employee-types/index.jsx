@@ -6,7 +6,8 @@ import PersonTypeList from "./person-type-list";
 
 const EmployeeTypes = () => {
   return (
-    <PageContainer><PersonTypeList />
+    <PageContainer>
+      <PersonTypeList />
 
     
     </PageContainer>
