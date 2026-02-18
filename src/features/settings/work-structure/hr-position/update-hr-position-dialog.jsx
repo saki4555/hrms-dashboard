@@ -15,6 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormField,
@@ -25,6 +32,7 @@ import {
 import { Briefcase } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdatePosition } from "./queries";
+import { useGrades } from "../hr-grade/queries";
 
 const formSchema = z.object({
   title: z
@@ -54,7 +62,12 @@ export default function UpdateHRPositionDialog({
   showConfirmation,
   position,
 }) {
+
+  
+  const { data: grades = [], isLoading: isGradesLoading } = useGrades();
+  // if(isGradesLoading) return <p>hello</p>
   const updatePositionMutation = useUpdatePosition();
+  console.log("grades:", grades, "position.GRADE:", position?.GRADE);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -66,11 +79,13 @@ export default function UpdateHRPositionDialog({
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   // Populate form when position data changes
   useEffect(() => {
-    if (position) {
+    if (position && !isGradesLoading) {
       form.reset({
         title: position.TITLE || "",
         grade: position.GRADE || "",
@@ -78,7 +93,7 @@ export default function UpdateHRPositionDialog({
         notes: position.NOTES || "",
       });
     }
-  }, [position, form]);
+  }, [position,  form]);
 
   const onSubmit = async (data) => {
     if (!position?.POSITION_ID) {
@@ -156,7 +171,6 @@ export default function UpdateHRPositionDialog({
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
               {/* Title - full width */}
               <FormField
                 control={form.control}
@@ -185,13 +199,30 @@ export default function UpdateHRPositionDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Grade</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g. G5"
-                        disabled={isSubmitting}
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isGradesLoading || isSubmitting}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              isGradesLoading
+                                ? "Loading grades..."
+                                : "Select a grade"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {grades.map((grade) => (
+                          <SelectItem key={grade.ID} value={grade.GRADE}>
+                            {grade.GRADE}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -66,6 +66,11 @@ export const NAV_ITEMS = [
             url: "/core-hr/documents",
             roles: ["Admin", "HR"],
           },
+          {
+            title: "Employee Types",
+            url: "/core-hr/employee-types",
+            roles: ["Admin", "HR"],
+          }
         ],
       },
       {
@@ -183,8 +188,13 @@ export const NAV_ITEMS = [
             roles: ["Admin", "HR"],
           },
           {
-            title: "Units",
-            url: "/settings/work-structure/units",
+            title: "Grades",
+            url: "/settings/work-structure/grades",
+            roles: ["Admin", "HR"],
+          },
+          {
+            title: "HR Positions",
+            url: "/settings/work-structure/hr-positions",
             roles: ["Admin", "HR"],
           },
         ],

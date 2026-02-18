@@ -13,8 +13,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -23,17 +21,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { UserCog } from "lucide-react";
-import { DatePicker } from "@/components/DatePicker";
+import { GraduationCap } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreatePersonType } from "./queries";
+import { useUpdateGrade } from "./queries";
+import { DatePicker } from "@/components/DatePicker";
+import { Input } from "@/components/ui/input";
+
 
 const formSchema = z
   .object({
-    personType: z.string().min(1, "Person Type name is required"),
-    description: z.string().optional().or(z.literal("")),
-    effectiveStartDate: z.string().min(1, "Start date is required"),
-    effectiveEndDate: z.string().min(1, "End date is required"),
+    grade: z
+      .string()
+      .min(1, "Grade is required")
+      .max(30, "Grade cannot exceed 30 characters"),
+    effectiveStartDate: z.string().min(1, "Effective start date is required"),
+    effectiveEndDate: z.string().min(1, "Effective end date is required"),
   })
   .refine(
     (data) =>
@@ -41,21 +43,21 @@ const formSchema = z
     {
       message: "End date must be after start date",
       path: ["effectiveEndDate"],
-    },
+    }
   );
 
-export default function AddPersonTypeDialog({
+export default function UpdateGradeDialog({
   open,
   onOpenChange,
   showConfirmation,
+  grade,
 }) {
-  const createPersonTypeMutation = useCreatePersonType();
+  const updateGradeMutation = useUpdateGrade();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      personType: "",
-      description: "",
+      grade: "",
       effectiveStartDate: "",
       effectiveEndDate: "",
     },
@@ -65,39 +67,55 @@ export default function AddPersonTypeDialog({
     formState: { isDirty },
   } = form;
 
+  // Populate form when grade data changes
   useEffect(() => {
-    if (open) {
-      form.reset();
+    if (grade) {
+      form.reset({
+        grade: grade.GRADE || "",
+        effectiveStartDate: grade.EFFECTIVE_START_DATE
+          ? format(new Date(grade.EFFECTIVE_START_DATE), "yyyy-MM-dd")
+          : "",
+        effectiveEndDate: grade.EFFECTIVE_END_DATE
+          ? format(new Date(grade.EFFECTIVE_END_DATE), "yyyy-MM-dd")
+          : "",
+      });
     }
-  }, [open]);
+  }, [grade, form]);
 
-  // Watch start date and auto-set end date to +100 years
+  // Auto-set end date to +100 years when start date changes
+  // only if the user is actively changing it (isDirty guard)
   const startDate = form.watch("effectiveStartDate");
 
   useEffect(() => {
-    if (startDate) {
+    if (startDate && isDirty) {
       const endDate = format(addYears(new Date(startDate), 100), "yyyy-MM-dd");
       form.setValue("effectiveEndDate", endDate, { shouldDirty: true });
     }
   }, [startDate]);
 
   const onSubmit = async (data) => {
+    if (!grade?.ID) {
+      toast.error("Grade ID is missing");
+      return;
+    }
+
     try {
       const backendData = {
-        PERSON_TYPE: data.personType,
-        DESCRIPTION: data.description || null,
-        EFFECTIVE_START_DATE: data.effectiveStartDate,
-        EFFECTIVE_END_DATE: data.effectiveEndDate,
+        grade: data.grade,
+        startDate: data.effectiveStartDate,
+        endDate: data.effectiveEndDate,
       };
 
-      await createPersonTypeMutation.mutateAsync(backendData);
-      toast.success("Person type created successfully!");
+      await updateGradeMutation.mutateAsync({
+        id: grade.ID,
+        data: backendData,
+      });
+
+      toast.success("Grade updated successfully!");
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error?.message || "Failed to create person type. Please try again.",
-      );
+      toast.error(error?.message || "Failed to update grade. Please try again.");
     }
   };
 
@@ -119,6 +137,8 @@ export default function AddPersonTypeDialog({
     onOpenChange(false);
   };
 
+  const isSubmitting = updateGradeMutation.isPending;
+
   return (
     <Dialog
       open={open}
@@ -130,12 +150,12 @@ export default function AddPersonTypeDialog({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-primary" />
+              <GraduationCap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle>Add New Person Type</DialogTitle>
+              <DialogTitle>Update Grade</DialogTitle>
               <DialogDescription>
-                Create a new employee person type category
+                Edit grade details for "{grade?.GRADE}"
               </DialogDescription>
             </div>
           </div>
@@ -145,17 +165,21 @@ export default function AddPersonTypeDialog({
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
 
-              {/* Person Type Name */}
+              {/* Grade Name */}
               <FormField
                 control={form.control}
-                name="personType"
+                name="grade"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Person Type <span className="text-destructive">*</span>
+                      Grade <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Full-Time Employee" {...field} />
+                      <Input
+                        placeholder="e.g. Grade-1"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,6 +200,7 @@ export default function AddPersonTypeDialog({
                         <DatePicker
                           className="w-full"
                           placeholder="Select start date"
+                          disabled={isSubmitting}
                           value={field.value ? new Date(field.value) : undefined}
                           onChange={(date) =>
                             field.onChange(date ? format(date, "yyyy-MM-dd") : "")
@@ -199,6 +224,7 @@ export default function AddPersonTypeDialog({
                         <DatePicker
                           className="w-full"
                           placeholder="Select end date"
+                          disabled={isSubmitting}
                           value={field.value ? new Date(field.value) : undefined}
                           onChange={(date) =>
                             field.onChange(date ? format(date, "yyyy-MM-dd") : "")
@@ -210,42 +236,28 @@ export default function AddPersonTypeDialog({
                   )}
                 />
               </div>
-
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter description (optional)"
-                        className="resize-none min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={form.handleSubmit(onSubmit)}
-                disabled={createPersonTypeMutation.isPending}
+                disabled={isSubmitting}
               >
-                {createPersonTypeMutation.isPending ? (
+                {isSubmitting ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
-                    Creating...
+                    Updating...
                   </>
                 ) : (
-                  "Save Person Type"
+                  "Update Grade"
                 )}
               </Button>
             </DialogFooter>

@@ -5,6 +5,7 @@ import { Route } from "react-router";
 
 import { ROLES } from "@/constants/roles";
 import HRPositions from "./work-structure/hr-position";
+import Grades from "./work-structure/hr-grade";
 
 
 const AddOrganizationPage = lazy(() => import('../core-hr/pages/AddOrganizationPage'));
@@ -40,12 +41,20 @@ const SettingsRoutes = (
         </PrivateRoute>
       }
     />
-
+{/* //! others (not in doc's hrms menu) */}
     <Route
       path="settings/work-structure/hr-positions"
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <HRPositions />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/grades"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Grades />
         </PrivateRoute>
       }
     />

@@ -14,7 +14,7 @@ import {
   Trash2,
   AlertCircle,
   RefreshCw,
-  UserCog,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -38,32 +38,40 @@ import {
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-
 import { Spinner } from "@/components/ui/spinner";
-
 import { IconPlus } from "@tabler/icons-react";
-import { useDeletePersonType, usePersonTypes } from "./queries";
 import {
   Empty,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import AddPersonTypeDialog from "./add-person-type-dialog";
-import UpdatePersonTypeDialog from "./update-person-type-dialog";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Link } from "react-router";
 
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
+import { useGrades, useDeleteGrade } from "./queries";
+import AddGradeDialog from "./add-grade-dialog";
+import UpdateGradeDialog from "./update-grade-dialog";
+// TODO: import UpdateGradeDialog from "./update-grade-dialog";
 
-  const date = new Date(dateString);
-
-  // Format: Feb 5, 2026
-  return format(date, "MMM d, yyyy");
+const formatDate = (dateStr) => {
+  if (!dateStr) return "N/A";
+  try {
+    return format(new Date(dateStr), "MMM dd, yyyy");
+  } catch {
+    return "Invalid date";
+  }
 };
 
-export default function PersonTypeList() {
+export default function GradeList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -71,40 +79,30 @@ export default function PersonTypeList() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [selectedPersonType, setSelectedPersonType] = useState(null);
+  const [selectedGrade, setSelectedGrade] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   const {
-    data: personTypeData = [],
+    data: gradesData = [],
     isLoading,
     isError,
     error,
     refetch,
     isFetching,
-  } = usePersonTypes();
+  } = useGrades();
 
-  console.log("person types", personTypeData);
+  const deleteGradeMutation = useDeleteGrade();
 
-  const deletePersonTypeMutation = useDeletePersonType();
-
-  console.log("Person Type data:", personTypeData);
-
-  const handleAdd = () => {
-    console.log("Opening add dialog");
-    setIsAddDialogOpen(true);
-  };
-
-  const handleEdit = (personType) => {
-    console.log("Edit person type:", personType);
-    setSelectedPersonType(personType);
+  const handleEdit = (grade) => {
+    setSelectedGrade(grade);
     setIsUpdateDialogOpen(true);
   };
 
-  const handleDelete = async (personType) => {
+  const handleDelete = async (grade) => {
     const confirmed = await showConfirmation({
-      title: "Delete person type?",
-      description: `Are you sure you want to delete "${personType.PERSON_TYPE}"? This action cannot be undone.`,
+      title: "Delete grade?",
+      description: `Are you sure you want to delete "${grade.GRADE}"? This action cannot be undone.`,
       confirmText: "Delete",
       cancelText: "Cancel",
       variant: "destructive",
@@ -112,20 +110,14 @@ export default function PersonTypeList() {
 
     if (confirmed) {
       try {
-        await deletePersonTypeMutation.mutateAsync(personType.PERSON_TYPE_ID);
-        console.log("Person type deleted successfully:", personType);
-        toast.success("Person type deleted successfully!");
+        await deleteGradeMutation.mutateAsync(grade.ID);
+        toast.success("Grade deleted successfully!");
       } catch (error) {
-        console.error("Error deleting person type:", error);
         toast.error(
-          error?.message || "Failed to delete person type. Please try again."
+          error?.message || "Failed to delete grade. Please try again.",
         );
       }
     }
-  };
-
-  const handleRefetch = () => {
-    refetch();
   };
 
   const columns = [
@@ -151,73 +143,65 @@ export default function PersonTypeList() {
       enableSorting: false,
       enableHiding: false,
     },
-    
     {
-      accessorKey: "PERSON_TYPE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Person Type
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("PERSON_TYPE")}</div>
+      accessorKey: "GRADE",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Grade
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
       ),
-    },
-    {
-      accessorKey: "DESCRIPTION",
-      header: "Description",
       cell: ({ row }) => (
-        <div className="max-w-md truncate">
-          {row.getValue("DESCRIPTION") || "N/A"}
-        </div>
+        <div className="font-medium">{row.getValue("GRADE")}</div>
       ),
     },
     {
       accessorKey: "EFFECTIVE_START_DATE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Start Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("EFFECTIVE_START_DATE");
-        return <div>{formatDate(date)}</div>;
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Start Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div>{formatDate(row.getValue("EFFECTIVE_START_DATE"))}</div>
+      ),
     },
     {
       accessorKey: "EFFECTIVE_END_DATE",
-      header: "End Date",
-      cell: ({ row }) => {
-        const date = row.getValue("EFFECTIVE_END_DATE");
-        return <div>{formatDate(date)}</div>;
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          End Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div>{formatDate(row.getValue("EFFECTIVE_END_DATE"))}</div>
+      ),
     },
     {
       id: "actions",
       header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const personType = row.original;
+        const grade = row.original;
 
         return (
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => handleEdit(personType)}
+              className="h-8 w-8 "
+              onClick={() => handleEdit(grade)}
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -227,10 +211,10 @@ export default function PersonTypeList() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(personType)}
-              disabled={deletePersonTypeMutation.isPending}
+              onClick={() => handleDelete(grade)}
+              disabled={deleteGradeMutation.isPending}
             >
-              {deletePersonTypeMutation.isPending ? (
+              {deleteGradeMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : (
                 <Trash2 className="h-4 w-4" />
@@ -244,7 +228,7 @@ export default function PersonTypeList() {
   ];
 
   const table = useReactTable({
-    data: personTypeData,
+    data: gradesData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -267,26 +251,25 @@ export default function PersonTypeList() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="">
-        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+      <div>
+        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage employee person type categories
-              </p>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Grades
+              </h1>
             </div>
             <Button disabled>
-              <IconPlus size={20} className="mr-2" />
-              Add Person Type
+              <IconPlus />
+              Add Grade
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4">
+        <div className="bg-card rounded-md shadow-sm p-4">
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner className="h-12 w-12 mb-4" />
-            <p className="text-muted-foreground">Loading person types...</p>
+            <p className="text-muted-foreground">Loading grades...</p>
           </div>
         </div>
       </div>
@@ -296,35 +279,33 @@ export default function PersonTypeList() {
   // Error State
   if (isError) {
     return (
-      <div className="">
-        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+      <div>
+        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage employee person type categories
-              </p>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Grades
+              </h1>
             </div>
-            <Button onClick={handleAdd}>
-              <IconPlus size={20} className="mr-2" />
-              Add Person Type
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <IconPlus />
+              Add Grade
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm p-4 ">
+        <div className="bg-card rounded-md shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Person Types</AlertTitle>
+            <AlertTitle>Error Loading Grades</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
               <p>
-                {error?.message ||
-                  "Failed to load person types. Please try again."}
+                {error?.message || "Failed to load grades. Please try again."}
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleRefetch}
+                onClick={() => refetch()}
                 disabled={isFetching}
                 className="w-fit"
               >
@@ -348,42 +329,59 @@ export default function PersonTypeList() {
   }
 
   return (
-    <div className="">
-      <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
+    <div>
+      {/* Header */}
+      <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-2xl font-bold">Person Types</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage employee person type categories
-            </p>
+          <div className="space-y-0.5">
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+              Grades
+            </h1>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/">Dashboard</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>Work Structure</BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Grades</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="icon"
-              onClick={handleRefetch}
+              onClick={() => refetch()}
               disabled={isFetching}
-              title="Refresh data"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
               />
+              <span className="sr-only">Refresh data</span>
             </Button>
-            <Button onClick={handleAdd}>
-              <IconPlus size={20} className="mr-2" />
-              Add Person Type
+
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <IconPlus />
+              Add Grade
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="bg-card rounded-lg shadow-sm p-4">
+      {/* Table */}
+      <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
-              placeholder="Search person types..."
+              placeholder="Search grades..."
               value={globalFilter ?? ""}
-              onChange={(event) => setGlobalFilter(event.target.value)}
+              onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
             />
 
@@ -396,21 +394,17 @@ export default function PersonTypeList() {
               <DropdownMenuContent align="end">
                 {table
                   .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id.replace(/_/g, " ")}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
+                  .filter((col) => col.getCanHide())
+                  .map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.id}
+                      className="capitalize"
+                      checked={col.getIsVisible()}
+                      onCheckedChange={(value) => col.toggleVisibility(!!value)}
+                    >
+                      {col.id.replace(/_/g, " ")}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -419,14 +413,14 @@ export default function PersonTypeList() {
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} >
+                  <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     ))}
@@ -445,7 +439,7 @@ export default function PersonTypeList() {
                         <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </TableCell>
                       ))}
@@ -460,9 +454,9 @@ export default function PersonTypeList() {
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">
-                            <UserCog />
+                            <GraduationCap />
                           </EmptyMedia>
-                          <EmptyTitle>No Person Types Found</EmptyTitle>
+                          <EmptyTitle>No Grades Found</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -476,20 +470,22 @@ export default function PersonTypeList() {
         </div>
       </div>
 
-      {/* Person Type Dialogs */}
-      <AddPersonTypeDialog
-        open={isAddDialogOpen} 
-        onOpenChange={setIsAddDialogOpen} 
-        showConfirmation={showConfirmation}
-      />
+      {isAddDialogOpen && (
+        <AddGradeDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          showConfirmation={showConfirmation}
+        />
+      )}
 
-      <UpdatePersonTypeDialog
-        open={isUpdateDialogOpen} 
-        onOpenChange={setIsUpdateDialogOpen} 
-        showConfirmation={showConfirmation}
-        personType={selectedPersonType}
-      />
-
+      {isUpdateDialogOpen && (
+        <UpdateGradeDialog
+          open={isUpdateDialogOpen}
+          onOpenChange={setIsUpdateDialogOpen}
+          showConfirmation={showConfirmation}
+          grade={selectedGrade}
+        />
+      )}
       <ConfirmationDialog />
     </div>
   );

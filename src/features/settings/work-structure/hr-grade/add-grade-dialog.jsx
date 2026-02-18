@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -23,17 +22,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { UserCog } from "lucide-react";
-import { DatePicker } from "@/components/DatePicker";
+import { GraduationCap } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreatePersonType } from "./queries";
+import { useCreateGrade } from "./queries";
+import { DatePicker } from "@/components/DatePicker";
 
 const formSchema = z
   .object({
-    personType: z.string().min(1, "Person Type name is required"),
-    description: z.string().optional().or(z.literal("")),
-    effectiveStartDate: z.string().min(1, "Start date is required"),
-    effectiveEndDate: z.string().min(1, "End date is required"),
+    grade: z
+      .string()
+      .min(1, "Grade is required")
+      .max(30, "Grade cannot exceed 30 characters"),
+    effectiveStartDate: z.string().min(1, "Effective start date is required"),
+    effectiveEndDate: z.string().min(1, "Effective end date is required"),
   })
   .refine(
     (data) =>
@@ -44,18 +45,17 @@ const formSchema = z
     },
   );
 
-export default function AddPersonTypeDialog({
+export default function AddGradeDialog({
   open,
   onOpenChange,
   showConfirmation,
 }) {
-  const createPersonTypeMutation = useCreatePersonType();
+  const createGradeMutation = useCreateGrade();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      personType: "",
-      description: "",
+      grade: "",
       effectiveStartDate: "",
       effectiveEndDate: "",
     },
@@ -84,19 +84,20 @@ export default function AddPersonTypeDialog({
   const onSubmit = async (data) => {
     try {
       const backendData = {
-        PERSON_TYPE: data.personType,
-        DESCRIPTION: data.description || null,
-        EFFECTIVE_START_DATE: data.effectiveStartDate,
-        EFFECTIVE_END_DATE: data.effectiveEndDate,
+        grade: data.grade,
+        startDate: data.effectiveStartDate,
+        endDate: data.effectiveEndDate,
       };
 
-      await createPersonTypeMutation.mutateAsync(backendData);
-      toast.success("Person type created successfully!");
+      console.log(backendData);
+
+      await createGradeMutation.mutateAsync(backendData);
+      toast.success("Grade created successfully!");
       form.reset();
       onOpenChange(false);
     } catch (error) {
       toast.error(
-        error?.message || "Failed to create person type. Please try again.",
+        error?.message || "Failed to create grade. Please try again.",
       );
     }
   };
@@ -130,12 +131,12 @@ export default function AddPersonTypeDialog({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-primary" />
+              <GraduationCap className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle>Add New Person Type</DialogTitle>
+              <DialogTitle>Add New Grade</DialogTitle>
               <DialogDescription>
-                Create a new employee person type category
+                Create a new grade in the system
               </DialogDescription>
             </div>
           </div>
@@ -144,18 +145,17 @@ export default function AddPersonTypeDialog({
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
-
-              {/* Person Type Name */}
+              {/* Grade Name */}
               <FormField
                 control={form.control}
-                name="personType"
+                name="grade"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Person Type <span className="text-destructive">*</span>
+                      Grade <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Full-Time Employee" {...field} />
+                      <Input placeholder="e.g. Grade-1" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,9 +176,13 @@ export default function AddPersonTypeDialog({
                         <DatePicker
                           className="w-full"
                           placeholder="Select start date"
-                          value={field.value ? new Date(field.value) : undefined}
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                            field.onChange(
+                              date ? format(date, "yyyy-MM-dd") : "",
+                            )
                           }
                         />
                       </FormControl>
@@ -199,9 +203,13 @@ export default function AddPersonTypeDialog({
                         <DatePicker
                           className="w-full"
                           placeholder="Select end date"
-                          value={field.value ? new Date(field.value) : undefined}
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                            field.onChange(
+                              date ? format(date, "yyyy-MM-dd") : "",
+                            )
                           }
                         />
                       </FormControl>
@@ -210,25 +218,6 @@ export default function AddPersonTypeDialog({
                   )}
                 />
               </div>
-
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter description (optional)"
-                        className="resize-none min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
@@ -237,15 +226,15 @@ export default function AddPersonTypeDialog({
               </Button>
               <Button
                 onClick={form.handleSubmit(onSubmit)}
-                disabled={createPersonTypeMutation.isPending}
+                disabled={createGradeMutation.isPending}
               >
-                {createPersonTypeMutation.isPending ? (
+                {createGradeMutation.isPending ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
                     Creating...
                   </>
                 ) : (
-                  "Save Person Type"
+                  "Save Grade"
                 )}
               </Button>
             </DialogFooter>

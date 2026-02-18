@@ -47,6 +47,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCreateOrganization, useOrganizations } from "../queries";
 import { useOrgTypeById, useOrgTypes } from "../../organization-types/queries";
 import { useHrLocations } from "../../locations/queries";
+import { IconBuildingPlus } from "@tabler/icons-react";
+import FormDialogHeader from "@/components/shared/form-dialog-header";
 
 // Demo data - easy to replace later with API calls
 const ORGANIZATION_TYPES = [
@@ -57,8 +59,6 @@ const ORGANIZATION_TYPES = [
   { id: 5, name: "Subsidiary" },
   { id: 6, name: "Regional Office" },
 ];
-
-
 
 // Zod schema matching database fields
 const formSchema = z.object({
@@ -87,10 +87,8 @@ export default function AddOrganizationDialog({
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-   const {
-      data: organizationData = [],
-      isLoading: orgLoading,
-    } = useOrganizations();
+  const { data: organizationData = [], isLoading: orgLoading } =
+    useOrganizations();
 
   console.log("Organization data:", organizationData);
 
@@ -145,7 +143,6 @@ export default function AddOrganizationDialog({
       };
 
       console.log("Sending to backend:", backendData);
-      
 
       await createOrganizationMutation.mutateAsync(backendData);
 
@@ -190,28 +187,17 @@ export default function AddOrganizationDialog({
         }
       }}
     >
-      
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
-        {
-        showLoading && (
+        {showLoading && (
           <div className="flex text-xl font-bold items-center justify-center w-full h-full">
             Loading....
           </div>
-        )
-      }
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle>Add New Organization</DialogTitle>
-              <DialogDescription>
-                Create a new organization in the system
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+        )}
+        <FormDialogHeader
+  icon={IconBuildingPlus}
+  title="Add New Organization"
+  description="Set up a new organizational unit to manage departments and teams."
+/>
 
         <Form {...form}>
           <div className="space-y-5">
@@ -267,198 +253,211 @@ export default function AddOrganizationDialog({
               />
 
               {/* Parent Organization */}
-<FormField
-  control={form.control}
-  name="parentOrgId"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Parent Organization</FormLabel>
-      <Popover
-        modal={true}
-        open={parentOrgOpen}
-        onOpenChange={setParentOrgOpen}
-      >
-        <PopoverTrigger asChild>
-          <FormControl>
-            <Button
-              variant="outline"
-              role="combobox"
-              className={`w-full justify-between font-normal ${
-                !field.value && "text-muted-foreground"
-              }`}
-            >
-              {field.value
-                ? organizationData.find(
-                    (org) => org.ID === field.value,
-                  )?.NAME
-                : "Select parent (optional)"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </FormControl>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0">
-          <Command>
-            <CommandInput
-              placeholder="Search organizations..."
-              className="h-9"
-            />
-            <CommandList>
-              <CommandEmpty>No organization found.</CommandEmpty>
-              <CommandGroup>
-                {organizationData.map((org) => (
-                  <CommandItem
-                    key={org.ID}
-                    value={org.NAME}
-                    onSelect={() => {
-                      field.onChange(org.ID);
-                      setParentOrgOpen(false);
-                    }}
-                  >
-                    {org.NAME}
-                    <Check
-                      className={`ml-auto h-4 w-4 ${
-                        field.value === org.ID
-                          ? "opacity-100"
-                          : "opacity-0"
-                      }`}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
-
-             {/* Cost Center */}
-<FormField
-  control={form.control}
-  name="costCenterId"
-  render={({ field }) => {
-    // Filter organizations where ORG_TYPE_ID is 24 (Cost Center)
-    const costCenterOrgs = organizationData.filter(org => org.ORG_TYPE_ID === 24);
-    
-    return (
-      <FormItem>
-        <FormLabel>Cost Center</FormLabel>
-        <Popover
-          modal={true}
-          open={costCenterOpen}
-          onOpenChange={setCostCenterOpen}
-        >
-          <PopoverTrigger asChild>
-            <FormControl>
-              <Button
-                variant="outline"
-                role="combobox"
-                className={`w-full justify-between font-normal ${
-                  !field.value && "text-muted-foreground"
-                }`}
-              >
-                {field.value
-                  ? costCenterOrgs.find((cc) => cc.ID === field.value)?.NAME
-                  : "Select cost center (optional)"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </FormControl>
-          </PopoverTrigger>
-          <PopoverContent className="w-[350px] p-0">
-            <Command>
-              <CommandInput
-                placeholder="Search cost centers..."
-                className="h-9"
-              />
-              <CommandList>
-                <CommandEmpty>No cost center found.</CommandEmpty>
-                <CommandGroup>
-                  {costCenterOrgs.map((cc) => (
-                    <CommandItem
-                      key={cc.ID}
-                      value={cc.NAME}
-                      onSelect={() => {
-                        field.onChange(cc.ID);
-                        setCostCenterOpen(false);
-                      }}
+              <FormField
+                control={form.control}
+                name="parentOrgId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Organization</FormLabel>
+                    <Popover
+                      modal={true}
+                      open={parentOrgOpen}
+                      onOpenChange={setParentOrgOpen}
                     >
-                      {cc.NAME}
-                      <Check
-                        className={`ml-auto h-4 w-4 ${
-                          field.value === cc.ID
-                            ? "opacity-100"
-                            : "opacity-0"
-                        }`}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        <FormMessage />
-      </FormItem>
-    );
-  }}
-/>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={`w-full justify-between font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
+                          >
+                            {field.value
+                              ? organizationData.find(
+                                  (org) => org.ID === field.value,
+                                )?.NAME
+                              : "Select parent (optional)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search organizations..."
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No organization found.</CommandEmpty>
+                            <CommandGroup>
+                              {organizationData.map((org) => (
+                                <CommandItem
+                                  key={org.ID}
+                                  value={org.NAME}
+                                  onSelect={() => {
+                                    field.onChange(org.ID);
+                                    setParentOrgOpen(false);
+                                  }}
+                                >
+                                  {org.NAME}
+                                  <Check
+                                    className={`ml-auto h-4 w-4 ${
+                                      field.value === org.ID
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    }`}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-             {/* Location - Full Width */}
-<FormField
-  control={form.control}
-  name="location"
-  render={({ field }) => (
-    <FormItem className="md:col-span-2">
-      <FormLabel>Location</FormLabel>
-      <Popover modal={true} open={locationOpen} onOpenChange={setLocationOpen}>
-        <PopoverTrigger asChild>
-          <FormControl>
-            <Button
-              variant="outline"
-              role="combobox"
-              className={`w-full justify-between font-normal ${
-                !field.value && "text-muted-foreground"
-              }`}
-            >
-              {field.value || "Select location (optional)"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </FormControl>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
-          <Command>
-            <CommandInput placeholder="Search locations..." className="h-9" />
-            <CommandList>
-              <CommandEmpty>No location found.</CommandEmpty>
-              <CommandGroup>
-                {locations.map((loc) => (
-                  <CommandItem
-                    key={loc.ID}
-                    value={loc.LOCATION_NAME}
-                    onSelect={() => {
-                      field.onChange(loc.LOCATION_NAME);
-                      setLocationOpen(false);
-                    }}
-                  >
-                    {loc.LOCATION_NAME}
-                    <Check
-                      className={`ml-auto h-4 w-4 ${
-                        field.value === loc.LOCATION_NAME ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+              {/* Cost Center */}
+              <FormField
+                control={form.control}
+                name="costCenterId"
+                render={({ field }) => {
+                  // Filter organizations where ORG_TYPE_ID is 24 (Cost Center)
+                  const costCenterOrgs = organizationData.filter(
+                    (org) => org.ORG_TYPE_ID === 24,
+                  );
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Cost Center</FormLabel>
+                      <Popover
+                        modal={true}
+                        open={costCenterOpen}
+                        onOpenChange={setCostCenterOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={`w-full justify-between font-normal ${
+                                !field.value && "text-muted-foreground"
+                              }`}
+                            >
+                              {field.value
+                                ? costCenterOrgs.find(
+                                    (cc) => cc.ID === field.value,
+                                  )?.NAME
+                                : "Select cost center (optional)"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[350px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder="Search cost centers..."
+                              className="h-9"
+                            />
+                            <CommandList>
+                              <CommandEmpty>No cost center found.</CommandEmpty>
+                              <CommandGroup>
+                                {costCenterOrgs.map((cc) => (
+                                  <CommandItem
+                                    key={cc.ID}
+                                    value={cc.NAME}
+                                    onSelect={() => {
+                                      field.onChange(cc.ID);
+                                      setCostCenterOpen(false);
+                                    }}
+                                  >
+                                    {cc.NAME}
+                                    <Check
+                                      className={`ml-auto h-4 w-4 ${
+                                        field.value === cc.ID
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* Location - Full Width */}
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Location</FormLabel>
+                    <Popover
+                      modal={true}
+                      open={locationOpen}
+                      onOpenChange={setLocationOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={`w-full justify-between font-normal ${
+                              !field.value && "text-muted-foreground"
+                            }`}
+                          >
+                            {field.value || "Select location (optional)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search locations..."
+                            className="h-9"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No location found.</CommandEmpty>
+                            <CommandGroup>
+                              {locations.map((loc) => (
+                                <CommandItem
+                                  key={loc.ID}
+                                  value={loc.LOCATION_NAME}
+                                  onSelect={() => {
+                                    field.onChange(loc.LOCATION_NAME);
+                                    setLocationOpen(false);
+                                  }}
+                                >
+                                  {loc.LOCATION_NAME}
+                                  <Check
+                                    className={`ml-auto h-4 w-4 ${
+                                      field.value === loc.LOCATION_NAME
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    }`}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
