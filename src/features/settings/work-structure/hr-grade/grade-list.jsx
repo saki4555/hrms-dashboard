@@ -40,7 +40,7 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { Spinner } from "@/components/ui/spinner";
-import { IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
 import {
   Empty,
   EmptyHeader,
@@ -60,7 +60,9 @@ import { Link } from "react-router";
 import { useGrades, useDeleteGrade } from "./queries";
 import AddGradeDialog from "./add-grade-dialog";
 import UpdateGradeDialog from "./update-grade-dialog";
-// TODO: import UpdateGradeDialog from "./update-grade-dialog";
+import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
+import { useEmployeesOld } from "@/features/core-hr/hooks/useEmployees";
+import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -91,7 +93,8 @@ export default function GradeList() {
     refetch,
     isFetching,
   } = useGrades();
-
+  const { data: employeeData = [] } = useEmployeesOld();
+  console.log("OLD DATA--------->", employeeData);
   const deleteGradeMutation = useDeleteGrade();
 
   const handleEdit = (grade) => {
@@ -146,46 +149,53 @@ export default function GradeList() {
     {
       accessorKey: "GRADE",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Grade
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   Grade
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="Grade" />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("GRADE")}</div>
+        <div className="font-medium ps-2">{row.getValue("GRADE")}</div>
       ),
     },
     {
       accessorKey: "EFFECTIVE_START_DATE",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Start Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   Start Date
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="Start Date" />
       ),
       cell: ({ row }) => (
-        <div>{formatDate(row.getValue("EFFECTIVE_START_DATE"))}</div>
+        <div className="ps-2 font-light">
+          {formatDate(row.getValue("EFFECTIVE_START_DATE"))}
+        </div>
       ),
     },
     {
       accessorKey: "EFFECTIVE_END_DATE",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          End Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   End Date
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="End Date" />
       ),
       cell: ({ row }) => (
-        <div>{formatDate(row.getValue("EFFECTIVE_END_DATE"))}</div>
+        <div className="ps-2 font-light">
+          {formatDate(row.getValue("EFFECTIVE_END_DATE"))}
+        </div>
       ),
     },
     {
@@ -203,7 +213,7 @@ export default function GradeList() {
               className="h-8 w-8 "
               onClick={() => handleEdit(grade)}
             >
-              <Pencil className="h-4 w-4" />
+              <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
             </Button>
 
@@ -377,7 +387,7 @@ export default function GradeList() {
       {/* Table */}
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* <div className="flex flex-col sm:flex-row gap-4">
             <Input
               placeholder="Search grades..."
               value={globalFilter ?? ""}
@@ -407,9 +417,13 @@ export default function GradeList() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </div> */}
+          <CustomDataTableToolbar
+            table={table}
+            searchPlaceholder="Search Grade..."
+          />
 
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-hidden  rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

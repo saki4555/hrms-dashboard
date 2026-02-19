@@ -43,7 +43,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { useDeletePosition, usePositions } from "../queries";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import UpdatePositionDialog from "./update-position-dialog";
-import CustomDataTableToolbar from "@/components/custom-temp/custom-data-table-toolbar";
+import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
