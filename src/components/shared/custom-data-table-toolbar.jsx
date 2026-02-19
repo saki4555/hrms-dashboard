@@ -1,8 +1,8 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DataTableFacetedFilter } from './faceted-filter'
-import { DataTableViewOptions } from './view-options'
+import { DataTableFacetedFilter } from '../custom-temp/faceted-filter'
+import { DataTableViewOptions } from '../custom-temp/view-options'
 import { CrossIcon } from 'lucide-react'
 
 export default function CustomDataTableToolbar({

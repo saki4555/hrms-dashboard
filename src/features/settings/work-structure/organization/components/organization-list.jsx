@@ -66,7 +66,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router";
-import { getColumnPinningStyle } from "@/lib/data-table";
+
 
 export default function OrganizationList() {
   const [sorting, setSorting] = useState([]);
@@ -373,7 +373,7 @@ export default function OrganizationList() {
                 <BreadcrumbItem>Work Structure</BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Organization</BreadcrumbPage>
+                  <BreadcrumbPage className="text-muted-foreground/80 ">Organization</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

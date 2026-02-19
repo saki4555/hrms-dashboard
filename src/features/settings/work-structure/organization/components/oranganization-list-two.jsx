@@ -62,8 +62,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import PageContainer from "@/components/page-container";
-import CustomDataTableToolbar from "@/components/custom-temp/custom-data-table-toolbar";
-import CustomDataTableColumnHeader from "@/components/custom-temp/custom-data-table-column-header";
+import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
+import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
 
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
@@ -184,7 +184,7 @@ export default function OrganizationListTwo() {
         return (<CustomDataTableColumnHeader column={column} title="Organization Name"/>)
       },
       cell: ({ row }) => (
-        <div className="font-medium ps-2">{row.getValue("NAME")}</div>
+        <div className="font-medium">{row.getValue("NAME")}</div>
       ),
     },
     {

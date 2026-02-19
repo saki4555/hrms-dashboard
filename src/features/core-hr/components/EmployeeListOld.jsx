@@ -72,6 +72,7 @@ export default function EmployeeListOld() {
   console.log({ employeeData }, "from use employee hook");
   const { data: personTypes = [], isLoading: personTypesLoading } =
     usePersonTypes();
+    const { data: employeeData = [], } = useEmployees();
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   // console.log("Person types", personTypes);

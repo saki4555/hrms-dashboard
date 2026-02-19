@@ -12,21 +12,14 @@ import {
 import { getColumnPinningStyle } from "@/lib/data-table";
 import { cn } from "@/lib/utils";
 
-export function DataTable(
-  {
-    table,
-    actionBar,
-    children,
-    className,
-    ...props
-  }
-) {
+export function DataTable({ table, actionBar, children, className, ...props }) {
   return (
     <div
-      className={cn("flex w-full flex-col gap-2.5 overflow-auto", className)}
-      {...props}>
+      className={cn("flex  w-full flex-col gap-2.5 overflow-auto", className)}
+      {...props}
+    >
       {children}
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-hidden bg-red-500 rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -37,10 +30,14 @@ export function DataTable(
                     colSpan={header.colSpan}
                     style={{
                       ...getColumnPinningStyle({ column: header.column }),
-                    }}>
+                    }}
+                  >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -49,22 +46,31 @@ export function DataTable(
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
-                   
                       key={cell.id}
                       style={{
                         ...getColumnPinningStyle({ column: cell.column }),
-                      }}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      }}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
+                <TableCell
+                  colSpan={table.getAllColumns().length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
