@@ -38,38 +38,8 @@ import {
 import { DatePicker } from "@/components/DatePicker";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdatePosition } from "../queries";
-
-// Demo data - easy to replace later with API calls
-const ORGANIZATIONS = [
-  { id: 1, name: "Corporate Headquarters" },
-  { id: 2, name: "North American Division" },
-  { id: 3, name: "European Division" },
-  { id: 4, name: "Asia Pacific Region" },
-  { id: 5, name: "Manufacturing Department" },
-  { id: 6, name: "Sales & Marketing" },
-  { id: 7, name: "Research & Development" },
-  { id: 8, name: "Human Resources" },
-  { id: 9, name: "Finance & Accounting" },
-  { id: 10, name: "Operations Management" },
-];
-
-const POSITIONS = [
-  { id: 1, name: "Senior Software Engineer" },
-  { id: 2, name: "Marketing Manager" },
-  { id: 3, name: "HR Specialist" },
-  { id: 4, name: "Financial Analyst" },
-  { id: 5, name: "Sales Director" },
-  { id: 6, name: "Product Manager" },
-  { id: 7, name: "Data Scientist" },
-  { id: 8, name: "DevOps Engineer" },
-  { id: 9, name: "UX Designer" },
-  { id: 10, name: "Business Analyst" },
-  { id: 11, name: "Project Manager" },
-  { id: 12, name: "Quality Assurance Engineer" },
-  { id: 13, name: "Customer Success Manager" },
-  { id: 14, name: "Operations Coordinator" },
-  { id: 15, name: "Executive Assistant" },
-];
+import { useOrganizations } from "../../organization/queries";
+import { usePositions } from "../../hr-position/queries";
 
 const getEndDateFromStart = (startDate) => {
   const endDate = new Date(startDate);
@@ -77,47 +47,54 @@ const getEndDateFromStart = (startDate) => {
   return endDate;
 };
 
-// Zod schema matching database fields
-const formSchema = z.object({
-  positionId: z.number().optional().nullable(),
-  orgId: z.number().optional().nullable(),
-  fte: z
-    .string()
-    .optional()
-    .refine((val) => {
-      if (!val || val === "") return true; // Optional field
-      const num = parseFloat(val);
-      return !isNaN(num) && num > 0 && num <= 1;
-    }, "FTE must be a number between 0 and 1 (e.g., 0.5 for part-time, 1 for full-time)"),
-  actualCount: z
-    .string()
-    .optional()
-    .refine((val) => {
-      if (!val || val === "") return true; // Optional field
-      const num = parseInt(val);
-      return !isNaN(num) && num >= 0;
-    }, "Actual count must be a non-negative number"),
-  effectiveStartDate: z.date().optional().nullable(),
-  effectiveEndDate: z.date().optional().nullable(),
-}).refine((data) => {
-  if (data.effectiveStartDate && data.effectiveEndDate) {
-    return data.effectiveEndDate > data.effectiveStartDate;
-  }
-  return true;
-}, {
-  message: "End date must be after start date",
-  path: ["effectiveEndDate"],
-});
+const formSchema = z
+  .object({
+    positionId: z.number({ required_error: "Position is required" }),
+    orgId: z.number({ required_error: "Organization is required" }),
+    fte: z
+      .string({ required_error: "FTE is required" })
+      .min(1, "FTE is required")
+      .refine((val) => {
+        const num = parseFloat(val);
+        return !isNaN(num) && num >= 0;
+      }, "FTE must be a non-negative number (e.g., 1 for one full-time equivalent, 2 for two)"),
+    actualCount: z
+      .string()
+      .optional()
+      .refine((val) => {
+        if (!val || val === "") return true;
+        const num = parseInt(val);
+        return !isNaN(num) && num >= 0;
+      }, "Actual count must be a non-negative number"),
+    effectiveStartDate: z.date({ required_error: "Start date is required" }),
+    effectiveEndDate: z.date({ required_error: "End date is required" }),
+  })
+  .refine(
+    (data) => {
+      if (data.effectiveStartDate && data.effectiveEndDate) {
+        return data.effectiveEndDate > data.effectiveStartDate;
+      }
+      return true;
+    },
+    {
+      message: "End date must be after start date",
+      path: ["effectiveEndDate"],
+    }
+  );
 
-export default function UpdatePositionDialog({ 
-  open, 
-  onOpenChange, 
-  showConfirmation, 
-  position 
+export default function UpdatePositionDialog({
+  open,
+  onOpenChange,
+  showConfirmation,
+  position,
 }) {
   const [orgComboboxOpen, setOrgComboboxOpen] = useState(false);
   const [positionComboboxOpen, setPositionComboboxOpen] = useState(false);
+  const [positionSearch, setPositionSearch] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+
+  const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
+  const { data: hrPositions = [], isLoading: hrPositionsLoading } = usePositions();
 
   const updatePositionMutation = useUpdatePosition();
 
@@ -143,11 +120,11 @@ export default function UpdatePositionDialog({
         orgId: position.ORG_ID || null,
         fte: position.FTE?.toString() || "1",
         actualCount: position.ACTUAL_COUNT?.toString() || "0",
-        effectiveStartDate: position.EFFECTIVE_START_DATE 
-          ? new Date(position.EFFECTIVE_START_DATE) 
+        effectiveStartDate: position.EFFECTIVE_START_DATE
+          ? new Date(position.EFFECTIVE_START_DATE)
           : null,
-        effectiveEndDate: position.EFFECTIVE_END_DATE 
-          ? new Date(position.EFFECTIVE_END_DATE) 
+        effectiveEndDate: position.EFFECTIVE_END_DATE
+          ? new Date(position.EFFECTIVE_END_DATE)
           : null,
       });
     }
@@ -166,30 +143,23 @@ export default function UpdatePositionDialog({
     }
 
     try {
-      // Prepare data for backend
       const backendData = {
         POSITION_ID: data.positionId,
         ORG_ID: data.orgId,
-        FTE: data.fte ? parseFloat(data.fte) : null,
+        FTE: parseFloat(data.fte),
         ACTUAL_COUNT: data.actualCount ? parseInt(data.actualCount) : 0,
-        EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split('T')[0],
-        EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split('T')[0],
+        EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split("T")[0],
+        EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split("T")[0],
       };
 
-      console.log("Updating position ID:", position.ID);
-      console.log("Sending to backend:", backendData);
-
-      // Use the mutation hook
       await updatePositionMutation.mutateAsync({
         id: position.ID,
         data: backendData,
       });
 
-      console.log("Position updated successfully");
       toast.success("Position updated successfully!");
-
-      // Reset form and close dialog
       form.reset();
+      setPositionSearch("");
       onOpenChange(false);
     } catch (error) {
       console.error("Error updating position:", error);
@@ -211,13 +181,12 @@ export default function UpdatePositionDialog({
     }
 
     form.reset();
+    setPositionSearch("");
     onOpenChange(false);
   };
 
   const handleStartDateChange = (date, field) => {
     field.onChange(date);
-    
-    // Automatically update end date to 100 years from the selected start date
     if (date) {
       const newEndDate = getEndDateFromStart(date);
       form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
@@ -230,9 +199,7 @@ export default function UpdatePositionDialog({
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          handleCancel();
-        }
+        if (!isOpen) handleCancel();
       }}
     >
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
@@ -243,9 +210,7 @@ export default function UpdatePositionDialog({
             </div>
             <div>
               <DialogTitle>Update Position</DialogTitle>
-              <DialogDescription>
-                Edit position assignment details
-              </DialogDescription>
+              <DialogDescription>Edit position assignment details</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -253,7 +218,8 @@ export default function UpdatePositionDialog({
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Position */}
+
+              {/* Position — API shape: { POSITION_ID, TITLE, ... } */}
               <FormField
                 control={form.control}
                 name="positionId"
@@ -266,46 +232,42 @@ export default function UpdatePositionDialog({
                           <Button
                             variant="outline"
                             role="combobox"
-                            disabled={isSubmitting}
-                            className={`w-full justify-between font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
+                            disabled={isSubmitting || hrPositionsLoading}
+                            className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
                           >
-                            {field.value
-                              ? POSITIONS.find(pos => pos.id === field.value)?.name
-                              : "Select position (optional)"}
+                            {hrPositionsLoading
+                              ? "Loading..."
+                              : field.value
+                              ? hrPositions.find((pos) => pos.POSITION_ID === field.value)?.TITLE
+                              : "Select position"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[400px] p-0">
                         <Command>
-                          <CommandInput placeholder="Search positions..." className="h-9" />
+                          <CommandInput
+                            placeholder="Search positions..."
+                            className="h-9"
+                            value={positionSearch}
+                            onValueChange={setPositionSearch}
+                          />
                           <CommandList>
                             <CommandEmpty>No position found.</CommandEmpty>
                             <CommandGroup>
-                              <CommandItem
-                                value="clear-selection"
-                                onSelect={() => {
-                                  field.onChange(null);
-                                  setPositionComboboxOpen(false);
-                                }}
-                              >
-                                <span className="text-muted-foreground">Clear selection</span>
-                              </CommandItem>
-                              {POSITIONS.map((pos) => (
+                              {hrPositions.map((pos) => (
                                 <CommandItem
-                                  key={pos.id}
-                                  value={pos.name}
+                                  key={pos.POSITION_ID}
+                                  value={pos.TITLE}
                                   onSelect={() => {
-                                    field.onChange(pos.id);
+                                    field.onChange(pos.POSITION_ID);
                                     setPositionComboboxOpen(false);
                                   }}
                                 >
-                                  {pos.name}
+                                  {pos.TITLE}
                                   <Check
                                     className={`ml-auto h-4 w-4 ${
-                                      field.value === pos.id ? "opacity-100" : "opacity-0"
+                                      field.value === pos.POSITION_ID ? "opacity-100" : "opacity-0"
                                     }`}
                                   />
                                 </CommandItem>
@@ -320,7 +282,7 @@ export default function UpdatePositionDialog({
                 )}
               />
 
-              {/* Organization */}
+              {/* Organization — API shape: { ID, NAME, ... } */}
               <FormField
                 control={form.control}
                 name="orgId"
@@ -333,14 +295,14 @@ export default function UpdatePositionDialog({
                           <Button
                             variant="outline"
                             role="combobox"
-                            disabled={isSubmitting}
-                            className={`w-full justify-between font-normal ${
-                              !field.value && "text-muted-foreground"
-                            }`}
+                            disabled={isSubmitting || organizationsLoading}
+                            className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
                           >
-                            {field.value
-                              ? ORGANIZATIONS.find(org => org.id === field.value)?.name
-                              : "Select organization (optional)"}
+                            {organizationsLoading
+                              ? "Loading..."
+                              : field.value
+                              ? organizations.find((org) => org.ID === field.value)?.NAME
+                              : "Select organization"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -351,28 +313,19 @@ export default function UpdatePositionDialog({
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
                             <CommandGroup>
-                              <CommandItem
-                                value="clear-selection"
-                                onSelect={() => {
-                                  field.onChange(null);
-                                  setOrgComboboxOpen(false);
-                                }}
-                              >
-                                <span className="text-muted-foreground">Clear selection</span>
-                              </CommandItem>
-                              {ORGANIZATIONS.map((org) => (
+                              {organizations.map((org) => (
                                 <CommandItem
-                                  key={org.id}
-                                  value={org.name}
+                                  key={org.ID}
+                                  value={org.NAME}
                                   onSelect={() => {
-                                    field.onChange(org.id);
+                                    field.onChange(org.ID);
                                     setOrgComboboxOpen(false);
                                   }}
                                 >
-                                  {org.name}
+                                  {org.NAME}
                                   <Check
                                     className={`ml-auto h-4 w-4 ${
-                                      field.value === org.id ? "opacity-100" : "opacity-0"
+                                      field.value === org.ID ? "opacity-100" : "opacity-0"
                                     }`}
                                   />
                                 </CommandItem>
@@ -437,14 +390,13 @@ export default function UpdatePositionDialog({
                   <FormItem>
                     <FormLabel>FTE (Full-Time Equivalent)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.1" 
-                        min="0" 
-                        max="1" 
-                        placeholder="e.g., 1 for full-time, 0.5 for part-time" 
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        placeholder="e.g., 1 for one full-time equivalent, 2 for two"
                         disabled={isSubmitting}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -460,13 +412,13 @@ export default function UpdatePositionDialog({
                   <FormItem>
                     <FormLabel>Actual Count</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        step="1" 
-                        min="0" 
-                        placeholder="Number of employees in this position" 
+                      <Input
+                        type="number"
+                        step="1"
+                        min="0"
+                        placeholder="Number of employees in this position"
                         disabled={isSubmitting}
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -476,15 +428,15 @@ export default function UpdatePositionDialog({
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={isSubmitting}
               >

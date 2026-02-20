@@ -40,7 +40,7 @@ import AddPositionDialog from "./AddPositionDialog";
 
 
 import { IconPlus } from "@tabler/icons-react";
-import { useDeletePosition, usePositions } from "../queries";
+import { useDeletePosition, useOrgPositions } from "../queries";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import UpdatePositionDialog from "./update-position-dialog";
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
@@ -73,7 +73,7 @@ export default function PositionListTwo() {
     error,
     refetch,
     isFetching,
-  } = usePositions();
+  } = useOrgPositions();
   
   const deletePositionMutation = useDeletePosition();
 

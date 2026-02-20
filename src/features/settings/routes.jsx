@@ -6,24 +6,26 @@ import { Route } from "react-router";
 import { ROLES } from "@/constants/roles";
 import HRPositions from "./work-structure/hr-position";
 import Grades from "./work-structure/hr-grade";
+import Companies from "./work-structure/company";
 
 
-const AddOrganizationPage = lazy(() => import('../core-hr/pages/AddOrganizationPage'));
 
-const Organizations = lazy(() => import('./work-structure/organization/pages'))
+// const AddOrganizationPage = lazy(() => import('../core-hr/pages/AddOrganizationPage'));
+
+const Organizations  = lazy(() => import('./work-structure/organization'))
 const Positions  = lazy(() => import('./work-structure/position/pages'))
 
 
 const SettingsRoutes = (
   <>
-    <Route
+    {/* <Route
       path="settings/work-structure"
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <AddOrganizationPage />
         </PrivateRoute>
       }
-    />
+    /> */}
 
     <Route
       path="settings/work-structure/organization"
@@ -55,6 +57,14 @@ const SettingsRoutes = (
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <Grades />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/company"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Companies />
         </PrivateRoute>
       }
     />

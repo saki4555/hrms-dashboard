@@ -5,6 +5,7 @@ import { ROLES } from "@/constants/roles";
 import { lazy } from "react";
 import Employees from "./employee-management";
 import EmployeeTypes from "./employee-types";
+import UpdateEmployeePage from "./employee-management/update-employee-page";
 
 const CoreHRPage = lazy(() => import("./pages"));
 const AddEmployeePage = lazy(
@@ -37,6 +38,14 @@ const CoreHRRoutes = (
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <AddEmployeePage />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="core-hr/employee-management/update/:personId"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <UpdateEmployeePage />
         </PrivateRoute>
       }
     />

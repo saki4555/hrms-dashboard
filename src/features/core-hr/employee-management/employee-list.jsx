@@ -59,7 +59,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { useNavigate } from "react-router";
-import UpdateEmployeeSheet from "./update-employee-sheet";
+
 
 const GENDER_OPTIONS = [
   { value: "all", label: "All Genders" },
@@ -68,23 +68,13 @@ const GENDER_OPTIONS = [
   { value: "Other", label: "Other" },
 ];
 
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
-
-  const date = new Date(dateString);
-
-  // Format: Feb 5, 2026 at 12:45 PM
-  return format(date, "MMM d, yyyy 'at' h:mm a");
-};
-
 const formatSimpleDate = (dateString) => {
   if (!dateString) return "N/A";
-
   const date = new Date(dateString);
-
-  // Format: Feb 5, 2026
   return format(date, "MMM d, yyyy");
 };
+
+
 
 export default function EmployeeList() {
   const navigate = useNavigate();
@@ -93,8 +83,7 @@ export default function EmployeeList() {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isUpdateSheetOpen, setIsUpdateSheetOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
@@ -106,16 +95,11 @@ export default function EmployeeList() {
     refetch,
     isFetching,
   } = useEmployees();
-  
 
   const deleteEmployeeMutation = useDeleteEmployee();
 
-  console.log("Employee data:", employeeData);
-
   const handleEdit = (employee) => {
-    console.log("Edit employee:", employee);
-    setSelectedEmployee(employee);
-    setIsUpdateSheetOpen(true);
+    navigate(`/core-hr/employee-management/update/${employee.PERSON_ID}`);
   };
 
   const handleDelete = async (employee) => {
@@ -131,10 +115,8 @@ export default function EmployeeList() {
     if (confirmed) {
       try {
         await deleteEmployeeMutation.mutateAsync(employee.PERSON_ID);
-        console.log("Employee deleted successfully:", employee);
         toast.success("Employee deleted successfully!");
       } catch (error) {
-        console.error("Error deleting employee:", error);
         toast.error(
           error?.message || "Failed to delete employee. Please try again.",
         );
@@ -142,13 +124,9 @@ export default function EmployeeList() {
     }
   };
 
-  const handleRefetch = () => {
-    refetch();
-  };
+  const handleRefetch = () => refetch();
 
-  const handleAddEmployee = () => {
-    navigate("/core-hr/employees/add");
-  };
+  const handleAddEmployee = () => navigate("/core-hr/employees/add");
 
   const columns = [
     {
@@ -175,17 +153,15 @@ export default function EmployeeList() {
     },
     {
       accessorKey: "EMP_NO",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Employee ID
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Employee ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("EMP_NO")}</div>
       ),
@@ -194,17 +170,15 @@ export default function EmployeeList() {
       id: "fullName",
       accessorFn: (row) =>
         `${row.TITLE || ""} ${row.FIRST_NAME} ${row.LAST_NAME}`.trim(),
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Full Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Full Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const title = row.original.TITLE;
         const firstName = row.original.FIRST_NAME;
@@ -221,93 +195,53 @@ export default function EmployeeList() {
       accessorKey: "GENDER",
       header: "Gender",
       cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
-      filterFn: (row, id, value) => {
-        return value === "all" || row.getValue(id) === value;
-      },
-    },
-    {
-      accessorKey: "DATE_OF_BIRTH",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Date of Birth
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("DATE_OF_BIRTH");
-        return <div>{formatSimpleDate(date)}</div>;
-      },
-    },
-    {
-      accessorKey: "NID",
-      header: "NID",
-      cell: ({ row }) => (
-        <div className="max-w-xs truncate">{row.getValue("NID") || "N/A"}</div>
-      ),
-    },
-    {
-      accessorKey: "NATIONALITY",
-      header: "Nationality",
-      cell: ({ row }) => <div>{row.getValue("NATIONALITY") || "N/A"}</div>,
+      filterFn: (row, id, value) =>
+        value === "all" || row.getValue(id) === value,
     },
     {
       accessorKey: "JOIN_DATE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Join Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Join Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => <div>{formatSimpleDate(row.getValue("JOIN_DATE"))}</div>,
+    },
+    {
+      // Using the nested personType object for a readable label instead of raw PERSON_TYPE_ID
+      id: "personType",
+      accessorFn: (row) => row.personType?.PERSON_TYPE ?? row.PERSON_TYPE_ID,
+      header: "Person Type",
       cell: ({ row }) => {
-        const date = row.getValue("JOIN_DATE");
-        return <div>{formatSimpleDate(date)}</div>;
+        const label = row.original.personType?.PERSON_TYPE ?? row.original.PERSON_TYPE_ID;
+        return <Badge variant="outline">{label || "N/A"}</Badge>;
       },
     },
     {
-      accessorKey: "PERSON_TYPE_ID",
-      header: "Type",
+      // Assignment column — showing IDs for now until related tables are ready
+      // TODO: Replace COMPANY_ID, ORG_ID, OU_ID, POSITION_ID etc. with their
+      //       human-readable names once the company/org/position lookup tables
+      //       are joined in the API response.
+      id: "assignment",
+      header: "Position ID",
       cell: ({ row }) => {
-        const typeId = row.getValue("PERSON_TYPE_ID");
-        // You can map this to actual type names if you have the person types data
-        return <Badge variant="outline">{typeId || "N/A"}</Badge>;
+        const assignment = row.original.assignment;
+        const positionId = assignment?.POSITION_ID;
+        return <div>{positionId ?? <span className="text-muted-foreground">Unassigned</span>}</div>;
       },
+      enableSorting: false,
     },
-
-    {
-      accessorKey: "CREATION_DATE",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Created Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("CREATION_DATE");
-        return <div>{formatDate(date)}</div>;
-      },
-    },
+    
     {
       id: "actions",
       header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
         const employee = row.original;
-
         return (
           <div className="flex items-center gap-2">
             <Button
@@ -338,7 +272,7 @@ export default function EmployeeList() {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 "
+              className="h-8 w-8"
               onClick={() =>
                 navigate(
                   `/core-hr/employee-management/employee-details/${employee.PERSON_ID}`
@@ -378,11 +312,11 @@ export default function EmployeeList() {
   // Loading State
   if (isLoading) {
     return (
-      <div className="">
+      <div>
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Employees</h1>
+              <h1 className="text-2xl font-semibold">Employees</h1>
               <p className="text-muted-foreground mt-1">
                 Manage employee information and records
               </p>
@@ -393,7 +327,6 @@ export default function EmployeeList() {
             </Button>
           </div>
         </div>
-
         <div className="bg-card rounded-lg shadow-sm p-4">
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner className="h-12 w-12 mb-4" />
@@ -407,11 +340,11 @@ export default function EmployeeList() {
   // Error State
   if (isError) {
     return (
-      <div className="">
+      <div>
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-2xl font-bold">Employees</h1>
+              <h1 className="text-2xl font-semibold">Employees</h1>
               <p className="text-muted-foreground mt-1">
                 Manage employee information and records
               </p>
@@ -422,15 +355,13 @@ export default function EmployeeList() {
             </Button>
           </div>
         </div>
-
         <div className="bg-card rounded-lg shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Employees</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
               <p>
-                {error?.message ||
-                  "Failed to load employees. Please try again."}
+                {error?.message || "Failed to load employees. Please try again."}
               </p>
               <Button
                 variant="outline"
@@ -459,11 +390,11 @@ export default function EmployeeList() {
   }
 
   return (
-    <div className="">
+    <div>
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-2xl font-semibold">Employees</h1>
+            <h1 className="text-2xl font-semibold">Employees</h1>
             <p className="text-muted-foreground mt-1">
               Manage employee information and records
             </p>
@@ -530,20 +461,18 @@ export default function EmployeeList() {
                 {table
                   .getAllColumns()
                   .filter((column) => column.getCanHide())
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {column.id.replace(/_/g, " ")}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id.replace(/_/g, " ")}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -609,12 +538,7 @@ export default function EmployeeList() {
         </div>
       </div>
 
-      <UpdateEmployeeSheet
-        open={isUpdateSheetOpen}
-        onOpenChange={setIsUpdateSheetOpen}
-        employee={selectedEmployee}
-        showConfirmation={showConfirmation}
-      />
+      
       <ConfirmationDialog />
     </div>
   );
