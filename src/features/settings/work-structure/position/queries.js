@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const positionsQueryKeys = {
-  all: ['positions'],
+  all: ['org-positions'],
   lists: () => [...positionsQueryKeys.all, 'lists'],
   detail: (id) => [...positionsQueryKeys.all, 'detail', id],
 };
@@ -90,7 +90,7 @@ const createPosition = async (data) => {
   }
 };
 
-export const usePositions = () => useQuery({
+export const useOrgPositions = () => useQuery({
   queryKey: positionsQueryKeys.lists(),
   queryFn: getPositions,
   retry: 2,

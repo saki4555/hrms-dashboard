@@ -1,48 +1,46 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const organizationsQueryKeys = {
-  all: ['organizations'],
-  lists: () => [...organizationsQueryKeys.all, 'lists'],
-  detail: (id) => [...organizationsQueryKeys.all, 'detail', id],
+const companiesQueryKeys = {
+  all: ['companies'],
+  lists: () => [...companiesQueryKeys.all, 'lists'],
+  detail: (id) => [...companiesQueryKeys.all, 'detail', id],
 };
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/hr-org`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/hr-company`;
 
-const getOrganizations = async () => {
+const getCompanies = async () => {
   try {
     const res = await fetch(API_BASE_URL);
-    console.log("organizations data fetch response", res);
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch organizations: ${res.status} ${res.statusText}`);
+      throw new Error(`Failed to fetch companies: ${res.status} ${res.statusText}`);
     }
 
     const jsonData = await res.json();
-    console.log("Parsed JSON:", jsonData);
     return jsonData.data || jsonData;
   } catch (error) {
-    console.error("Error fetching organizations:", error);
+    console.error("Error fetching companies:", error);
     throw error;
   }
 };
 
-const getOrganizationById = async (id) => {
+const getCompanyById = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`);
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch organization: ${res.status} ${res.statusText}`);
+      throw new Error(`Failed to fetch company: ${res.status} ${res.statusText}`);
     }
 
     const jsonData = await res.json();
     return jsonData.data || jsonData;
   } catch (error) {
-    console.error("Error fetching organization:", error);
+    console.error("Error fetching company:", error);
     throw error;
   }
 };
 
-const deleteOrganization = async (id) => {
+const deleteCompany = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
@@ -50,17 +48,17 @@ const deleteOrganization = async (id) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to delete organization: ${res.status}`);
+      throw new Error(errorData.message || `Failed to delete company: ${res.status}`);
     }
 
     return res.json();
   } catch (error) {
-    console.error("Error deleting organization:", error);
+    console.error("Error deleting company:", error);
     throw error;
   }
 };
 
-const updateOrganization = async ({ id, data }) => {
+const updateCompany = async ({ id, data }) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
@@ -72,17 +70,17 @@ const updateOrganization = async ({ id, data }) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to update organization: ${res.status}`);
+      throw new Error(errorData.message || `Failed to update company: ${res.status}`);
     }
 
     return res.json();
   } catch (error) {
-    console.error("Error updating organization:", error);
+    console.error("Error updating company:", error);
     throw error;
   }
 };
 
-const createOrganization = async (data) => {
+const createCompany = async (data) => {
   try {
     const res = await fetch(API_BASE_URL, {
       method: 'POST',
@@ -94,19 +92,19 @@ const createOrganization = async (data) => {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to create organization: ${res.status}`);
+      throw new Error(errorData.message || `Failed to create company: ${res.status}`);
     }
 
     return res.json();
   } catch (error) {
-    console.error("Error creating organization:", error);
+    console.error("Error creating company:", error);
     throw error;
   }
 };
 
-export const useOrganizations = () => useQuery({
-  queryKey: organizationsQueryKeys.lists(),
-  queryFn: getOrganizations,
+export const useCompanies = () => useQuery({
+  queryKey: companiesQueryKeys.lists(),
+  queryFn: getCompanies,
   retry: 2,
   retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   staleTime: 30 * 1000,
@@ -116,9 +114,9 @@ export const useOrganizations = () => useQuery({
   throwOnError: false,
 });
 
-export const useOrganizationById = (id) => useQuery({
-  queryKey: organizationsQueryKeys.detail(id),
-  queryFn: () => getOrganizationById(id),
+export const useCompanyById = (id) => useQuery({
+  queryKey: companiesQueryKeys.detail(id),
+  queryFn: () => getCompanyById(id),
   enabled: !!id,
   retry: 2,
   retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -128,13 +126,13 @@ export const useOrganizationById = (id) => useQuery({
   throwOnError: false,
 });
 
-export const useDeleteOrganization = () => {
+export const useDeleteCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteOrganization,
+    mutationFn: deleteCompany,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: companiesQueryKeys.lists() });
     },
     onError: (error) => {
       console.error("Delete mutation failed:", error);
@@ -142,14 +140,14 @@ export const useDeleteOrganization = () => {
   });
 };
 
-export const useUpdateOrganization = () => {
+export const useUpdateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateOrganization,
+    mutationFn: updateCompany,
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: companiesQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: companiesQueryKeys.detail(variables.id) });
     },
     onError: (error) => {
       console.error("Update mutation failed:", error);
@@ -157,13 +155,13 @@ export const useUpdateOrganization = () => {
   });
 };
 
-export const useCreateOrganization = () => {
+export const useCreateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createOrganization,
+    mutationFn: createCompany,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: companiesQueryKeys.lists() });
     },
     onError: (error) => {
       console.error("Create mutation failed:", error);

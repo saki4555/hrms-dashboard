@@ -14,7 +14,7 @@ import {
   Trash2,
   AlertCircle,
   RefreshCw,
-  GraduationCap,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,7 +40,7 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { Spinner } from "@/components/ui/spinner";
-import { IconEdit, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconCircleDashedPlus, IconEdit, IconPlus } from "@tabler/icons-react";
 import {
   Empty,
   EmptyHeader,
@@ -57,23 +57,11 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router";
 
-import { useGrades, useDeleteGrade } from "./queries";
-import AddGradeDialog from "./add-grade-dialog";
-import UpdateGradeDialog from "./update-grade-dialog";
-import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
-import { useEmployeesOld } from "@/features/core-hr/hooks/useEmployees";
-import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
+import { useCompanies, useDeleteCompany } from "./queries";
+import AddCompanyDialog from "./add-company-dialog";
+import UpdateCompanyDialog from "./update-company-dialog";
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return "N/A";
-  try {
-    return format(new Date(dateStr), "MMM dd, yyyy");
-  } catch {
-    return "Invalid date";
-  }
-};
-
-export default function GradeList() {
+export default function CompanyList() {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -81,31 +69,30 @@ export default function GradeList() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  const [selectedGrade, setSelectedGrade] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   const {
-    data: gradesData = [],
+    data: companyData = [],
     isLoading,
     isError,
     error,
     refetch,
     isFetching,
-  } = useGrades();
-  const { data: employeeData = [] } = useEmployeesOld();
-  console.log("OLD DATA--------->", employeeData);
-  const deleteGradeMutation = useDeleteGrade();
+  } = useCompanies();
 
-  const handleEdit = (grade) => {
-    setSelectedGrade(grade);
+  const deleteCompanyMutation = useDeleteCompany();
+
+  const handleEdit = (company) => {
+    setSelectedCompany(company);
     setIsUpdateDialogOpen(true);
   };
 
-  const handleDelete = async (grade) => {
+  const handleDelete = async (company) => {
     const confirmed = await showConfirmation({
-      title: "Delete grade?",
-      description: `Are you sure you want to delete "${grade.GRADE}"? This action cannot be undone.`,
+      title: "Delete company?",
+      description: `Are you sure you want to delete "${company.COMPANY_NAME}"? This action cannot be undone.`,
       confirmText: "Delete",
       cancelText: "Cancel",
       variant: "destructive",
@@ -113,12 +100,10 @@ export default function GradeList() {
 
     if (confirmed) {
       try {
-        await deleteGradeMutation.mutateAsync(grade.ID);
-        toast.success("Grade deleted successfully!");
+        await deleteCompanyMutation.mutateAsync(company.COMPANY_ID);
+        toast.success("Company deleted successfully!");
       } catch (error) {
-        toast.error(
-          error?.message || "Failed to delete grade. Please try again.",
-        );
+        toast.error(error?.message || "Failed to delete company. Please try again.");
       }
     }
   };
@@ -147,72 +132,70 @@ export default function GradeList() {
       enableHiding: false,
     },
     {
-      accessorKey: "GRADE",
+      accessorKey: "COMPANY_NAME",
       header: ({ column }) => (
-        // <Button
-        //   variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        // >
-        //   Grade
-        //   <ArrowUpDown className="ml-2 h-4 w-4" />
-        // </Button>
-        <CustomDataTableColumnHeader column={column} title="Grade" />
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Company Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
       ),
       cell: ({ row }) => (
-        <div className="font-medium ps-2">{row.getValue("GRADE")}</div>
+        <div className="font-medium">{row.getValue("COMPANY_NAME")}</div>
       ),
-      
+    },
+    {
+      accessorKey: "COMPANY_DETAIL",
+      header: "Detail",
+      cell: ({ row }) => (
+        <div className="max-w-xs truncate text-muted-foreground">
+          {row.getValue("COMPANY_DETAIL") || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "BIN_NO",
+      header: "BIN No",
+      cell: ({ row }) => <div>{row.getValue("BIN_NO") || "N/A"}</div>,
+    },
+    {
+      accessorKey: "ADDRESS",
+      header: "Address",
+      cell: ({ row }) => (
+        <div className="max-w-xs truncate">{row.getValue("ADDRESS") || "N/A"}</div>
+      ),
     },
     {
       accessorKey: "EFFECTIVE_START_DATE",
-      header: ({ column }) => (
-        // <Button
-        //   variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        // >
-        //   Start Date
-        //   <ArrowUpDown className="ml-2 h-4 w-4" />
-        // </Button>
-        <CustomDataTableColumnHeader column={column} title="Start Date" />
-      ),
-      cell: ({ row }) => (
-        <div className="ps-2 font-light">
-          {formatDate(row.getValue("EFFECTIVE_START_DATE"))}
-        </div>
-      ),
+      header: "Start Date",
+      cell: ({ row }) => {
+        const val = row.getValue("EFFECTIVE_START_DATE");
+        return <div>{val ? format(new Date(val), "dd MMM yyyy") : "N/A"}</div>;
+      },
     },
     {
       accessorKey: "EFFECTIVE_END_DATE",
-      header: ({ column }) => (
-        // <Button
-        //   variant="ghost"
-        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        // >
-        //   End Date
-        //   <ArrowUpDown className="ml-2 h-4 w-4" />
-        // </Button>
-        <CustomDataTableColumnHeader column={column} title="End Date" />
-      ),
-      cell: ({ row }) => (
-        <div className="ps-2 font-light">
-          {formatDate(row.getValue("EFFECTIVE_END_DATE"))}
-        </div>
-      ),
+      header: "End Date",
+      cell: ({ row }) => {
+        const val = row.getValue("EFFECTIVE_END_DATE");
+        return <div>{val ? format(new Date(val), "dd MMM yyyy") : "N/A"}</div>;
+      },
     },
     {
       id: "actions",
       header: "Actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const grade = row.original;
-
+        const company = row.original;
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 "
-              onClick={() => handleEdit(grade)}
+              className="h-8 w-8"
+              onClick={() => handleEdit(company)}
             >
               <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
@@ -222,10 +205,10 @@ export default function GradeList() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(grade)}
-              disabled={deleteGradeMutation.isPending}
+              onClick={() => handleDelete(company)}
+              disabled={deleteCompanyMutation.isPending}
             >
-              {deleteGradeMutation.isPending ? (
+              {deleteCompanyMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : (
                 <Trash2 className="h-4 w-4" />
@@ -239,7 +222,7 @@ export default function GradeList() {
   ];
 
   const table = useReactTable({
-    data: gradesData,
+    data: companyData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -259,60 +242,50 @@ export default function GradeList() {
     },
   });
 
-  // Loading State
   if (isLoading) {
     return (
       <div>
-        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
-                Grades
-              </h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
             </div>
             <Button disabled>
-              <IconPlus />
-              Add Grade
+              <IconPlus size={20} className="mr-2" />
+              Add Company
             </Button>
           </div>
         </div>
-
-        <div className="bg-card rounded-md shadow-sm p-4">
+        <div className="bg-card rounded-lg shadow-sm p-4">
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner className="h-12 w-12 mb-4" />
-            <p className="text-muted-foreground">Loading grades...</p>
+            <p className="text-muted-foreground">Loading companies...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Error State
   if (isError) {
     return (
       <div>
-        <div className="bg-card rounded-md shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
-                Grades
-              </h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
-              <IconPlus />
-              Add Grade
+              <IconPlus size={20} className="mr-2" />
+              Add Company
             </Button>
           </div>
         </div>
-
-        <div className="bg-card rounded-md shadow-sm p-4">
+        <div className="bg-card rounded-lg shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Grades</AlertTitle>
+            <AlertTitle>Error Loading Companies</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
-              <p>
-                {error?.message || "Failed to load grades. Please try again."}
-              </p>
+              <p>{error?.message || "Failed to load companies. Please try again."}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -321,15 +294,9 @@ export default function GradeList() {
                 className="w-fit"
               >
                 {isFetching ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Retrying...
-                  </>
+                  <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
                 ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Retry
-                  </>
+                  <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
                 )}
               </Button>
             </AlertDescription>
@@ -345,9 +312,7 @@ export default function GradeList() {
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
-            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
-              Grades
-            </h1>
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -359,27 +324,20 @@ export default function GradeList() {
                 <BreadcrumbItem>Work Structure</BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Grades</BreadcrumbPage>
+                  <BreadcrumbPage className="text-muted-foreground/80">Companies</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               <span className="sr-only">Refresh data</span>
             </Button>
-
             <Button onClick={() => setIsAddDialogOpen(true)}>
-              <IconPlus />
-              Add Grade
+              <IconCircleDashedPlus />
+              Add Company
             </Button>
           </div>
         </div>
@@ -388,14 +346,13 @@ export default function GradeList() {
       {/* Table */}
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-          {/* <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Input
-              placeholder="Search grades..."
+              placeholder="Search companies..."
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
             />
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="ml-auto">
@@ -418,13 +375,9 @@ export default function GradeList() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div> */}
-          <CustomDataTableToolbar
-            table={table}
-            searchPlaceholder="Search Grade..."
-          />
+          </div>
 
-          <div className="overflow-hidden  rounded-md border">
+          <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -433,10 +386,7 @@ export default function GradeList() {
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -446,32 +396,23 @@ export default function GradeList() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
+                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">
-                            <GraduationCap />
+                            <Building2 />
                           </EmptyMedia>
-                          <EmptyTitle>No Grades Found</EmptyTitle>
+                          <EmptyTitle>No Companies Found</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -486,7 +427,7 @@ export default function GradeList() {
       </div>
 
       {isAddDialogOpen && (
-        <AddGradeDialog
+        <AddCompanyDialog
           open={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}
           showConfirmation={showConfirmation}
@@ -494,13 +435,14 @@ export default function GradeList() {
       )}
 
       {isUpdateDialogOpen && (
-        <UpdateGradeDialog
+        <UpdateCompanyDialog
           open={isUpdateDialogOpen}
           onOpenChange={setIsUpdateDialogOpen}
           showConfirmation={showConfirmation}
-          grade={selectedGrade}
+          company={selectedCompany}
         />
       )}
+
       <ConfirmationDialog />
     </div>
   );

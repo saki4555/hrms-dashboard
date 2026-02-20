@@ -1,5 +1,5 @@
 import PageContainer from "@/components/page-container";
-import PositionList from "../components/positon-list";
+import PositionList from "../components/position-list";
 import PositionListTwo from "../components/position-list-two";
 
 

@@ -25,12 +25,13 @@ import {
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { useDataTable } from "@/hooks/use-data-table";
-import { useDeleteOrganization, useOrganizations } from "../queries";
+import { useDeleteOrganization, useOrganizations } from "./queries";
 import { Spinner } from "@/components/ui/spinner";
-import UpdateOrganizationDialog from "./update-organization-dialog";
+
 import AddOrganizationDialog from "./AddOrganizationDialog";
 import { IconPlus } from "@tabler/icons-react";
 import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
+import UpdateOrganizationDialog from "./update-organization-dialog";
 
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },

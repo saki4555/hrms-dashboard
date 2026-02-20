@@ -197,6 +197,11 @@ export const NAV_ITEMS = [
             url: "/settings/work-structure/hr-positions",
             roles: ["Admin", "HR"],
           },
+          {
+            title: "Company",
+            url: "/settings/work-structure/company",
+            roles: ["Admin", "HR"],
+          }
         ],
       },
     ],

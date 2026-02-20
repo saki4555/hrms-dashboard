@@ -50,9 +50,9 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useDeleteOrganization, useOrganizations } from "../queries";
+import { useDeleteOrganization, useOrganizations } from "./queries";
 import { Spinner } from "@/components/ui/spinner";
-import UpdateOrganizationDialog from "./update-organization-dialog";
+
 import AddOrganizationDialog from "./AddOrganizationDialog";
 import { IconPlus } from "@tabler/icons-react";
 import {
@@ -64,6 +64,7 @@ import {
 import PageContainer from "@/components/page-container";
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
+import UpdateOrganizationDialog from "./update-organization-dialog";
 
 const ORGANIZATION_TYPES = [
   { id: 1, name: "Headquarters" },
@@ -181,7 +182,12 @@ export default function OrganizationListTwo() {
         //     <ArrowUpDown className="ml-2 h-4 w-4" />
         //   </Button>
         // );
-        return (<CustomDataTableColumnHeader column={column} title="Organization Name"/>)
+        return (
+          <CustomDataTableColumnHeader
+            column={column}
+            title="Organization Name"
+          />
+        );
       },
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("NAME")}</div>
@@ -196,8 +202,8 @@ export default function OrganizationListTwo() {
         </div>
       ),
       filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
+        return value.includes(row.getValue(id));
+      },
     },
     {
       accessorKey: "LOCATION",
@@ -423,7 +429,7 @@ export default function OrganizationListTwo() {
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} >
+                      <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -444,7 +450,7 @@ export default function OrganizationListTwo() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} >
+                        <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),

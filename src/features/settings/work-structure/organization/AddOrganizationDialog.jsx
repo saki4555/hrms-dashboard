@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -43,24 +44,26 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Spinner } from "@/components/ui/spinner";
-import { useUpdateOrganization, useOrganizations } from "../queries";
-import { useOrgTypes } from "../../organization-types/queries";
-import { useHrLocations } from "../../locations/queries";
 
-const COST_CENTERS = [
-  { id: 101, name: "CC-001 - Corporate Services" },
-  { id: 102, name: "CC-002 - IT Infrastructure" },
-  { id: 103, name: "CC-003 - Human Resources" },
-  { id: 104, name: "CC-004 - Finance & Accounting" },
-  { id: 105, name: "CC-005 - Sales Operations" },
-  { id: 106, name: "CC-006 - Marketing" },
-  { id: 107, name: "CC-007 - Research & Development" },
-  { id: 108, name: "CC-008 - Manufacturing" },
-  { id: 109, name: "CC-009 - Logistics" },
-  { id: 110, name: "CC-010 - Customer Support" },
+
+
+import { IconBuildingPlus } from "@tabler/icons-react";
+import FormDialogHeader from "@/components/shared/form-dialog-header";
+import { useCreateOrganization, useOrganizations } from "./queries";
+import { useOrgTypes } from "../organization-types/queries";
+import { useHrLocations } from "../locations/queries";
+
+// Demo data - easy to replace later with API calls
+const ORGANIZATION_TYPES = [
+  { id: 1, name: "Headquarters" },
+  { id: 2, name: "Branch Office" },
+  { id: 3, name: "Department" },
+  { id: 4, name: "Division" },
+  { id: 5, name: "Subsidiary" },
+  { id: 6, name: "Regional Office" },
 ];
 
-// Zod schema
+// Zod schema matching database fields
 const formSchema = z.object({
   name: z
     .string()
@@ -74,34 +77,36 @@ const formSchema = z.object({
     .max(200, "Location cannot exceed 200 characters")
     .optional(),
   costCenterId: z.number().optional().nullable(),
-  status: z.number(), // Added back
-  updatedBy: z.number().optional(),
+  createdBy: z.number().optional(), // Will be set from logged-in user
 });
 
-export default function UpdateOrganizationDialog({
+export default function AddOrganizationDialog({
   open,
   onOpenChange,
   showConfirmation,
-  organization,
 }) {
   const [parentOrgOpen, setParentOrgOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [costCenterOpen, setCostCenterOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  console.log("organization", organization);
 
-  // Fetch data
   const { data: organizationData = [], isLoading: orgLoading } =
     useOrganizations();
+
+  console.log("Organization data:", organizationData);
+
   const { data: organizationTypes = [], isLoading: orgTypesLoading } =
     useOrgTypes();
+  console.log("Organization types data:", organizationTypes);
+
   const { data: locations = [], isLoading: locationsLoading } =
     useHrLocations();
+  console.log("Locations data:", locations);
 
+  const showLoading = orgLoading || orgTypesLoading || locationsLoading;
+  console.log("showLoading", showLoading);
 
-
-
-  const updateOrganizationMutation = useUpdateOrganization();
+  const createOrganizationMutation = useCreateOrganization();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -111,29 +116,13 @@ export default function UpdateOrganizationDialog({
       parentOrgId: null,
       location: "",
       costCenterId: null,
-      status: 1, // Added back
-      updatedBy: undefined,
+      createdBy: undefined, // TODO: Set this from logged-in user context
     },
   });
 
   const {
     formState: { isDirty },
   } = form;
-
-  // Populate form when organization changes
-  useEffect(() => {
-    if (organization) {
-      form.reset({
-        name: organization.NAME || "",
-        orgTypeId: organization.ORG_TYPE_ID || undefined,
-        parentOrgId: organization.PARENT_ORG_ID || null,
-        location: organization.LOCATION || "",
-        costCenterId: organization.COST_CENTER_ID || null,
-        status: organization.STATUS ?? 1, // Added back
-        updatedBy: undefined, // TODO: Get from user session
-      });
-    }
-  }, [organization, form]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -142,43 +131,34 @@ export default function UpdateOrganizationDialog({
   if (!isMounted) return null;
 
   const onSubmit = async (data) => {
-    if (!organization || !organization.ID) {
-      toast.error("Organization ID is missing");
-      return;
-    }
-
     try {
-      // Prepare data for backend
+      // Prepare data for backend (sending IDs, not display names)
       const backendData = {
         NAME: data.name,
         ORG_TYPE_ID: data.orgTypeId,
         PARENT_ORG_ID: data.parentOrgId,
         LOCATION: data.location || null,
         COST_CENTER_ID: data.costCenterId,
-        STATUS: data.status || 1,
-        UPDATED_BY: data.updatedBy || 1, // TODO: Get from user session
-        // STATUS is not included - it's managed by soft delete functionality
+        STATUS: 1, // Always set to Active (1) when creating
+        CREATED_BY: data.createdBy || 1, // TODO: Get from user session
+        // CREATED_DATE will be auto-filled by database (SYSTIMESTAMP)
+        // ID is auto-increment, no need to send
       };
 
-      console.log("Updating organization ID:", organization.ID);
       console.log("Sending to backend:", backendData);
 
-      // Use the mutation hook
-      await updateOrganizationMutation.mutateAsync({
-        id: organization.ID,
-        data: backendData,
-      });
+      await createOrganizationMutation.mutateAsync(backendData);
 
-      console.log("Organization updated successfully");
-      toast.success("Organization updated successfully!");
+      // Show success message
+      toast.success("Organization created successfully!");
 
       // Reset form and close dialog
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating organization:", error);
+      console.error("Error creating organization:", error);
       toast.error(
-        error.message || "Failed to update organization. Please try again.",
+        error?.message || "Failed to create organization. Please try again.",
       );
     }
   };
@@ -201,8 +181,6 @@ export default function UpdateOrganizationDialog({
     onOpenChange(false);
   };
 
-  const isSubmitting = updateOrganizationMutation.isPending;
-
   return (
     <Dialog
       open={open}
@@ -212,21 +190,17 @@ export default function UpdateOrganizationDialog({
         }
       }}
     >
-      
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle>Update Organization</DialogTitle>
-              <DialogDescription>
-                Edit organization details for "{organization?.NAME}"
-              </DialogDescription>
-            </div>
+        {showLoading && (
+          <div className="flex text-xl font-bold items-center justify-center w-full h-full">
+            Loading....
           </div>
-        </DialogHeader>
+        )}
+        <FormDialogHeader
+  icon={IconBuildingPlus}
+  title="Add New Organization"
+  description="Set up a new organizational unit to manage departments and teams."
+/>
 
         <Form {...form}>
           <div className="space-y-5">
@@ -242,11 +216,7 @@ export default function UpdateOrganizationDialog({
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Enter organization name"
-                        disabled={isSubmitting}
-                        {...field}
-                      />
+                      <Input placeholder="Enter organization name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -266,7 +236,6 @@ export default function UpdateOrganizationDialog({
                     <Select
                       onValueChange={(value) => field.onChange(Number(value))}
                       value={field.value?.toString()}
-                      disabled={isSubmitting}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -303,7 +272,6 @@ export default function UpdateOrganizationDialog({
                           <Button
                             variant="outline"
                             role="combobox"
-                            disabled={isSubmitting}
                             className={`w-full justify-between font-normal ${
                               !field.value && "text-muted-foreground"
                             }`}
@@ -326,22 +294,10 @@ export default function UpdateOrganizationDialog({
                           <CommandList>
                             <CommandEmpty>No organization found.</CommandEmpty>
                             <CommandGroup>
-                              <CommandItem
-                                value="clear-selection"
-                                onSelect={() => {
-                                  field.onChange(null);
-                                  setParentOrgOpen(false);
-                                }}
-                              >
-                                <span className="text-muted-foreground">
-                                  Clear selection
-                                </span>
-                              </CommandItem>
                               {organizationData.map((org) => (
                                 <CommandItem
                                   key={org.ID}
                                   value={org.NAME}
-                                  disabled={organization.ID === org.ID}
                                   onSelect={() => {
                                     field.onChange(org.ID);
                                     setParentOrgOpen(false);
@@ -390,7 +346,6 @@ export default function UpdateOrganizationDialog({
                             <Button
                               variant="outline"
                               role="combobox"
-                              disabled={isSubmitting}
                               className={`w-full justify-between font-normal ${
                                 !field.value && "text-muted-foreground"
                               }`}
@@ -413,17 +368,6 @@ export default function UpdateOrganizationDialog({
                             <CommandList>
                               <CommandEmpty>No cost center found.</CommandEmpty>
                               <CommandGroup>
-                                <CommandItem
-                                  value="clear-selection"
-                                  onSelect={() => {
-                                    field.onChange(null);
-                                    setCostCenterOpen(false);
-                                  }}
-                                >
-                                  <span className="text-muted-foreground">
-                                    Clear selection
-                                  </span>
-                                </CommandItem>
                                 {costCenterOrgs.map((cc) => (
                                   <CommandItem
                                     key={cc.ID}
@@ -471,7 +415,6 @@ export default function UpdateOrganizationDialog({
                           <Button
                             variant="outline"
                             role="combobox"
-                            disabled={isSubmitting}
                             className={`w-full justify-between font-normal ${
                               !field.value && "text-muted-foreground"
                             }`}
@@ -490,17 +433,6 @@ export default function UpdateOrganizationDialog({
                           <CommandList>
                             <CommandEmpty>No location found.</CommandEmpty>
                             <CommandGroup>
-                              <CommandItem
-                                value="clear-selection"
-                                onSelect={() => {
-                                  field.onChange("");
-                                  setLocationOpen(false);
-                                }}
-                              >
-                                <span className="text-muted-foreground">
-                                  Clear selection
-                                </span>
-                              </CommandItem>
                               {locations.map((loc) => (
                                 <CommandItem
                                   key={loc.ID}
@@ -532,25 +464,20 @@ export default function UpdateOrganizationDialog({
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button
                 onClick={form.handleSubmit(onSubmit)}
-                disabled={isSubmitting}
+                disabled={createOrganizationMutation.isPending}
               >
-                {isSubmitting ? (
+                {createOrganizationMutation.isPending ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
-                    Updating...
+                    Creating...
                   </>
                 ) : (
-                  "Update Organization"
+                  "Save Organization"
                 )}
               </Button>
             </DialogFooter>

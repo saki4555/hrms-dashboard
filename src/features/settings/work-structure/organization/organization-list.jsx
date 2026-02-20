@@ -46,9 +46,9 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useDeleteOrganization, useOrganizations } from "../queries";
+import { useDeleteOrganization, useOrganizations } from "./queries";
 import { Spinner } from "@/components/ui/spinner";
-import UpdateOrganizationDialog from "./update-organization-dialog";
+
 import AddOrganizationDialog from "./AddOrganizationDialog";
 import { IconCircleDashedPlus, IconCirclePlus, IconCirclePlus2, IconCirclePlusFilled, IconEdit, IconEditCircle, IconPlus, IconRefresh } from "@tabler/icons-react";
 import {
@@ -66,6 +66,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router";
+import UpdateOrganizationDialog from "./update-organization-dialog";
 
 
 export default function OrganizationList() {

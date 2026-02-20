@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -19,13 +21,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+
 import {
   Table,
   TableBody,
@@ -43,9 +39,17 @@ import { Spinner } from "@/components/ui/spinner";
 import AddPositionDialog from "./AddPositionDialog";
 
 import { IconPlus } from "@tabler/icons-react";
-import { useDeletePosition, usePositions } from "../queries";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { useDeletePosition, useOrgPositions } from "../queries";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import UpdatePositionDialog from "./update-position-dialog";
+import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
+import { useOrgTypes } from "../../organization-types/queries";
+import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
 
 export default function PositionList() {
   const [sorting, setSorting] = useState([]);
@@ -66,7 +70,15 @@ export default function PositionList() {
     error,
     refetch,
     isFetching,
-  } = usePositions();
+  } = useOrgPositions();
+
+  const {
+    data: organizationTypes = [],
+    isLoading: isLoadingOrganizaitonTypes,
+  } = useOrgTypes();
+
+  console.log("org - positionData ---------", positionData);
+  console.log("organizationTypes ---------", organizationTypes);
 
   const deletePositionMutation = useDeletePosition();
 
@@ -89,7 +101,9 @@ export default function PositionList() {
         await deletePositionMutation.mutateAsync(position.ID);
         toast.success("Position deleted successfully!");
       } catch (error) {
-        toast.error(error?.message || "Failed to delete position. Please try again.");
+        toast.error(
+          error?.message || "Failed to delete position. Please try again.",
+        );
       }
     }
   };
@@ -119,38 +133,41 @@ export default function PositionList() {
     },
     {
       accessorKey: "POSITION_TITLE",
-      header: "Position Title",
+      header: ({ column }) => (
+        <CustomDataTableColumnHeader column={column} title="Grade" />
+      ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("POSITION_TITLE") || "N/A"}</div>
+        <div className="font-medium ps-2">
+          {row.getValue("POSITION_TITLE") || "N/A"}
+        </div>
       ),
     },
     {
       accessorKey: "ORG_NAME",
-      header: "Organization",
-      cell: ({ row }) => (
-        <div>{row.getValue("ORG_NAME") || "N/A"}</div>
-      ),
+      header: ({ column }) => <CustomDataTableColumnHeader column={column} title="Organization"/>,
+      cell: ({ row }) => <div className="ps-2">{row.getValue("ORG_NAME") || "N/A"}</div>,
+
+      filterFn: (row, id, value) => {
+        return value.includes(row.getValue(id));
+      },
     },
     {
       accessorKey: "FTE",
-      header: "FTE",
-      cell: ({ row }) => (
-        <div>{row.getValue("FTE") ?? "N/A"}</div>
-      ),
+     
+      header: ({ column }) => <CustomDataTableColumnHeader column={column} title="FTE"/>,
+      cell: ({ row }) => <div className="ps-2">{row.getValue("FTE") ?? "N/A"}</div>,
     },
     {
       accessorKey: "ACTUAL_COUNT",
-      header: "Actual Count",
-      cell: ({ row }) => (
-        <div>{row.getValue("ACTUAL_COUNT") ?? 0}</div>
-      ),
+      // header: "Actual Count",
+      header: ({ column }) => <CustomDataTableColumnHeader column={column} title="Actual Count"/>,
+      cell: ({ row }) => <div className="ps-2">{row.getValue("ACTUAL_COUNT") ?? 0}</div>,
     },
     {
       accessorKey: "GRADE",
-      header: "Grade",
-      cell: ({ row }) => (
-        <div>{row.getValue("GRADE") || "N/A"}</div>
-      ),
+      // header: "Grade",
+      header: ({ column }) => <CustomDataTableColumnHeader column={column} title="Grade"/>,
+      cell: ({ row }) => <div className="ps-2">{row.getValue("GRADE") || "N/A"}</div>,
     },
     {
       id: "actions",
@@ -201,6 +218,8 @@ export default function PositionList() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     state: {
@@ -219,7 +238,9 @@ export default function PositionList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">Positions</h1>
-              <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+              <p className="text-muted-foreground mt-1">
+                Manage position assignments and records
+              </p>
             </div>
             <Button disabled>
               <IconPlus size={20} className="mr-2" />
@@ -245,7 +266,9 @@ export default function PositionList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">Positions</h1>
-              <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+              <p className="text-muted-foreground mt-1">
+                Manage position assignments and records
+              </p>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus size={20} className="mr-2" />
@@ -259,7 +282,10 @@ export default function PositionList() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Positions</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
-              <p>{error?.message || "Failed to load positions. Please try again."}</p>
+              <p>
+                {error?.message ||
+                  "Failed to load positions. Please try again."}
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -268,9 +294,15 @@ export default function PositionList() {
                 className="w-fit"
               >
                 {isFetching ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
                 ) : (
-                  <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
                 )}
               </Button>
             </AlertDescription>
@@ -286,7 +318,9 @@ export default function PositionList() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Positions</h1>
-            <p className="text-muted-foreground mt-1">Manage position assignments and records</p>
+            <p className="text-muted-foreground mt-1">
+              Manage position assignments and records
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -296,7 +330,9 @@ export default function PositionList() {
               disabled={isFetching}
               title="Refresh data"
             >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
             </Button>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus size={20} className="mr-2" />
@@ -308,37 +344,26 @@ export default function PositionList() {
 
       <div className="bg-card rounded-lg shadow-sm p-4">
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Input
-              placeholder="Search positions..."
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-sm"
-            />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-auto">
-                  Columns <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((col) => col.getCanHide())
-                  .map((col) => (
-                    <DropdownMenuCheckboxItem
-                      key={col.id}
-                      className="capitalize"
-                      checked={col.getIsVisible()}
-                      onCheckedChange={(value) => col.toggleVisibility(!!value)}
-                    >
-                      {col.id.replace(/_/g, " ")}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <CustomDataTableToolbar
+            table={table}
+            searchPlaceholder="Search positions..."
+            filters={[
+              {
+                columnId: "ORG_NAME",
+                title: "Organization",
+                options: Array.from(
+                  new Map(
+                    positionData
+                      .filter((pos) => pos.ORG_NAME)
+                      .map((pos) => [
+                        pos.ORG_NAME,
+                        { label: pos.ORG_NAME, value: pos.ORG_NAME },
+                      ]),
+                  ).values(),
+                ),
+              },
+            ]}
+          />
 
           <div className="overflow-hidden rounded-md border">
             <Table>
@@ -349,7 +374,10 @@ export default function PositionList() {
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -359,17 +387,26 @@ export default function PositionList() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">
