@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
 import { CheckIcon, PlusCircleIcon } from 'lucide-react'
+import { IconFilter } from '@tabler/icons-react'
+
 
 export function DataTableFacetedFilter({ column, title, options }) {
   const facets = column?.getFacetedUniqueValues()
@@ -28,7 +30,7 @@ export function DataTableFacetedFilter({ column, title, options }) {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant='outline' size='sm' className='h-8 border-dashed'>
-          <PlusCircleIcon className='size-4' />
+          <IconFilter className='size-4' />
           {title}
           {selectedValues?.size > 0 && (
             <>
