@@ -21,6 +21,14 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 import {
   Table,
@@ -50,6 +58,7 @@ import UpdatePositionDialog from "./update-position-dialog";
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 import { useOrgTypes } from "../../organization-types/queries";
 import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
+import { Link } from "react-router";
 
 export default function PositionList() {
   const [sorting, setSorting] = useState([]);
@@ -134,7 +143,7 @@ export default function PositionList() {
     {
       accessorKey: "POSITION_TITLE",
       header: ({ column }) => (
-        <CustomDataTableColumnHeader column={column} title="Grade" />
+        <CustomDataTableColumnHeader column={column} title="Position Title" />
       ),
       cell: ({ row }) => (
         <div className="font-medium ps-2">
@@ -316,11 +325,30 @@ export default function PositionList() {
     <div>
       <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Positions</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage position assignments and records
-            </p>
+           <div className="space-y-0.5">
+           
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight ">
+              Positions
+            </h1>
+             <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/">Dashboard</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>Work Structure</BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="text-muted-foreground/80 ">Position</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+
+            {/* <p className="text-sm text-muted-foreground leading-snug">
+        Manage organization information and records
+      </p> */}
           </div>
           <div className="flex items-center gap-2">
             <Button

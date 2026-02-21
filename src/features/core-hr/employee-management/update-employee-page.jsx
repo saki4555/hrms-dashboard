@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   BriefcaseIcon,
   IdCard,
@@ -9,6 +9,8 @@ import {
   Home,
   FileEditIcon,
   Plus,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,11 +42,30 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   MARITAL_STATUS_OPTIONS,
   REG_DISABILITY_OPTIONS,
 } from "@/lib/constants/employeeOptions";
 import { DatePicker } from "@/components/DatePicker";
-import { usePersonTypes } from "../hooks/usePersonTypes";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
@@ -57,6 +78,12 @@ import PageContainer from "@/components/page-container";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
+import { useCompanies } from "@/features/settings/work-structure/company/queries";
+import { useOrganizations } from "@/features/settings/work-structure/organization/queries";
+import { useOrgPositions } from "@/features/settings/work-structure/position/queries";
+import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
+import { usePersonTypes } from "../employee-types/queries";
+import { Badge } from "@/components/ui/badge";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -137,12 +164,13 @@ const employeeSchema = z
     effectiveEndDate: z.date({
       required_error: "Effective end date is required",
     }),
-    companyId: z.string().min(1, "Company ID is required").trim(),
-    ouId: z.string().min(1, "OU ID is required").trim(),
-    orgId: z.string().min(1, "Org ID is required").trim(),
-    positionId: z.string().min(1, "Position ID is required").trim(),
+    companyId: z.string().min(1, "Company is required").trim(),
+    ouId: z.string().min(1, "Operational Unit is required").trim(),
+    orgId: z.string().min(1, "Organization is required").trim(),
+    positionId: z.string().min(1, "Position is required").trim(),
+    orgPositionId: z.string().min(1, "Position is required").trim(),
     payrollId: z.string().min(1, "Payroll ID is required").trim(),
-    gradeId: z.string().min(1, "Grade ID is required").trim(),
+    gradeId: z.string().min(1, "Grade is required").trim(),
     assignmentEffectiveStartDate: z.date({
       required_error: "Assignment start date is required",
     }),
@@ -355,7 +383,87 @@ function AddressFields({ form, prefix, disabled }) {
   );
 }
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Reusable Combobox Field ──────────────────────────────────────────────────
+function ComboboxField({
+  form,
+  name,
+  label,
+  items,
+  idKey,
+  nameKey,
+  placeholder,
+  disabled = false,
+  onSelect,
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedId = form.watch(name);
+  const selectedItem = items.find(
+    (item) => String(item[idKey]) === String(selectedId),
+  );
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label} *</FormLabel>
+          <Popover modal={true} open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <FormControl>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  disabled={disabled}
+                  className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
+                >
+                  {selectedItem ? selectedItem[nameKey] : placeholder}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </FormControl>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput
+                  placeholder={`Search ${label.toLowerCase()}...`}
+                  className="h-9"
+                />
+                <CommandList>
+                  <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
+                  <CommandGroup>
+                    {items.map((item) => (
+                      <CommandItem
+                        key={item[idKey]}
+                        value={item[nameKey]}
+                        onSelect={() => {
+                          field.onChange(String(item[idKey]));
+                          onSelect?.(item);
+                          setOpen(false);
+                        }}
+                      >
+                        {item[nameKey]}
+                        <Check
+                          className={`ml-auto h-4 w-4 ${
+                            String(field.value) === String(item[idKey])
+                              ? "opacity-100"
+                              : "opacity-0"
+                          }`}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const parseDate = (dateString) => {
   if (!dateString) return undefined;
   return new Date(dateString);
@@ -367,16 +475,20 @@ const fd = (date) => (date ? format(date, "yyyy-MM-dd") : null);
 export default function UpdateEmployeePage() {
   const { personId } = useParams();
   const navigate = useNavigate();
-  const { data: personTypes = [] } = usePersonTypes();
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   const updateEmployeeMutation = useUpdateEmployee();
   const createEmployeeMutation = useCreateEmployee();
 
-  const [submissionType, setSubmissionType] = useState(null); // "correction" | "update" | null
+  const [submissionType, setSubmissionType] = useState(null);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [newPersonId, setNewPersonId] = useState(null);
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
+
+  // FIX: track whether the form has been seeded from employee data, so we
+  // know when to apply the async second-pass (orgPositionId resolution).
+  const [formSeeded, setFormSeeded] = useState(false);
 
   const isSubmitting = submissionType !== null;
 
@@ -386,8 +498,21 @@ export default function UpdateEmployeePage() {
     isError,
     error,
   } = useEmployeeById(personId);
+  const { data: personTypes = [], isLoading: personTypesLoading } =
+    usePersonTypes();
+  const { data: companies = [], isLoading: companiesLoading } = useCompanies();
+  const { data: organizations = [], isLoading: organizationsLoading } =
+    useOrganizations();
+  const { data: orgPositions = [], isLoading: orgPositionsLoading } =
+    useOrgPositions();
+  const { data: grades = [], isLoading: gradesLoading } = useGrades();
 
-  console.log("employee----", employee);
+  const filteredPositions = useMemo(() => {
+    if (!selectedOrgId) return [];
+    return orgPositions.filter(
+      (pos) => String(pos.ORG_ID) === String(selectedOrgId),
+    );
+  }, [orgPositions, selectedOrgId]);
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
@@ -414,6 +539,7 @@ export default function UpdateEmployeePage() {
       ouId: "",
       orgId: "",
       positionId: "",
+      orgPositionId: "",
       payrollId: "",
       gradeId: "",
       presentAddress: {
@@ -439,7 +565,7 @@ export default function UpdateEmployeePage() {
     },
   });
 
-  // Populate form once employee data is fetched
+  // ── 1. Populate form when employee data loads ─────────────────────────────
   useEffect(() => {
     if (!employee) return;
 
@@ -455,6 +581,9 @@ export default function UpdateEmployeePage() {
       effectiveStartDate: parseDate(a?.EFFECTIVE_START_DATE),
       effectiveEndDate: parseDate(a?.EFFECTIVEEND_DATE),
     });
+
+    const existingOrgId = employee.assignment?.ORG_ID;
+    if (existingOrgId) setSelectedOrgId(existingOrgId);
 
     form.reset({
       empNo: employee.EMP_NO || "",
@@ -479,13 +608,14 @@ export default function UpdateEmployeePage() {
       regDisability: employee.REG_DISABILITY?.toString() || "",
       effectiveStartDate: parseDate(employee.EFFECTIVE_START_DATE),
       effectiveEndDate: parseDate(employee.EFFECTIVEEND_DATE),
-      // Assignment — showing IDs for now
-      // TODO: Replace companyId, ouId, orgId, positionId, payrollId, gradeId with
-      //       human-readable Select dropdowns once lookup tables are available from API
       companyId: employee.assignment?.COMPANY_ID?.toString() || "",
       ouId: employee.assignment?.OU_ID?.toString() || "",
       orgId: employee.assignment?.ORG_ID?.toString() || "",
-      positionId: employee.assignment?.POSITION_ID?.toString() || "",
+      // FIX: positionId and orgPositionId are resolved in the second useEffect
+      // once orgPositions has loaded. Leave them empty here so the second
+      // effect can set them correctly with the proper master POSITION_ID.
+      positionId: "",
+      orgPositionId: "",
       payrollId: employee.assignment?.PAYROLL_ID?.toString() || "",
       gradeId: employee.assignment?.GRADE_ID?.toString() || "",
       assignmentEffectiveStartDate: parseDate(
@@ -497,8 +627,54 @@ export default function UpdateEmployeePage() {
       presentAddress: addr(employee.presentAddress),
       permanentAddress: addr(employee.permanentAddress),
     });
-  }, [employee, form]);
 
+    setFormSeeded(true);
+  }, [employee]);
+
+  // ── 2. Resolve positionId + orgPositionId once orgPositions array is available ──
+  //
+  // KEY FIX: The assignment's POSITION_ID is actually HR_ORG_POSITION.ID (the
+  // junction row primary key), NOT the master position ID. We find the matching
+  // row by pos.ID to get pos.POSITION_ID (master) for display in the combobox,
+  // and keep pos.ID as orgPositionId to send to the backend.
+  useEffect(() => {
+    if (!formSeeded || !employee || orgPositions.length === 0) return;
+
+    // assignment.POSITION_ID == HR_ORG_POSITION.ID (junction row)
+    const assignedOrgPositionId =
+      employee.assignment?.POSITION_ID?.toString() || "";
+    const orgId = employee.assignment?.ORG_ID;
+
+    if (!assignedOrgPositionId || !orgId) return;
+
+    const match = orgPositions.find(
+      (pos) =>
+        String(pos.ID) === assignedOrgPositionId &&
+        String(pos.ORG_ID) === String(orgId),
+    );
+
+    if (match) {
+      // positionId = master POSITION_ID → used for combobox display match
+      form.setValue("positionId", String(match.POSITION_ID), {
+        shouldValidate: false,
+      });
+      // orgPositionId = junction row ID → sent to backend
+      form.setValue("orgPositionId", String(match.ID), {
+        shouldValidate: false,
+      });
+      // Also auto-fill grade from the matched position
+      if (match.GRADE) {
+        const matchedGrade = grades.find((g) => g.GRADE === match.GRADE);
+        if (matchedGrade) {
+          form.setValue("gradeId", String(matchedGrade.ID), {
+            shouldValidate: false,
+          });
+        }
+      }
+    }
+  }, [formSeeded, employee, orgPositions, grades]);
+
+  // ─── Payload builder ───────────────────────────────────────────────────────
   const buildPayload = (data) => ({
     employee: {
       EMP_NO: data.empNo,
@@ -554,7 +730,7 @@ export default function UpdateEmployeePage() {
       COMPANY_ID: parseInt(data.companyId),
       OU_ID: parseInt(data.ouId),
       ORG_ID: parseInt(data.orgId),
-      POSITION_ID: parseInt(data.positionId),
+      POSITION_ID: parseInt(data.orgPositionId), // HR_ORG_POSITION.ID
       PAYROLL_ID: parseInt(data.payrollId),
       GRADE_ID: parseInt(data.gradeId),
       EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
@@ -562,7 +738,7 @@ export default function UpdateEmployeePage() {
     },
   });
 
-  // Correction → PUT (update existing record in place)
+  // ─── Submit handlers ───────────────────────────────────────────────────────
   const handleFormSubmit = async (data, operationType) => {
     try {
       setSubmissionType(operationType);
@@ -571,22 +747,22 @@ export default function UpdateEmployeePage() {
 
       const payload = buildPayload(data);
 
-      // Replace the two navigate calls after success in handleFormSubmit:
-
       if (operationType === "correction") {
         await updateEmployeeMutation.mutateAsync({
           personId: employee.PERSON_ID,
-          data: { ...payload, STATUS: employee.STATUS, LAST_UPDATE_BY: 101 },
+          data: {
+            ...payload,
+            employee: { ...payload.employee, LAST_UPDATE_BY: 101 },
+            STATUS: employee.STATUS,
+          },
         });
         toast.success("Employee corrected successfully!");
         setSubmitStatus("success");
         setStatusMessage("Employee corrected successfully!");
-        // personId already known from params, no need to store it
       } else {
         const result = await createEmployeeMutation.mutateAsync(payload);
-        const newPersonId =
-          result?.data?.PERSON_ID || result?.PERSON_ID || null;
-        setNewPersonId(newPersonId);
+        const createdPersonId = result?.PERSON_ID || null;
+        setNewPersonId(createdPersonId);
         toast.success("Employee updated (new record created) successfully!");
         setSubmitStatus("success");
         setStatusMessage("Employee updated (new record created) successfully!");
@@ -604,7 +780,6 @@ export default function UpdateEmployeePage() {
     }
   };
 
-  // Update button needs a confirmation first
   const handleUpdateClick = async () => {
     const isValid = await form.trigger();
     if (!isValid) return;
@@ -643,7 +818,7 @@ export default function UpdateEmployeePage() {
 
   const allErrors = flattenErrors(form.formState.errors);
 
-  // ── Loading & error states ────────────────────────────────────────────────
+  // ── Loading & error states ─────────────────────────────────────────────────
   if (isLoading) {
     return (
       <PageContainer>
@@ -669,7 +844,7 @@ export default function UpdateEmployeePage() {
     );
   }
 
-  // ── Page ─────────────────────────────────────────────────────────────────
+  // ── Page ───────────────────────────────────────────────────────────────────
   return (
     <PageContainer className="px-6">
       {/* Header */}
@@ -685,14 +860,13 @@ export default function UpdateEmployeePage() {
               </h1>
               <Breadcrumb>
                 <BreadcrumbList>
-                 
                   <BreadcrumbItem className="hidden md:block">
                     Core HR
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/core-hr/employees">
+                      <Link to="/core-hr/employee-management">
                         Employee Management
                       </Link>
                     </BreadcrumbLink>
@@ -764,7 +938,6 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* First & Last Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -802,7 +975,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Father's Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -840,7 +1012,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Mother's Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -878,7 +1049,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Gender */}
                       <FormField
                         control={form.control}
                         name="gender"
@@ -911,7 +1081,6 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* DOB & NID */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -950,7 +1119,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Birth Reg No & Town */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -988,7 +1156,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Region & Country of Birth */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -1026,7 +1193,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Marital Status */}
                       <FormField
                         control={form.control}
                         name="maritalStatus"
@@ -1061,7 +1227,6 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* Nationality */}
                       <FormField
                         control={form.control}
                         name="nationality"
@@ -1127,7 +1292,6 @@ export default function UpdateEmployeePage() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4">
-                      {/* Employee Number */}
                       <FormField
                         control={form.control}
                         name="empNo"
@@ -1146,7 +1310,6 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* Join Date & Effective Start Date */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -1186,7 +1349,6 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      {/* Effective End Date */}
                       <FormField
                         control={form.control}
                         name="effectiveEndDate"
@@ -1206,38 +1368,48 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* Person Type */}
+                      {/*
+                        FIX — Person Type Select:
+                        The `key` prop forces the Select to remount whenever `personTypeId`
+                        changes (i.e. after form.reset() sets it from the employee data).
+                        Without this, the shadcn Select renders before personTypes have
+                        loaded and never updates its displayed label even though the
+                        controlled `value` is correct.
+                      */}
                       <FormField
                         control={form.control}
                         name="personTypeId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Person Type *</FormLabel>
-                            <FormControl>
-                              <RadioGroup
-                                onValueChange={field.onChange}
-                                value={field.value}
-                                disabled={isSubmitting}
-                                className="flex flex-row gap-x-3 flex-wrap"
-                              >
+                            <Select
+                              key={`person-type-${field.value}-${personTypes.length}`}
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={isSubmitting || personTypesLoading}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={
+                                      personTypesLoading
+                                        ? "Loading..."
+                                        : "Select person type"
+                                    }
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
                                 {personTypes.map((type) => (
-                                  <div
+                                  <SelectItem
                                     key={type.PERSON_TYPE_ID}
-                                    className="flex items-center space-x-2"
+                                    value={String(type.PERSON_TYPE_ID)}
                                   >
-                                    <RadioGroupItem
-                                      value={type.PERSON_TYPE_ID.toString()}
-                                      id={`person-type-${type.PERSON_TYPE_ID}`}
-                                    />
-                                    <Label
-                                      htmlFor={`person-type-${type.PERSON_TYPE_ID}`}
-                                    >
-                                      {type.PERSON_TYPE}
-                                    </Label>
-                                  </div>
+                                    {type.PERSON_TYPE}
+                                  </SelectItem>
                                 ))}
-                              </RadioGroup>
-                            </FormControl>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1286,120 +1458,250 @@ export default function UpdateEmployeePage() {
                           Assignment
                         </p>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="companyId"
-                              render={({ field }) => (
+                          <ComboboxField
+                            form={form}
+                            name="companyId"
+                            label="Company"
+                            items={companies}
+                            idKey="COMPANY_ID"
+                            nameKey="COMPANY_NAME"
+                            placeholder={
+                              companiesLoading ? "Loading..." : "Select company"
+                            }
+                            disabled={isSubmitting || companiesLoading}
+                          />
+
+                          <ComboboxField
+                            form={form}
+                            name="ouId"
+                            label="Operational Unit"
+                            items={organizations}
+                            idKey="ID"
+                            nameKey="NAME"
+                            placeholder={
+                              organizationsLoading
+                                ? "Loading..."
+                                : "Select operational unit"
+                            }
+                            disabled={isSubmitting || organizationsLoading}
+                          />
+
+                          <ComboboxField
+                            form={form}
+                            name="orgId"
+                            label="Organization"
+                            items={organizations}
+                            idKey="ID"
+                            nameKey="NAME"
+                            placeholder={
+                              organizationsLoading
+                                ? "Loading..."
+                                : "Select organization"
+                            }
+                            disabled={isSubmitting || organizationsLoading}
+                            onSelect={(org) => {
+                              setSelectedOrgId(org.ID);
+                              form.setValue("positionId", "", {
+                                shouldValidate: false,
+                              });
+                              form.setValue("orgPositionId", "", {
+                                shouldValidate: false,
+                              });
+                              form.setValue("gradeId", "", {
+                                shouldValidate: false,
+                              });
+                            }}
+                          />
+
+                          {/*
+                            FIX — Position combobox:
+                            selectedPosition now looks up by pos.POSITION_ID (master)
+                            which is what positionId stores, so the label correctly
+                            shows after the second useEffect resolves the values.
+                          */}
+                          <FormField
+                            control={form.control}
+                            name="positionId"
+                            render={({ field }) => {
+                              const [posOpen, setPosOpen] = useState(false);
+                              const isDisabled =
+                                isSubmitting ||
+                                !selectedOrgId ||
+                                orgPositionsLoading;
+
+                              const selectedPosition = filteredPositions.find(
+                                (pos) =>
+                                  String(pos.POSITION_ID) ===
+                                  String(field.value),
+                              );
+
+                              const handlePositionSelect = (pos) => {
+                                field.onChange(String(pos.POSITION_ID));
+                                form.setValue("orgPositionId", String(pos.ID), {
+                                  shouldValidate: false,
+                                });
+                                if (pos.GRADE) {
+                                  const matchedGrade = grades.find(
+                                    (g) => g.GRADE === pos.GRADE,
+                                  );
+                                  if (matchedGrade) {
+                                    form.setValue(
+                                      "gradeId",
+                                      String(matchedGrade.ID),
+                                      { shouldValidate: true },
+                                    );
+                                  }
+                                }
+                                setPosOpen(false);
+                              };
+
+                              return (
                                 <FormItem>
-                                  {/* TODO: Replace with company Select fetched from backend */}
-                                  <FormLabel>Company ID *</FormLabel>
+                                  <FormLabel>Position *</FormLabel>
+                                  <Popover
+                                    modal={true}
+                                    open={posOpen}
+                                    onOpenChange={setPosOpen}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <FormControl>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          disabled={isDisabled}
+                                          className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
+                                        >
+                                          {!selectedOrgId && !isSubmitting
+                                            ? "Select an organization first"
+                                            : orgPositionsLoading
+                                              ? "Loading..."
+                                              : selectedPosition
+                                                ? selectedPosition.POSITION_TITLE
+                                                : "Select position"}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0">
+                                      <Command>
+                                        <CommandInput
+                                          placeholder="Search positions..."
+                                          className="h-9"
+                                        />
+                                        <CommandList>
+                                          <CommandEmpty>
+                                            {filteredPositions.length === 0
+                                              ? "No positions found for this organization."
+                                              : "No position found."}
+                                          </CommandEmpty>
+                                          <CommandGroup>
+                                            {filteredPositions.map((pos) => {
+                                              const isFull =
+                                                pos.ACTUAL_COUNT >= pos.FTE;
+                                              return (
+                                                <CommandItem
+                                                  key={pos.ID}
+                                                  value={pos.POSITION_TITLE}
+                                                  disabled={isFull}
+                                                  onSelect={() => {
+                                                    if (isFull) return;
+                                                    handlePositionSelect(pos);
+                                                  }}
+                                                  className={
+                                                    isFull
+                                                      ? "opacity-50 cursor-not-allowed"
+                                                      : ""
+                                                  }
+                                                >
+                                                  <div className="flex flex-col flex-1 min-w-0">
+                                                    <span className="truncate">
+                                                      {pos.POSITION_TITLE}
+                                                    </span>
+                                                    {pos.GRADE && (
+                                                      <span className="text-xs text-muted-foreground">
+                                                        {pos.GRADE} ·{" "}
+                                                        {pos.LEVELS}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  {isFull ? (
+                                                    <Badge
+                                                      variant="secondary"
+                                                      className="ml-auto shrink-0 text-xs font-normal"
+                                                    >
+                                                      Full ({pos.ACTUAL_COUNT}/
+                                                      {pos.FTE})
+                                                    </Badge>
+                                                  ) : (
+                                                    <Check
+                                                      className={`ml-auto h-4 w-4 shrink-0 ${
+                                                        String(field.value) ===
+                                                        String(pos.POSITION_ID)
+                                                          ? "opacity-100"
+                                                          : "opacity-0"
+                                                      }`}
+                                                    />
+                                                  )}
+                                                </CommandItem>
+                                              );
+                                            })}
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+
+                          {/* Grade — read-only, auto-filled */}
+                          <FormField
+                            control={form.control}
+                            name="gradeId"
+                            render={({ field }) => {
+                              const selectedGrade = grades.find(
+                                (g) => String(g.ID) === String(field.value),
+                              );
+                              return (
+                                <FormItem>
+                                  <FormLabel>Grade</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Enter company ID"
-                                      disabled={isSubmitting}
-                                      {...field}
+                                      readOnly
+                                      disabled
+                                      value={
+                                        selectedGrade ? selectedGrade.GRADE : ""
+                                      }
+                                      placeholder="Auto-filled from selected position"
+                                      className="bg-muted/50 cursor-not-allowed"
                                     />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="ouId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with OU Select fetched from backend */}
-                                  <FormLabel>OU ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter OU ID"
-                                      disabled={isSubmitting}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="orgId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Organization Select fetched from backend */}
-                                  <FormLabel>Org ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter org ID"
-                                      disabled={isSubmitting}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="positionId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Position Select fetched from backend */}
-                                  <FormLabel>Position ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter position ID"
-                                      disabled={isSubmitting}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="payrollId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Payroll Select fetched from backend */}
-                                  <FormLabel>Payroll ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter payroll ID"
-                                      disabled={isSubmitting}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="gradeId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Grade Select fetched from backend */}
-                                  <FormLabel>Grade ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter grade ID"
-                                      disabled={isSubmitting}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                              );
+                            }}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="payrollId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Payroll ID *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter payroll ID"
+                                    disabled={isSubmitting}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
                               control={form.control}
@@ -1497,7 +1799,7 @@ export default function UpdateEmployeePage() {
                   <CheckCircle className="h-4 w-4" />
                   {statusMessage}
                   <Link
-                    to="/core-hr/employee-management"
+                    to="/core-hr/employees"
                     className="ml-2 underline font-medium hover:no-underline"
                   >
                     View Employees
@@ -1531,7 +1833,7 @@ export default function UpdateEmployeePage() {
                 Cancel
               </Button>
 
-              {/* Correction — PUT (fixes data in place) */}
+              {/* Correction — PUT */}
               <Button
                 type="button"
                 onClick={form.handleSubmit(
@@ -1554,7 +1856,7 @@ export default function UpdateEmployeePage() {
                 )}
               </Button>
 
-              {/* Update — POST (archives old, creates new record) */}
+              {/* Update — POST */}
               <Button
                 type="button"
                 onClick={handleUpdateClick}

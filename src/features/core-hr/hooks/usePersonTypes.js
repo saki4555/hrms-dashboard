@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getPersonTypes } from "../api/employeeApi";
 
 
-export const usePersonTypes = () => {
+export const usePersonTypesOld = () => {
     return useQuery({
         queryKey: ["personTypes"],
         queryFn: getPersonTypes,

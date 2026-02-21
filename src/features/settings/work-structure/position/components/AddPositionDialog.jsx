@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
+import { addYears, format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, Briefcase } from "lucide-react";
+import { Check, ChevronsUpDown, Briefcase, Lock } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -35,43 +36,34 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/DatePicker";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreatePosition } from "../queries";
+import { useCreatePosition, useOrgPositions } from "../queries";
 import { usePositions } from "../../hr-position/queries";
 import { useOrganizations } from "../../organization/queries";
 
-const getDefaultStartDate = () => new Date();
-const getDefaultEndDate = () => {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() + 100);
-  return date;
-};
-
-const getEndDateFromStart = (startDate) => {
-  const endDate = new Date(startDate);
-  endDate.setFullYear(endDate.getFullYear() + 100);
-  return endDate;
-};
-
 const formSchema = z
   .object({
-    positionId: z.number({ required_error: "Position is required" }),
     orgId: z.number({ required_error: "Organization is required" }),
+    positionId: z.number({ required_error: "Position is required" }),
     fte: z
       .string({ required_error: "FTE is required" })
       .min(1, "FTE is required")
-      .refine((val) => {
-        const num = parseFloat(val);
-        return !isNaN(num) && num >= 0;
-      }, "FTE must be a non-negative number (e.g., 1 for one full-time equivalent, 2 for two)"),
-    effectiveStartDate: z.date({ required_error: "Start date is required" }),
-    effectiveEndDate: z.date({ required_error: "End date is required" }),
+      .refine(
+        (val) => {
+          const num = parseFloat(val);
+          return !isNaN(num) && num > 0;
+        },
+        "FTE must be a positive number"
+      ),
+    effectiveStartDate: z.string().min(1, "Start date is required"),
+    effectiveEndDate: z.string().min(1, "End date is required"),
   })
   .refine(
     (data) => {
       if (data.effectiveStartDate && data.effectiveEndDate) {
-        return data.effectiveEndDate > data.effectiveStartDate;
+        return new Date(data.effectiveEndDate) > new Date(data.effectiveStartDate);
       }
       return true;
     },
@@ -84,32 +76,50 @@ const formSchema = z
 export default function AddPositionDialog({ open, onOpenChange, showConfirmation }) {
   const [orgComboboxOpen, setOrgComboboxOpen] = useState(false);
   const [positionComboboxOpen, setPositionComboboxOpen] = useState(false);
-  const [positionSearch, setPositionSearch] = useState("");
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
   const { data: hrPositions = [], isLoading: hrPositionsLoading } = usePositions();
+  const { data: orgPositions = [] } = useOrgPositions();
 
   const createPositionMutation = useCreatePosition();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      positionId: null,
       orgId: null,
+      positionId: null,
       fte: "1",
-      effectiveStartDate: getDefaultStartDate(),
-      effectiveEndDate: getDefaultEndDate(),
+      effectiveStartDate: "",
+      effectiveEndDate: "",
     },
   });
 
-  const {
-    formState: { isDirty },
-  } = form;
+  const { formState: { isDirty } } = form;
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Auto-set end date to +100 years when start date changes — same pattern as AddGradeDialog
+  const startDate = form.watch("effectiveStartDate");
+  useEffect(() => {
+    if (startDate) {
+      const endDate = format(addYears(new Date(startDate), 100), "yyyy-MM-dd");
+      form.setValue("effectiveEndDate", endDate, { shouldDirty: true });
+    }
+  }, [startDate]);
+
+  // Set of POSITION_IDs already assigned to the selected org
+  const assignedPositionIds = useMemo(() => {
+    if (!selectedOrgId) return new Set();
+    return new Set(
+      orgPositions
+        .filter((op) => op.ORG_ID === selectedOrgId)
+        .map((op) => op.POSITION_ID)
+    );
+  }, [orgPositions, selectedOrgId]);
 
   if (!isMounted) return null;
 
@@ -120,21 +130,30 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
         ORG_ID: data.orgId,
         FTE: parseFloat(data.fte),
         ACTUAL_COUNT: 0,
-        EFFECTIVE_START_DATE: data.effectiveStartDate?.toISOString().split("T")[0],
-        EFFECTIVE_END_DATE: data.effectiveEndDate?.toISOString().split("T")[0],
+        EFFECTIVE_START_DATE: data.effectiveStartDate,
+        EFFECTIVE_END_DATE: data.effectiveEndDate,
         STATUS: 1,
       };
 
       await createPositionMutation.mutateAsync(backendData);
-
-      toast.success("Position created successfully!");
-      form.reset();
-      setPositionSearch("");
+      toast.success("Position assigned successfully!");
+      handleReset();
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating position:", error);
-      toast.error(error?.message || "Failed to create position. Please try again.");
+      toast.error(error?.message || "Failed to assign position. Please try again.");
     }
+  };
+
+  const handleReset = () => {
+    form.reset({
+      orgId: null,
+      positionId: null,
+      fte: "1",
+      effectiveStartDate: "",
+      effectiveEndDate: "",
+    });
+    setSelectedOrgId(null);
   };
 
   const handleCancel = async () => {
@@ -146,30 +165,16 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
         cancelText: "Keep Editing",
         variant: "destructive",
       });
-
       if (!confirmed) return;
     }
-
-    form.reset();
-    setPositionSearch("");
+    handleReset();
     onOpenChange(false);
   };
 
-  const handleStartDateChange = (date, field) => {
-    field.onChange(date);
-    if (date) {
-      const newEndDate = getEndDateFromStart(date);
-      form.setValue("effectiveEndDate", newEndDate, { shouldValidate: true });
-    }
-  };
+  const positionFieldDisabled = !selectedOrgId || hrPositionsLoading;
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) handleCancel();
-      }}
-    >
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -177,8 +182,10 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
               <Briefcase className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle>Add New Position</DialogTitle>
-              <DialogDescription>Assign a position to an organization</DialogDescription>
+              <DialogTitle>Assign Position</DialogTitle>
+              <DialogDescription>
+                Select an organization first, then choose a position to assign to it.
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -187,76 +194,15 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* Position — API shape: { POSITION_ID, TITLE, ... } */}
-              <FormField
-                control={form.control}
-                name="positionId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Position</FormLabel>
-                    <Popover modal={true} open={positionComboboxOpen} onOpenChange={setPositionComboboxOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            disabled={hrPositionsLoading}
-                            className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
-                          >
-                            {hrPositionsLoading
-                              ? "Loading..."
-                              : field.value
-                              ? hrPositions.find((pos) => pos.POSITION_ID === field.value)?.TITLE
-                              : "Select position"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search positions..."
-                            className="h-9"
-                            value={positionSearch}
-                            onValueChange={setPositionSearch}
-                          />
-                          <CommandList>
-                            <CommandEmpty>No position found.</CommandEmpty>
-                            <CommandGroup>
-                              {hrPositions.map((pos) => (
-                                <CommandItem
-                                  key={pos.POSITION_ID}
-                                  value={pos.TITLE}
-                                  onSelect={() => {
-                                    field.onChange(pos.POSITION_ID);
-                                    setPositionComboboxOpen(false);
-                                  }}
-                                >
-                                  {pos.TITLE}
-                                  <Check
-                                    className={`ml-auto h-4 w-4 ${
-                                      field.value === pos.POSITION_ID ? "opacity-100" : "opacity-0"
-                                    }`}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Organization — API shape: { ID, NAME, ... } */}
+              {/* ── 1. Organization ───────────────────────────────────────── */}
               <FormField
                 control={form.control}
                 name="orgId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Organization</FormLabel>
+                    <FormLabel>
+                      Organization <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Popover modal={true} open={orgComboboxOpen} onOpenChange={setOrgComboboxOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -287,14 +233,14 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                                   value={org.NAME}
                                   onSelect={() => {
                                     field.onChange(org.ID);
+                                    setSelectedOrgId(org.ID);
+                                    form.setValue("positionId", null, { shouldValidate: false });
                                     setOrgComboboxOpen(false);
                                   }}
                                 >
                                   {org.NAME}
                                   <Check
-                                    className={`ml-auto h-4 w-4 ${
-                                      field.value === org.ID ? "opacity-100" : "opacity-0"
-                                    }`}
+                                    className={`ml-auto h-4 w-4 ${field.value === org.ID ? "opacity-100" : "opacity-0"}`}
                                   />
                                 </CommandItem>
                               ))}
@@ -308,19 +254,117 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* Effective Start Date */}
+              {/* ── 2. Position (locked until org selected) ───────────────── */}
+              <FormField
+                control={form.control}
+                name="positionId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Position <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Popover
+                      modal={true}
+                      open={positionComboboxOpen}
+                      onOpenChange={(o) => {
+                        if (!positionFieldDisabled) setPositionComboboxOpen(o);
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            disabled={positionFieldDisabled}
+                            className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
+                          >
+                            <span className="flex items-center gap-2 truncate">
+                              {!selectedOrgId && (
+                                <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              {!selectedOrgId
+                                ? "Select an organization first"
+                                : hrPositionsLoading
+                                ? "Loading..."
+                                : field.value
+                                ? hrPositions.find((p) => p.POSITION_ID === field.value)?.TITLE
+                                : "Select position"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search positions..." className="h-9" />
+                          <CommandList>
+                            <CommandEmpty>No position found.</CommandEmpty>
+                            <CommandGroup>
+                              {hrPositions.map((pos) => {
+                                const isAssigned = assignedPositionIds.has(pos.POSITION_ID);
+                                const isSelected = field.value === pos.POSITION_ID;
+                                return (
+                                  <CommandItem
+                                    key={pos.POSITION_ID}
+                                    value={pos.TITLE}
+                                    disabled={isAssigned}
+                                    onSelect={() => {
+                                      if (isAssigned) return;
+                                      field.onChange(pos.POSITION_ID);
+                                      setPositionComboboxOpen(false);
+                                    }}
+                                    className={isAssigned ? "opacity-50 cursor-not-allowed" : ""}
+                                  >
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <span className="truncate">{pos.TITLE}</span>
+                                      {pos.GRADE && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {pos.GRADE} · {pos.LEVELS}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {isAssigned ? (
+                                      <Badge
+                                        variant="secondary"
+                                        className="ml-auto shrink-0 text-xs font-normal"
+                                      >
+                                        Already assigned
+                                      </Badge>
+                                    ) : (
+                                      <Check
+                                        className={`ml-auto h-4 w-4 shrink-0 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                                      />
+                                    )}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* ── 3. Effective Start Date ───────────────────────────────── */}
               <FormField
                 control={form.control}
                 name="effectiveStartDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Effective Start Date</FormLabel>
+                    <FormLabel>
+                      Effective Start Date <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <DatePicker
-                        value={field.value}
-                        onChange={(date) => handleStartDateChange(date, field)}
-                        placeholder="Select start date"
                         className="w-full"
+                        placeholder="Select start date"
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date) =>
+                          field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -328,19 +372,23 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* Effective End Date */}
+              {/* ── 4. Effective End Date ─────────────────────────────────── */}
               <FormField
                 control={form.control}
                 name="effectiveEndDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Effective End Date</FormLabel>
+                    <FormLabel>
+                      Effective End Date <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <DatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select end date"
                         className="w-full"
+                        placeholder="Select end date"
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date) =>
+                          field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -348,18 +396,20 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 )}
               />
 
-              {/* FTE */}
+              {/* ── 5. FTE ───────────────────────────────────────────────── */}
               <FormField
                 control={form.control}
                 name="fte"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>FTE (Full-Time Equivalent)</FormLabel>
+                    <FormLabel>
+                      FTE (Full-Time Equivalent) <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="1"
-                        min="0"
+                        min="1"
                         placeholder="e.g., 1 for one full-time equivalent, 2 for two"
                         {...field}
                       />
@@ -381,10 +431,10 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
                 {createPositionMutation.isPending ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
-                    Creating...
+                    Assigning...
                   </>
                 ) : (
-                  "Save Position"
+                  "Assign Position"
                 )}
               </Button>
             </DialogFooter>

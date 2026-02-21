@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -58,8 +60,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { useNavigate } from "react-router";
-
+import { Link, useNavigate } from "react-router";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
+import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 const GENDER_OPTIONS = [
   { value: "all", label: "All Genders" },
@@ -74,8 +79,6 @@ const formatSimpleDate = (dateString) => {
   return format(date, "MMM d, yyyy");
 };
 
-
-
 export default function EmployeeList() {
   const navigate = useNavigate();
   const [sorting, setSorting] = useState([]);
@@ -83,7 +86,6 @@ export default function EmployeeList() {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
@@ -154,16 +156,17 @@ export default function EmployeeList() {
     {
       accessorKey: "EMP_NO",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Employee ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   Employee ID
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="Employee ID" />
       ),
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("EMP_NO")}</div>
+        <div className="font-medium ps-2 ">{row.getValue("EMP_NO")}</div>
       ),
     },
     {
@@ -171,20 +174,21 @@ export default function EmployeeList() {
       accessorFn: (row) =>
         `${row.TITLE || ""} ${row.FIRST_NAME} ${row.LAST_NAME}`.trim(),
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Full Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   Full Name
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="Employee ID" />
       ),
       cell: ({ row }) => {
         const title = row.original.TITLE;
         const firstName = row.original.FIRST_NAME;
         const lastName = row.original.LAST_NAME;
         return (
-          <div className="font-medium">
+          <div className="font-medium ps-2">
             {title && <span className="text-muted-foreground">{title} </span>}
             {firstName} {lastName}
           </div>
@@ -195,21 +199,27 @@ export default function EmployeeList() {
       accessorKey: "GENDER",
       header: "Gender",
       cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
-      filterFn: (row, id, value) =>
-        value === "all" || row.getValue(id) === value,
+      // filterFn: (row, id, value) =>
+      //   value === "all" || row.getValue(id) === value,
+      filterFn: (row, id, value) => value.includes(row.getValue(id)), // ← changed
     },
     {
       accessorKey: "JOIN_DATE",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Join Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        // <Button
+        //   variant="ghost"
+        //   onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        // >
+        //   Join Date
+        //   <ArrowUpDown className="ml-2 h-4 w-4" />
+        // </Button>
+        <CustomDataTableColumnHeader column={column} title="Join Date" />
       ),
-      cell: ({ row }) => <div>{formatSimpleDate(row.getValue("JOIN_DATE"))}</div>,
+      cell: ({ row }) => (
+        <div className="ps-2">
+          {formatSimpleDate(row.getValue("JOIN_DATE"))}
+        </div>
+      ),
     },
     {
       // Using the nested personType object for a readable label instead of raw PERSON_TYPE_ID
@@ -217,25 +227,24 @@ export default function EmployeeList() {
       accessorFn: (row) => row.personType?.PERSON_TYPE ?? row.PERSON_TYPE_ID,
       header: "Person Type",
       cell: ({ row }) => {
-        const label = row.original.personType?.PERSON_TYPE ?? row.original.PERSON_TYPE_ID;
+        const label =
+          row.original.personType?.PERSON_TYPE ?? row.original.PERSON_TYPE_ID;
         return <Badge variant="outline">{label || "N/A"}</Badge>;
       },
+      filterFn: (row, id, value) => value.includes(row.getValue(id)), // ← added
     },
     {
-      // Assignment column — showing IDs for now until related tables are ready
-      // TODO: Replace COMPANY_ID, ORG_ID, OU_ID, POSITION_ID etc. with their
-      //       human-readable names once the company/org/position lookup tables
-      //       are joined in the API response.
-      id: "assignment",
-      header: "Position ID",
-      cell: ({ row }) => {
-        const assignment = row.original.assignment;
-        const positionId = assignment?.POSITION_ID;
-        return <div>{positionId ?? <span className="text-muted-foreground">Unassigned</span>}</div>;
-      },
-      enableSorting: false,
-    },
-    
+  id: "assignment",
+  accessorFn: (row) => row.assignment?.POSITION_TITLE ?? "", // ← add this
+  header: "Position",
+  cell: ({ row }) => {
+    const title = row.original.assignment?.POSITION_TITLE;
+    return <div>{title || "N/A"}</div>;
+  },
+  enableSorting: false,
+  filterFn: (row, id, value) => value.includes(row.getValue(id)),
+},
+
     {
       id: "actions",
       header: "Actions",
@@ -275,7 +284,7 @@ export default function EmployeeList() {
               className="h-8 w-8"
               onClick={() =>
                 navigate(
-                  `/core-hr/employee-management/employee-details/${employee.PERSON_ID}`
+                  `/core-hr/employee-management/employee-details/${employee.PERSON_ID}`,
                 )
               }
             >
@@ -298,6 +307,8 @@ export default function EmployeeList() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+     getFacetedRowModel: getFacetedRowModel(),
+        getFacetedUniqueValues: getFacetedUniqueValues(),
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     state: {
@@ -309,6 +320,32 @@ export default function EmployeeList() {
     },
   });
 
+  const genderOptions = [
+    ...new Map(
+      employeeData
+        .map((e) => e.GENDER)
+        .filter(Boolean)
+        .map((g) => [g, { label: g, value: g }]),
+    ).values(),
+  ];
+
+  const personTypeOptions = [
+    ...new Map(
+      employeeData
+        .map((e) => e.personType?.PERSON_TYPE ?? String(e.PERSON_TYPE_ID ?? ""))
+        .filter(Boolean)
+        .map((pt) => [pt, { label: pt, value: pt }]),
+    ).values(),
+  ];
+
+  const positionOptions = [
+    ...new Map(
+      employeeData
+        .map((e) => e.assignment?.POSITION_TITLE)
+        .filter(Boolean)
+        .map((p) => [p, { label: p, value: p }]),
+    ).values(),
+  ];
   // Loading State
   if (isLoading) {
     return (
@@ -361,7 +398,8 @@ export default function EmployeeList() {
             <AlertTitle>Error Loading Employees</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
               <p>
-                {error?.message || "Failed to load employees. Please try again."}
+                {error?.message ||
+                  "Failed to load employees. Please try again."}
               </p>
               <Button
                 variant="outline"
@@ -394,10 +432,23 @@ export default function EmployeeList() {
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Employees</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage employee information and records
-            </p>
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Employees</h1>
+             <Breadcrumb>
+                          <BreadcrumbList>
+                            <BreadcrumbItem>
+                              <BreadcrumbLink asChild>
+                                <Link to="/">Dashboard</Link>
+                              </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>Core HR</BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                              <BreadcrumbPage className="text-muted-foreground/80 ">Employee Management</BreadcrumbPage>
+                            </BreadcrumbItem>
+                          </BreadcrumbList>
+                        </Breadcrumb>
+            
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -421,7 +472,7 @@ export default function EmployeeList() {
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* <div className="flex flex-col sm:flex-row gap-4">
             <Input
               placeholder="Search employees..."
               value={globalFilter ?? ""}
@@ -475,7 +526,24 @@ export default function EmployeeList() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </div> */}
+          <CustomDataTableToolbar
+            table={table}
+            searchPlaceholder="Search employees..."
+            filters={[
+              { columnId: "GENDER", title: "Gender", options: genderOptions },
+              {
+                columnId: "personType",
+                title: "Person Type",
+                options: personTypeOptions,
+              },
+              {
+                columnId: "assignment",
+                title: "Position",
+                options: positionOptions,
+              },
+            ]}
+          />
 
           <div className="overflow-hidden rounded-md border">
             <Table>
@@ -538,7 +606,6 @@ export default function EmployeeList() {
         </div>
       </div>
 
-      
       <ConfirmationDialog />
     </div>
   );

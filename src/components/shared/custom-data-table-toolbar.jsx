@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DataTableFacetedFilter } from '../custom-temp/faceted-filter'
 import { DataTableViewOptions } from '../custom-temp/view-options'
-import { CrossIcon } from 'lucide-react'
+
+import { IconCross, IconUser, IconX } from '@tabler/icons-react'
 
 export default function CustomDataTableToolbar({
   table,
@@ -58,7 +59,7 @@ export default function CustomDataTableToolbar({
             className='h-8 px-2 lg:px-3'
           >
             Reset
-            <CrossIcon className='ms-2 h-4 w-4' />
+            <IconX className='ms-2 h-4 w-4' />
           </Button>
         )}
       </div>

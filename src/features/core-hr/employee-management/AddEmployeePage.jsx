@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   BriefcaseIcon,
   IdCard,
@@ -7,6 +7,8 @@ import {
   XCircle,
   MapPin,
   Home,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,17 +40,42 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   MARITAL_STATUS_OPTIONS,
   REG_DISABILITY_OPTIONS,
 } from "@/lib/constants/employeeOptions";
 import { DatePicker } from "@/components/DatePicker";
-import { usePersonTypes } from "../hooks/usePersonTypes";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateEmployee } from "./queries";
 import PageContainer from "@/components/page-container";
 import { Link } from "react-router";
+import { useCompanies } from "@/features/settings/work-structure/company/queries";
+import { useOrganizations } from "@/features/settings/work-structure/organization/queries";
+import { useOrgPositions } from "@/features/settings/work-structure/position/queries";
+import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
+import { usePersonTypes } from "../employee-types/queries";
+import { Badge } from "@/components/ui/badge";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -202,12 +229,13 @@ const employeeSchema = z
     }),
 
     // ── Assignment ────────────────────────────────────────────────────────────
-    companyId: z.string().min(1, "Company ID is required").trim(),
-    ouId: z.string().min(1, "OU ID is required").trim(),
-    orgId: z.string().min(1, "Org ID is required").trim(),
-    positionId: z.string().min(1, "Position ID is required").trim(),
+    companyId: z.string().min(1, "Company is required").trim(),
+    ouId: z.string().min(1, "Operational Unit is required").trim(),
+    orgId: z.string().min(1, "Organization is required").trim(),
+    positionId: z.string().min(1, "Position is required").trim(),
+    orgPositionId: z.string().min(1, "Position is required").trim(),
     payrollId: z.string().min(1, "Payroll ID is required").trim(),
-    gradeId: z.string().min(1, "Grade ID is required").trim(),
+    gradeId: z.string().min(1, "Grade is required").trim(),
     assignmentEffectiveStartDate: z.date({
       required_error: "Assignment start date is required",
     }),
@@ -392,13 +420,112 @@ function AddressFields({ form, prefix }) {
   );
 }
 
+// ─── Reusable Combobox Field ──────────────────────────────────────────────────
+function ComboboxField({
+  form,
+  name,
+  label,
+  items,
+  idKey,
+  nameKey,
+  placeholder,
+  disabled = false,
+  onSelect,
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedId = form.watch(name);
+  const selectedItem = items.find(
+    (item) => String(item[idKey]) === String(selectedId),
+  );
+
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label} *</FormLabel>
+          <Popover modal={true} open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <FormControl>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  disabled={disabled}
+                  className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
+                >
+                  {selectedItem ? selectedItem[nameKey] : placeholder}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </FormControl>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput
+                  placeholder={`Search ${label.toLowerCase()}...`}
+                  className="h-9"
+                />
+                <CommandList>
+                  <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
+                  <CommandGroup>
+                    {items.map((item) => (
+                      <CommandItem
+                        key={item[idKey]}
+                        value={item[nameKey]}
+                        onSelect={() => {
+                          field.onChange(String(item[idKey]));
+                          onSelect?.(item);
+                          setOpen(false);
+                        }}
+                      >
+                        {item[nameKey]}
+                        <Check
+                          className={`ml-auto h-4 w-4 ${
+                            String(field.value) === String(item[idKey])
+                              ? "opacity-100"
+                              : "opacity-0"
+                          }`}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AddEmployeePage() {
-  const { data: personTypes = [] } = usePersonTypes();
   const createEmployeeMutation = useCreateEmployee();
   const [submitStatus, setSubmitStatus] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [newPersonId, setNewPersonId] = useState(null);
+
+  // Track selected orgId for filtering positions
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
+
+  const { data: personTypes = [], isLoading: personTypesLoading } =
+    usePersonTypes();
+  const { data: companies = [], isLoading: companiesLoading } = useCompanies();
+  const { data: organizations = [], isLoading: organizationsLoading } =
+    useOrganizations();
+  const { data: orgPositions = [], isLoading: orgPositionsLoading } =
+    useOrgPositions();
+  const { data: grades = [], isLoading: gradesLoading } = useGrades();
+
+  // Filter org positions by selected org
+  const filteredPositions = useMemo(() => {
+    if (!selectedOrgId) return [];
+    return orgPositions.filter(
+      (pos) => String(pos.ORG_ID) === String(selectedOrgId),
+    );
+  }, [orgPositions, selectedOrgId]);
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
@@ -425,6 +552,7 @@ export default function AddEmployeePage() {
       ouId: "",
       orgId: "",
       positionId: "",
+      orgPositionId: "",
       payrollId: "",
       gradeId: "",
       presentAddress: {
@@ -457,7 +585,6 @@ export default function AddEmployeePage() {
       setSubmitStatus(null);
       setStatusMessage("");
 
-      // ── Payload shaped exactly as the backend expects ──────────────────────
       const payload = {
         employee: {
           EMP_NO: data.empNo,
@@ -484,7 +611,6 @@ export default function AddEmployeePage() {
           EFFECTIVEEND_DATE: fd(data.effectiveEndDate),
         },
 
-        // Nested under "address" with "present" and "permanent" keys
         address: {
           present: {
             ADDRESS1: data.presentAddress.address1,
@@ -512,11 +638,22 @@ export default function AddEmployeePage() {
           },
         },
 
+        // assignment: {
+        //   COMPANY_ID: parseInt(data.companyId),
+        //   OU_ID: parseInt(data.ouId),
+        //   ORG_ID: parseInt(data.orgId),
+        //   POSITION_ID: parseInt(data.positionId),
+        //   ORG_POSITION_ID: parseInt(data.orgPositionId),
+        //   PAYROLL_ID: parseInt(data.payrollId),
+        //   GRADE_ID: parseInt(data.gradeId),
+        //   EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
+        //   EFFECTIVE_END_DATE: fd(data.assignmentEffectiveEndDate),
+        // },
         assignment: {
           COMPANY_ID: parseInt(data.companyId),
           OU_ID: parseInt(data.ouId),
           ORG_ID: parseInt(data.orgId),
-          POSITION_ID: parseInt(data.positionId),
+          POSITION_ID: parseInt(data.orgPositionId), // HR_ORG_POSITION.ID → what backend inserts
           PAYROLL_ID: parseInt(data.payrollId),
           GRADE_ID: parseInt(data.gradeId),
           EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
@@ -527,11 +664,13 @@ export default function AddEmployeePage() {
       console.log("Sending to backend:", payload);
 
       const result = await createEmployeeMutation.mutateAsync(payload);
+      console.log({ result });
       setNewPersonId(result?.PERSON_ID);
 
       setSubmitStatus("success");
       setStatusMessage("Employee created successfully!");
-      form.reset();
+      // form.reset();
+      setSelectedOrgId(null);
     } catch (error) {
       console.error("Error creating employee:", error);
       setSubmitStatus("error");
@@ -547,7 +686,6 @@ export default function AddEmployeePage() {
     setStatusMessage("Please fill in all required fields correctly.");
   };
 
-  // Flatten nested zod errors for the summary panel
   const flattenErrors = (errors, prefix = "") =>
     Object.entries(errors).flatMap(([key, value]) => {
       const fullKey = prefix ? `${prefix}.${key}` : key;
@@ -561,27 +699,25 @@ export default function AddEmployeePage() {
 
   return (
     <PageContainer className="px-6">
-      <header className="mb-8 bg-card p-4 rounded-md  shadow-xs  ">
+      <header className="mb-8 bg-card p-4 rounded-md shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-1.5 border border-primary/10 bg-primary/10 rounded-md shadow-xs">
-              <UserPlus className="w-6 h-6  text-primary" />
+              <UserPlus className="w-6 h-6 text-primary" />
             </div>
-
             <div className="space-y-0.5">
-              <h1 className="text-lg md:text-2xl font-semibold  tracking-tight">
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
                 New Employee Onboarding
               </h1>
               <Breadcrumb>
                 <BreadcrumbList>
-                  
                   <BreadcrumbItem className="hidden md:block">
                     Core HR
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/core-hr/employee-management">
+                      <Link to="/core-hr/employees">
                         Employee Management
                       </Link>
                     </BreadcrumbLink>
@@ -601,7 +737,7 @@ export default function AddEmployeePage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, handleFormError)}>
-          <div className="grid grid-cols-1  md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* ── LEFT COLUMN ── Personal Info + Present Address ───────────── */}
             <div className="space-y-6">
               {/* Personal Information */}
@@ -609,7 +745,7 @@ export default function AddEmployeePage() {
                 type="single"
                 collapsible
                 defaultValue="personal"
-                className="bg-card/70 px-4  rounded-md shadow-sm "
+                className="bg-card/70 px-4 rounded-md shadow-sm"
               >
                 <AccordionItem value="personal">
                   <AccordionTrigger className="text-lg font-medium flex items-center gap-2">
@@ -652,7 +788,6 @@ export default function AddEmployeePage() {
                         )}
                       />
 
-                      {/* First & Last Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -688,7 +823,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Father's Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -721,7 +855,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Mother's Name */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -754,7 +887,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Gender */}
                       <FormField
                         control={form.control}
                         name="gender"
@@ -786,7 +918,6 @@ export default function AddEmployeePage() {
                         )}
                       />
 
-                      {/* Date of Birth & NID */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -823,7 +954,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Birth Reg No & Town of Birth */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -859,7 +989,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Region & Country of Birth */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -889,7 +1018,6 @@ export default function AddEmployeePage() {
                         />
                       </div>
 
-                      {/* Marital Status */}
                       <FormField
                         control={form.control}
                         name="maritalStatus"
@@ -923,7 +1051,6 @@ export default function AddEmployeePage() {
                         )}
                       />
 
-                      {/* Nationality */}
                       <FormField
                         control={form.control}
                         name="nationality"
@@ -1059,37 +1186,40 @@ export default function AddEmployeePage() {
                         )}
                       />
 
-                      {/* Person Type */}
+                      {/* Person Type — Select */}
                       <FormField
                         control={form.control}
                         name="personTypeId"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Person Type *</FormLabel>
-                            <FormControl>
-                              <RadioGroup
-                                onValueChange={field.onChange}
-                                value={field.value}
-                                className="flex flex-row gap-x-3 flex-wrap"
-                              >
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={personTypesLoading}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={
+                                      personTypesLoading
+                                        ? "Loading..."
+                                        : "Select person type"
+                                    }
+                                  />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
                                 {personTypes.map((type) => (
-                                  <div
+                                  <SelectItem
                                     key={type.PERSON_TYPE_ID}
-                                    className="flex items-center space-x-2"
+                                    value={String(type.PERSON_TYPE_ID)}
                                   >
-                                    <RadioGroupItem
-                                      value={type.PERSON_TYPE_ID.toString()}
-                                      id={`person-type-${type.PERSON_TYPE_ID}`}
-                                    />
-                                    <Label
-                                      htmlFor={`person-type-${type.PERSON_TYPE_ID}`}
-                                    >
-                                      {type.PERSON_TYPE}
-                                    </Label>
-                                  </div>
+                                    {type.PERSON_TYPE}
+                                  </SelectItem>
                                 ))}
-                              </RadioGroup>
-                            </FormControl>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1137,116 +1267,251 @@ export default function AddEmployeePage() {
                           Assignment
                         </p>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="companyId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with company Select fetched from backend */}
-                                  <FormLabel>Company ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter company ID"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="ouId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with OU Select fetched from backend */}
-                                  <FormLabel>OU ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter OU ID"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                          {/* Company — Combobox */}
+                          <ComboboxField
+                            form={form}
+                            name="companyId"
+                            label="Company"
+                            items={companies}
+                            idKey="COMPANY_ID"
+                            nameKey="COMPANY_NAME"
+                            placeholder={
+                              companiesLoading ? "Loading..." : "Select company"
+                            }
+                            disabled={companiesLoading}
+                          />
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="orgId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Organization Select fetched from backend */}
-                                  <FormLabel>Org ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter org ID"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="positionId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Position Select fetched from backend */}
-                                  <FormLabel>Position ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter position ID"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                          {/* Operational Unit (OU) — Combobox using organizations */}
+                          <ComboboxField
+                            form={form}
+                            name="ouId"
+                            label="Operational Unit"
+                            items={organizations}
+                            idKey="ID"
+                            nameKey="NAME"
+                            placeholder={
+                              organizationsLoading
+                                ? "Loading..."
+                                : "Select operational unit"
+                            }
+                            disabled={organizationsLoading}
+                          />
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="payrollId"
-                              render={({ field }) => (
+                          {/* Organization — Combobox; clears position + grade on change */}
+                          <ComboboxField
+                            form={form}
+                            name="orgId"
+                            label="Organization"
+                            items={organizations}
+                            idKey="ID"
+                            nameKey="NAME"
+                            placeholder={
+                              organizationsLoading
+                                ? "Loading..."
+                                : "Select organization"
+                            }
+                            disabled={organizationsLoading}
+                            onSelect={(org) => {
+                              setSelectedOrgId(org.ID);
+                              form.setValue("positionId", "", {
+                                shouldValidate: false,
+                              });
+                              form.setValue("orgPositionId", "", {
+                                shouldValidate: false,
+                              });
+                              form.setValue("gradeId", "", {
+                                shouldValidate: false,
+                              });
+                            }}
+                          />
+
+                          {/* Position — Combobox, disabled until org selected, filtered by org; auto-fills grade */}
+                          <FormField
+                            control={form.control}
+                            name="positionId"
+                            render={({ field }) => {
+                              const [posOpen, setPosOpen] = useState(false);
+                              const isDisabled =
+                                !selectedOrgId || orgPositionsLoading;
+                              // Match on POSITION_ID (master), not pos.ID (junction row)
+                              const selectedPosition = filteredPositions.find(
+                                (pos) =>
+                                  String(pos.POSITION_ID) ===
+                                  String(field.value),
+                              );
+
+                              const handlePositionSelect = (pos) => {
+                                // pos.POSITION_ID → master position ID (sent as POSITION_ID)
+                                field.onChange(String(pos.POSITION_ID));
+                                // pos.ID → HR_ORG_POSITION row ID (sent as ORG_POSITION_ID)
+                                form.setValue("orgPositionId", String(pos.ID), {
+                                  shouldValidate: false,
+                                });
+                                // Auto-fill grade
+                                if (pos.GRADE) {
+                                  const matchedGrade = grades.find(
+                                    (g) => g.GRADE === pos.GRADE,
+                                  );
+                                  if (matchedGrade) {
+                                    form.setValue(
+                                      "gradeId",
+                                      String(matchedGrade.ID),
+                                      { shouldValidate: true },
+                                    );
+                                  }
+                                }
+                                setPosOpen(false);
+                              };
+
+                              return (
                                 <FormItem>
-                                  {/* TODO: Replace with Payroll Select fetched from backend */}
-                                  <FormLabel>Payroll ID *</FormLabel>
+                                  <FormLabel>Position *</FormLabel>
+                                  <Popover
+                                    modal={true}
+                                    open={posOpen}
+                                    onOpenChange={setPosOpen}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <FormControl>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          disabled={isDisabled}
+                                          className={`w-full justify-between font-normal ${
+                                            !field.value &&
+                                            "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {!selectedOrgId
+                                            ? "Select an organization first"
+                                            : orgPositionsLoading
+                                              ? "Loading..."
+                                              : selectedPosition
+                                                ? selectedPosition.POSITION_TITLE
+                                                : "Select position"}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0">
+                                      <Command>
+                                        <CommandInput
+                                          placeholder="Search positions..."
+                                          className="h-9"
+                                        />
+                                        <CommandList>
+                                          <CommandEmpty>
+                                            {filteredPositions.length === 0
+                                              ? "No positions found for this organization."
+                                              : "No position found."}
+                                          </CommandEmpty>
+                                          <CommandGroup>
+                                            {filteredPositions.map((pos) => {
+                                              const isFull =
+                                                pos.ACTUAL_COUNT >= pos.FTE;
+                                              return (
+                                                <CommandItem
+                                                  key={pos.ID}
+                                                  value={pos.POSITION_TITLE}
+                                                  disabled={isFull}
+                                                  onSelect={() => {
+                                                    if (isFull) return;
+                                                    handlePositionSelect(pos);
+                                                  }}
+                                                  className={
+                                                    isFull
+                                                      ? "opacity-50 cursor-not-allowed"
+                                                      : ""
+                                                  }
+                                                >
+                                                  <div className="flex flex-col flex-1 min-w-0">
+                                                    <span className="truncate">
+                                                      {pos.POSITION_TITLE}
+                                                    </span>
+                                                    {pos.GRADE && (
+                                                      <span className="text-xs text-muted-foreground">
+                                                        {pos.GRADE} ·{" "}
+                                                        {pos.LEVELS}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  {isFull ? (
+                                                    <Badge
+                                                      variant="secondary"
+                                                      className="ml-auto shrink-0 text-xs font-normal"
+                                                    >
+                                                      Full ({pos.ACTUAL_COUNT}/
+                                                      {pos.FTE})
+                                                    </Badge>
+                                                  ) : (
+                                                    <Check
+                                                      className={`ml-auto h-4 w-4 shrink-0 ${
+                                                        String(field.value) ===
+                                                        String(pos.POSITION_ID)
+                                                          ? "opacity-100"
+                                                          : "opacity-0"
+                                                      }`}
+                                                    />
+                                                  )}
+                                                </CommandItem>
+                                              );
+                                            })}
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+
+                          {/* Grade — read-only, auto-filled from selected position */}
+                          <FormField
+                            control={form.control}
+                            name="gradeId"
+                            render={({ field }) => {
+                              const selectedGrade = grades.find(
+                                (g) => String(g.ID) === String(field.value),
+                              );
+                              return (
+                                <FormItem>
+                                  <FormLabel>Grade</FormLabel>
                                   <FormControl>
                                     <Input
-                                      placeholder="Enter payroll ID"
-                                      {...field}
+                                      readOnly
+                                      disabled
+                                      value={
+                                        selectedGrade ? selectedGrade.GRADE : ""
+                                      }
+                                      placeholder="Auto-filled from selected position"
+                                      className="bg-muted/50 cursor-not-allowed"
                                     />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="gradeId"
-                              render={({ field }) => (
-                                <FormItem>
-                                  {/* TODO: Replace with Grade Select fetched from backend */}
-                                  <FormLabel>Grade ID *</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Enter grade ID"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                              );
+                            }}
+                          />
+
+                          {/* Payroll ID — keep as-is */}
+                          <FormField
+                            control={form.control}
+                            name="payrollId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Payroll ID *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter payroll ID"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
@@ -1340,7 +1605,7 @@ export default function AddEmployeePage() {
                   <CheckCircle className="h-4 w-4" />
                   {statusMessage}
                   <Link
-                    to="/core-hr/employee-management"
+                    to="/core-hr/employees"
                     className="ml-2 underline font-medium hover:no-underline"
                   >
                     View Employees
