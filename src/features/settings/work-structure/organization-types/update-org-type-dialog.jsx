@@ -22,17 +22,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { GraduationCap } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateGrade } from "./queries";
+import { useUpdateOrgType } from "./queries";
 import { DatePicker } from "@/components/DatePicker";
 
 const formSchema = z
   .object({
-    grade: z
+    orgType: z
       .string()
-      .min(1, "Grade is required")
-      .max(30, "Grade cannot exceed 30 characters"),
+      .min(1, "Organization type is required")
+      .max(100, "Organization type cannot exceed 100 characters"),
     effectiveStartDate: z.string().min(1, "Effective start date is required"),
     effectiveEndDate: z.string().min(1, "Effective end date is required"),
   })
@@ -45,69 +45,74 @@ const formSchema = z
     },
   );
 
-export default function AddGradeDialog({
+export default function UpdateOrgTypeDialog({
   open,
   onOpenChange,
   showConfirmation,
+  orgType,
 }) {
-  const createGradeMutation = useCreateGrade();
-
-  const today = format(new Date(), "yyyy-MM-dd");
-  const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
+  const updateOrgTypeMutation = useUpdateOrgType();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      grade: "",
-      effectiveStartDate: today,
-      effectiveEndDate: hundredYearsLater,
+      orgType: "",
+      effectiveStartDate: "",
+      effectiveEndDate: "",
     },
   });
 
-  const {
-    formState: { isDirty },
-  } = form;
+  const { formState: { isDirty } } = form;
 
-useEffect(() => {
-  if (open) {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
-    form.reset({
-      grade: "",
-      effectiveStartDate: today,
-      effectiveEndDate: hundredYearsLater,
-    });
-  }
-}, [open]);
+  // Populate form when orgType data changes
+  useEffect(() => {
+    if (orgType) {
+      form.reset({
+        orgType: orgType.ORG_TYPE || "",
+        effectiveStartDate: orgType.EFFECTIVE_START_DATE
+          ? format(new Date(orgType.EFFECTIVE_START_DATE), "yyyy-MM-dd")
+          : "",
+        effectiveEndDate: orgType.EFFECTIVE_END_DATE
+          ? format(new Date(orgType.EFFECTIVE_END_DATE), "yyyy-MM-dd")
+          : "",
+      });
+    }
+  }, [orgType]);
 
-  // Watch start date and auto-set end date to +100 years
+  // Auto-set end date to +100 years when start date changes
+  // only if the user is actively changing it (isDirty guard)
   const startDate = form.watch("effectiveStartDate");
 
   useEffect(() => {
-    if (startDate) {
+    if (startDate && isDirty) {
       const endDate = format(addYears(new Date(startDate), 100), "yyyy-MM-dd");
       form.setValue("effectiveEndDate", endDate, { shouldDirty: true });
     }
   }, [startDate]);
 
   const onSubmit = async (data) => {
+    if (!orgType?.ID) {
+      toast.error("Organization type ID is missing");
+      return;
+    }
+
     try {
       const backendData = {
-        grade: data.grade,
+        orgType: data.orgType,
         startDate: data.effectiveStartDate,
         endDate: data.effectiveEndDate,
       };
 
-      console.log(backendData);
+      await updateOrgTypeMutation.mutateAsync({
+        id: orgType.ID,
+        data: backendData,
+      });
 
-      await createGradeMutation.mutateAsync(backendData);
-      toast.success("Grade created successfully!");
+      toast.success("Organization type updated successfully!");
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error?.message || "Failed to create grade. Please try again.",
-      );
+      toast.error(error?.message || "Failed to update organization type. Please try again.");
     }
   };
 
@@ -129,6 +134,8 @@ useEffect(() => {
     onOpenChange(false);
   };
 
+  const isSubmitting = updateOrgTypeMutation.isPending;
+
   return (
     <Dialog
       open={open}
@@ -140,12 +147,12 @@ useEffect(() => {
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="h-5 w-5 text-primary" />
+              <Building2 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <DialogTitle>Add New Grade</DialogTitle>
+              <DialogTitle>Update Organization Type</DialogTitle>
               <DialogDescription>
-                Create a new grade in the system
+                Edit organization type details for "{orgType?.ORG_TYPE}"
               </DialogDescription>
             </div>
           </div>
@@ -154,17 +161,21 @@ useEffect(() => {
         <Form {...form}>
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
-              {/* Grade Name */}
+              {/* Org Type Name */}
               <FormField
                 control={form.control}
-                name="grade"
+                name="orgType"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Grade <span className="text-destructive">*</span>
+                      Organization Type <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Grade-1" {...field} />
+                      <Input
+                        placeholder="e.g. Department"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -185,13 +196,10 @@ useEffect(() => {
                         <DatePicker
                           className="w-full"
                           placeholder="Select start date"
-                          value={
-                            field.value ? new Date(field.value) : undefined
-                          }
+                          disabled={isSubmitting}
+                          value={field.value ? new Date(field.value) : undefined}
                           onChange={(date) =>
-                            field.onChange(
-                              date ? format(date, "yyyy-MM-dd") : "",
-                            )
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
                           }
                         />
                       </FormControl>
@@ -212,13 +220,10 @@ useEffect(() => {
                         <DatePicker
                           className="w-full"
                           placeholder="Select end date"
-                          value={
-                            field.value ? new Date(field.value) : undefined
-                          }
+                          disabled={isSubmitting}
+                          value={field.value ? new Date(field.value) : undefined}
                           onChange={(date) =>
-                            field.onChange(
-                              date ? format(date, "yyyy-MM-dd") : "",
-                            )
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
                           }
                         />
                       </FormControl>
@@ -230,20 +235,25 @@ useEffect(() => {
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button
                 onClick={form.handleSubmit(onSubmit)}
-                disabled={createGradeMutation.isPending}
+                disabled={isSubmitting}
               >
-                {createGradeMutation.isPending ? (
+                {isSubmitting ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
-                    Creating...
+                    Updating...
                   </>
                 ) : (
-                  "Save Grade"
+                  "Update Organization Type"
                 )}
               </Button>
             </DialogFooter>

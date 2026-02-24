@@ -77,24 +77,37 @@ export default function AddCompanyDialog({ open, onOpenChange, showConfirmation 
 
   const createCompanyMutation = useCreateCompany();
   const { data: locations = [], isLoading: locationsLoading } = useHrLocations();
+const today = format(new Date(), "yyyy-MM-dd");
+const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+const form = useForm({
+  resolver: zodResolver(formSchema),
+  defaultValues: {
+    companyName: "",
+    companyDetail: "",
+    binNo: "",
+    address: "",
+    effectiveStartDate: today,
+    effectiveEndDate: hundredYearsLater,
+  },
+});
+
+  const { formState: { isDirty } } = form;
+
+useEffect(() => {
+  if (open) {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
+    form.reset({
       companyName: "",
       companyDetail: "",
       binNo: "",
       address: "",
-      effectiveStartDate: "",
-      effectiveEndDate: "",
-    },
-  });
-
-  const { formState: { isDirty } } = form;
-
-  useEffect(() => {
-    if (open) form.reset();
-  }, [open]);
+      effectiveStartDate: today,
+      effectiveEndDate: hundredYearsLater,
+    });
+  }
+}, [open]);
 
   const startDate = form.watch("effectiveStartDate");
 

@@ -5,7 +5,7 @@ const PageContainer = ({ children, className }) => {
   return (
     <div
       className={cn(
-        'w-full  px-3 py-3',
+        'w-full  px-3 py-3 mx-auto ',
         className
       )}
     >

@@ -85,16 +85,19 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
 
   const createPositionMutation = useCreatePosition();
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      orgId: null,
-      positionId: null,
-      fte: "1",
-      effectiveStartDate: "",
-      effectiveEndDate: "",
-    },
-  });
+ const today = format(new Date(), "yyyy-MM-dd");
+const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
+
+const form = useForm({
+  resolver: zodResolver(formSchema),
+  defaultValues: {
+    orgId: null,
+    positionId: null,
+    fte: "1",
+    effectiveStartDate: today,
+    effectiveEndDate: hundredYearsLater,
+  },
+});
 
   const { formState: { isDirty } } = form;
 
@@ -145,16 +148,18 @@ export default function AddPositionDialog({ open, onOpenChange, showConfirmation
     }
   };
 
-  const handleReset = () => {
-    form.reset({
-      orgId: null,
-      positionId: null,
-      fte: "1",
-      effectiveStartDate: "",
-      effectiveEndDate: "",
-    });
-    setSelectedOrgId(null);
-  };
+ const handleReset = () => {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const hundredYearsLater = format(addYears(new Date(), 100), "yyyy-MM-dd");
+  form.reset({
+    orgId: null,
+    positionId: null,
+    fte: "1",
+    effectiveStartDate: today,
+    effectiveEndDate: hundredYearsLater,
+  });
+  setSelectedOrgId(null);
+};
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {

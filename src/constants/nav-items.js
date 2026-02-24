@@ -201,6 +201,16 @@ export const NAV_ITEMS = [
             title: "Company",
             url: "/settings/work-structure/company",
             roles: ["Admin", "HR"],
+          },
+          {
+            title: "Organization Types",
+            url: "/settings/work-structure/org-types",
+            roles: ["Admin", "HR"],
+          },
+          {
+            title: "Locations",
+            url: "/settings/work-structure/locations",
+            roles: ["Admin", "HR"],
           }
         ],
       },

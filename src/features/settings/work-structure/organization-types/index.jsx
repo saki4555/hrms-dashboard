@@ -1,7 +1,10 @@
 import PageContainer from "@/components/page-container";
+import OrgTypeList from "./org-type-list";
 
-const Grades = () => {
-  return <PageContainer></PageContainer>;
+const OrgTypes = () => {
+  return <PageContainer>
+<OrgTypeList />
+  </PageContainer>;
 };
 
-export default Grades;
+export default OrgTypes;
