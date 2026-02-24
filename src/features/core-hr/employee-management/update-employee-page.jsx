@@ -84,6 +84,7 @@ import { useOrgPositions } from "@/features/settings/work-structure/position/que
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { Badge } from "@/components/ui/badge";
+import { IconCirclePlus, IconEdit } from "@tabler/icons-react";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -1794,16 +1795,17 @@ export default function UpdateEmployeePage() {
             )}
 
             {submitStatus === "success" && (
-              <Alert className="w-full">
-                <AlertDescription className="flex items-center gap-2">
+              <Alert className="max-w-lg " variant="success">
+                <AlertDescription className="flex items-center  gap-2">
                   <CheckCircle className="h-4 w-4" />
                   {statusMessage}
                   <Link
                     to="/core-hr/employees"
-                    className="ml-2 underline font-medium hover:no-underline"
+                    className="ml-2  underline font-medium hover:no-underline"
                   >
                     View Employees
                   </Link>
+                  
                   <Link
                     to={`/core-hr/employee-management/employee-details/${newPersonId ?? personId}`}
                     className="underline font-medium hover:no-underline"
@@ -1841,7 +1843,8 @@ export default function UpdateEmployeePage() {
                   handleFormError,
                 )}
                 disabled={isSubmitting}
-                variant="default"
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 {submissionType === "correction" ? (
                   <>
@@ -1850,7 +1853,7 @@ export default function UpdateEmployeePage() {
                   </>
                 ) : (
                   <>
-                    <FileEditIcon className="w-4 h-4 mr-2" />
+                    <IconEdit  />
                     Correction
                   </>
                 )}
@@ -1861,7 +1864,7 @@ export default function UpdateEmployeePage() {
                 type="button"
                 onClick={handleUpdateClick}
                 disabled={isSubmitting}
-                className="bg-green-600 hover:bg-green-700"
+                variant="default"
               >
                 {submissionType === "update" ? (
                   <>
@@ -1870,7 +1873,7 @@ export default function UpdateEmployeePage() {
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <IconCirclePlus />
                     Update
                   </>
                 )}

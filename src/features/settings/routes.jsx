@@ -7,6 +7,8 @@ import { ROLES } from "@/constants/roles";
 import HRPositions from "./work-structure/hr-position";
 import Grades from "./work-structure/hr-grade";
 import Companies from "./work-structure/company";
+import OrgTypes from "./work-structure/organization-types";
+import Locations from "./work-structure/locations";
 
 
 
@@ -65,6 +67,22 @@ const SettingsRoutes = (
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <Companies />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/org-types"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <OrgTypes />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/locations"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Locations />
         </PrivateRoute>
       }
     />

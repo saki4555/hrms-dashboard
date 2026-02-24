@@ -53,7 +53,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { useDeleteEmployee, useEmployees } from "./queries";
 import { Spinner } from "@/components/ui/spinner";
-import { IconPlus } from "@tabler/icons-react";
+import { IconCircleDashedPlus, IconCirclePlus, IconCirclePlus2, IconPlus } from "@tabler/icons-react";
 import {
   Empty,
   EmptyHeader,
@@ -181,7 +181,7 @@ export default function EmployeeList() {
         //   Full Name
         //   <ArrowUpDown className="ml-2 h-4 w-4" />
         // </Button>
-        <CustomDataTableColumnHeader column={column} title="Employee ID" />
+        <CustomDataTableColumnHeader column={column} title="Full Name" />
       ),
       cell: ({ row }) => {
         const title = row.original.TITLE;
@@ -252,7 +252,7 @@ export default function EmployeeList() {
       cell: ({ row }) => {
         const employee = row.original;
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon"
@@ -463,7 +463,7 @@ export default function EmployeeList() {
               />
             </Button>
             <Button onClick={handleAddEmployee}>
-              <IconPlus size={20} className="mr-2" />
+              <IconCirclePlus size={20}  />
               Add Employee
             </Button>
           </div>

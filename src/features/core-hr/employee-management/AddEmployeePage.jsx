@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   BriefcaseIcon,
   IdCard,
@@ -13,7 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format } from "date-fns";
+import { addYears, format } from "date-fns";
 import {
   Form,
   FormControl,
@@ -76,6 +76,7 @@ import { useOrgPositions } from "@/features/settings/work-structure/position/que
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { Badge } from "@/components/ui/badge";
+import { useCountries, useDistricts, useRegions, useUpazillas } from "./location-lookup-queries";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -261,7 +262,177 @@ const employeeSchema = z
   );
 
 // ─── Reusable Address Fields ──────────────────────────────────────────────────
-function AddressFields({ form, prefix }) {
+// function AddressFields({ form, prefix }) {
+//   return (
+//     <div className="space-y-4">
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.address1`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Address *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter address" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.address1B`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Address (Bangla) *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="ঠিকানা লিখুন" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.country`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Country *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter country" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.region`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Region / Division *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter region" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.district`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>District *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter district" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.upazilla`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Upazilla *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter upazilla" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.unions`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Union *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter union" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.area`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Area / Village *</FormLabel>
+//               <FormControl>
+//                 <Input placeholder="Enter area" {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       </div>
+
+//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.effectiveStartDate`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Effective Start Date *</FormLabel>
+//               <FormControl>
+//                 <DatePicker
+//                   value={field.value}
+//                   onChange={field.onChange}
+//                   placeholder="Select start date"
+//                 />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name={`${prefix}.effectiveEndDate`}
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Effective End Date *</FormLabel>
+//               <FormControl>
+//                 <DatePicker
+//                   value={field.value}
+//                   onChange={field.onChange}
+//                   placeholder="Select end date"
+//                 />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       </div>
+//     </div>
+//   );
+// }
+
+function AddressFields({ form, prefix, disabled }) {
+  // Local IDs to drive cascade — NOT stored in form (address table stores names)
+  const [selectedCountryId, setSelectedCountryId] = useState(null);
+  const [selectedRegionId, setSelectedRegionId]   = useState(null);
+  const [selectedDistrictId, setSelectedDistrictId] = useState(null);
+
+  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+  console.log("countries", countries);
+  const { data: regions = [],   isLoading: regionsLoading }   = useRegions(selectedCountryId);
+  const { data: districts = [], isLoading: districtsLoading } = useDistricts(selectedRegionId);
+  const { data: upazillas = [], isLoading: upazillasLoading } = useUpazillas(selectedDistrictId);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -272,7 +443,7 @@ function AddressFields({ form, prefix }) {
             <FormItem>
               <FormLabel>Address *</FormLabel>
               <FormControl>
-                <Input placeholder="Enter address" {...field} />
+                <Input placeholder="Enter address" disabled={disabled} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -285,7 +456,7 @@ function AddressFields({ form, prefix }) {
             <FormItem>
               <FormLabel>Address (Bangla) *</FormLabel>
               <FormControl>
-                <Input placeholder="ঠিকানা লিখুন" {...field} />
+                <Input placeholder="ঠিকানা লিখুন" disabled={disabled} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -294,28 +465,62 @@ function AddressFields({ form, prefix }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Country */}
         <FormField
           control={form.control}
           name={`${prefix}.country`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Country *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter country" {...field} />
-              </FormControl>
+              <CascadeCombobox
+                value={field.value}
+                items={countries}
+                idKey="COUNTRY_ID"
+                nameKey="COUNTRY_NAME"
+                placeholder={countriesLoading ? "Loading..." : "Select country"}
+                disabled={disabled || countriesLoading}
+                onSelect={(item) => {
+                  field.onChange(item.COUNTRY_NAME);
+                  setSelectedCountryId(item.COUNTRY_ID);
+                  // Clear downstream fields
+                  form.setValue(`${prefix}.region`, "");
+                  form.setValue(`${prefix}.district`, "");
+                  form.setValue(`${prefix}.upazilla`, "");
+                  setSelectedRegionId(null);
+                  setSelectedDistrictId(null);
+                }}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Region */}
         <FormField
           control={form.control}
           name={`${prefix}.region`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Region / Division *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter region" {...field} />
-              </FormControl>
+              <CascadeCombobox
+                value={field.value}
+                items={regions}
+                idKey="REGION_ID"
+                nameKey="REGION_NAME"
+                placeholder={
+                  !selectedCountryId ? "Select country first"
+                  : regionsLoading ? "Loading..."
+                  : "Select region"
+                }
+                disabled={disabled || !selectedCountryId || regionsLoading}
+                onSelect={(item) => {
+                  field.onChange(item.REGION_NAME);
+                  setSelectedRegionId(item.REGION_ID);
+                  form.setValue(`${prefix}.district`, "");
+                  form.setValue(`${prefix}.upazilla`, "");
+                  setSelectedDistrictId(null);
+                }}
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -323,93 +528,100 @@ function AddressFields({ form, prefix }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* District */}
         <FormField
           control={form.control}
           name={`${prefix}.district`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>District *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter district" {...field} />
-              </FormControl>
+              <CascadeCombobox
+                value={field.value}
+                items={districts}
+                idKey="DISTRICT_ID"
+                nameKey="DISTRICT_NAME"
+                placeholder={
+                  !selectedRegionId ? "Select region first"
+                  : districtsLoading ? "Loading..."
+                  : "Select district"
+                }
+                disabled={disabled || !selectedRegionId || districtsLoading}
+                onSelect={(item) => {
+                  field.onChange(item.DISTRICT_NAME);
+                  setSelectedDistrictId(item.DISTRICT_ID);
+                  form.setValue(`${prefix}.upazilla`, "");
+                }}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {/* Upazilla */}
         <FormField
           control={form.control}
           name={`${prefix}.upazilla`}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Upazilla *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter upazilla" {...field} />
-              </FormControl>
+              <CascadeCombobox
+                value={field.value}
+                items={upazillas}
+                idKey="UPAZILLA_ID"
+                nameKey="UPAZILLA_NAME"
+                placeholder={
+                  !selectedDistrictId ? "Select district first"
+                  : upazillasLoading ? "Loading..."
+                  : "Select upazilla"
+                }
+                disabled={disabled || !selectedDistrictId || upazillasLoading}
+                onSelect={(item) => {
+                  field.onChange(item.UPAZILLA_NAME);
+                }}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
       </div>
 
+      {/* Unions & Area stay as free text */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name={`${prefix}.unions`}
+        <FormField control={form.control} name={`${prefix}.unions`}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Union *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter union" {...field} />
-              </FormControl>
+            <FormItem><FormLabel>Union *</FormLabel>
+              <FormControl><Input placeholder="Enter union" disabled={disabled} {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name={`${prefix}.area`}
+        <FormField control={form.control} name={`${prefix}.area`}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Area / Village *</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter area" {...field} />
-              </FormControl>
+            <FormItem><FormLabel>Area / Village *</FormLabel>
+              <FormControl><Input placeholder="Enter area" disabled={disabled} {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
       </div>
 
+      {/* Dates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name={`${prefix}.effectiveStartDate`}
+        <FormField control={form.control} name={`${prefix}.effectiveStartDate`}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Effective Start Date *</FormLabel>
+            <FormItem><FormLabel>Effective Start Date *</FormLabel>
               <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select start date"
-                />
+                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" disabled={disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name={`${prefix}.effectiveEndDate`}
+        <FormField control={form.control} name={`${prefix}.effectiveEndDate`}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Effective End Date *</FormLabel>
+            <FormItem><FormLabel>Effective End Date *</FormLabel>
               <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select end date"
-                />
+                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" disabled={disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -500,6 +712,50 @@ function ComboboxField({
   );
 }
 
+
+function CascadeCombobox({ value, items, idKey, nameKey, placeholder, disabled, onSelect }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover modal={true} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className={`w-full justify-between font-normal ${!value && "text-muted-foreground"}`}
+        >
+          <span className="truncate">{value || placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {items.map((item) => (
+                <CommandItem
+                  key={item[idKey]}
+                  value={item[nameKey]}
+                  onSelect={() => {
+                    onSelect(item);
+                    setOpen(false);
+                  }}
+                >
+                  {item[nameKey]}
+                  <Check className={`ml-auto h-4 w-4 ${value === item[nameKey] ? "opacity-100" : "opacity-0"}`} />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AddEmployeePage() {
   const createEmployeeMutation = useCreateEmployee();
@@ -527,56 +783,92 @@ export default function AddEmployeePage() {
     );
   }, [orgPositions, selectedOrgId]);
 
-  const form = useForm({
-    resolver: zodResolver(employeeSchema),
-    defaultValues: {
-      empNo: "",
-      title: "",
-      firstName: "",
-      lastName: "",
-      fathersName: "",
-      fathersNameB: "",
-      mothersName: "",
-      mothersNameB: "",
-      gender: "",
-      nid: "",
-      birthRegNo: "",
-      townOfBirth: "",
-      regionOfBirth: "",
-      countryOfBirth: "",
-      maritalStatus: "",
-      nationality: "",
-      personTypeId: "",
-      regDisability: "",
-      companyId: "",
-      ouId: "",
-      orgId: "",
-      positionId: "",
-      orgPositionId: "",
-      payrollId: "",
-      gradeId: "",
-      presentAddress: {
-        address1: "",
-        address1B: "",
-        country: "",
-        region: "",
-        district: "",
-        upazilla: "",
-        unions: "",
-        area: "",
-      },
-      permanentAddress: {
-        address1: "",
-        address1B: "",
-        country: "",
-        region: "",
-        district: "",
-        upazilla: "",
-        unions: "",
-        area: "",
-      },
+ const today = new Date();
+const fiveYearsLater = addYears(today, 5);
+
+const form = useForm({
+  resolver: zodResolver(employeeSchema),
+  defaultValues: {
+    empNo: "",
+    title: "",
+    firstName: "",
+    lastName: "",
+    fathersName: "",
+    fathersNameB: "",
+    mothersName: "",
+    mothersNameB: "",
+    gender: "",
+    nid: "",
+    birthRegNo: "",
+    townOfBirth: "",
+    regionOfBirth: "",
+    countryOfBirth: "",
+    maritalStatus: "",
+    nationality: "",
+    personTypeId: "",
+    regDisability: "",
+    companyId: "",
+    ouId: "",
+    orgId: "",
+    positionId: "",
+    orgPositionId: "",
+    payrollId: "",
+    gradeId: "",
+    effectiveStartDate: today,
+    effectiveEndDate: fiveYearsLater,
+    assignmentEffectiveStartDate: today,
+    assignmentEffectiveEndDate: fiveYearsLater,
+    presentAddress: {
+      address1: "",
+      address1B: "",
+      country: "",
+      region: "",
+      district: "",
+      upazilla: "",
+      unions: "",
+      area: "",
+      effectiveStartDate: today,
+      effectiveEndDate: fiveYearsLater,
     },
+    permanentAddress: {
+      address1: "",
+      address1B: "",
+      country: "",
+      region: "",
+      district: "",
+      upazilla: "",
+      unions: "",
+      area: "",
+      effectiveStartDate: today,
+      effectiveEndDate: fiveYearsLater,
+    },
+  },
+});
+
+
+const watchedStartDates = form.watch([
+  "effectiveStartDate",
+  "assignmentEffectiveStartDate",
+  "presentAddress.effectiveStartDate",
+  "permanentAddress.effectiveStartDate",
+]);
+
+useEffect(() => {
+  const [effective, assignment, present, permanent] = watchedStartDates;
+
+  const pairs = [
+    [effective, "effectiveEndDate"],
+    [assignment, "assignmentEffectiveEndDate"],
+    [present, "presentAddress.effectiveEndDate"],
+    [permanent, "permanentAddress.effectiveEndDate"],
+  ];
+
+  pairs.forEach(([startDate, endField]) => {
+    if (startDate) {
+      form.setValue(endField, addYears(startDate, 5), { shouldDirty: true });
+    }
   });
+}, [watchedStartDates]);
 
   const fd = (date) => (date ? format(date, "yyyy-MM-dd") : null);
 
@@ -698,7 +990,7 @@ export default function AddEmployeePage() {
   const allErrors = flattenErrors(form.formState.errors);
 
   return (
-    <PageContainer className="px-6">
+    <PageContainer className="px-6 ">
       <header className="mb-8 bg-card p-4 rounded-md shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
