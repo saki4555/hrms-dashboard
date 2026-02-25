@@ -19,10 +19,10 @@ const DashboardLayout = () => {
   // console.log(location.pathname, "pathname")
   return (
     
-      <SidebarProvider defaultOpen={false} >
-      <AppSidebar userRole={user?.role} />
-      <SidebarInset className="min-w-0 ">
-        <main>
+      <SidebarProvider defaultOpen={false} className="group/sidebar">
+      <AppSidebar userRole={user?.role}  collapsible="icon" />
+      <SidebarInset className="min-w-0 peer">
+        <main className="@container/main peer-data-[state=collapsed]:bg-red-400">
           <DashboardNavbar />
           <Suspense fallback={<PageLoader />}>
             <Outlet />
@@ -30,9 +30,9 @@ const DashboardLayout = () => {
         </main>
         {import.meta.env.DEV && (
           <>
-            <ContentSizeIndicator position="bottom-right" />
+            <ContentSizeIndicator position="top-center" />
             {/* @container — excludes sidebar */}
-            <ViewportSizeIndicator position="bottom-left" />
+            <ViewportSizeIndicator position="top-center" />
             {/* viewport — whole page */}
           </>
         )}
