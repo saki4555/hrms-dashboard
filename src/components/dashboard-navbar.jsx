@@ -13,7 +13,7 @@ const DashboardNavbar = () => {
 
   return (
     <>
-    <nav className="flex h-14 px-1  sticky top-0 z-50  backdrop-blur-lg shrink-0   items-center gap-2 transition-[width,height] ease-linear ">
+    <nav className="flex h-14 px-1  sticky top-0 z-50  backdrop-blur-lg shrink-0   items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=offcanvas]/sidebar-wrapper:h-12">
       <div className="flex w-full items-center justify-between ">
         <Button variant="outline" className="size-10"  onClick={toggleSidebar}>
           

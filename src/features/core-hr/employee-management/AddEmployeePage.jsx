@@ -990,7 +990,7 @@ useEffect(() => {
   const allErrors = flattenErrors(form.formState.errors);
 
   return (
-    <PageContainer className="px-6 ">
+    <PageContainer className="px-3 group-has-data-[collapsible=offcanvas]/sidebar-wrapper:px-6">
       <header className="mb-8 bg-card p-4 rounded-md shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -1029,7 +1029,7 @@ useEffect(() => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, handleFormError)}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid  grid-cols-2 gap-5 @max-3xl/main:grid-cols-1">
             {/* ── LEFT COLUMN ── Personal Info + Present Address ───────────── */}
             <div className="space-y-6">
               {/* Personal Information */}

@@ -7,8 +7,6 @@ import {
   XCircle,
   MapPin,
   Home,
-  FileEditIcon,
-  Plus,
   Check,
   ChevronsUpDown,
 } from "lucide-react";
@@ -85,6 +83,12 @@ import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { Badge } from "@/components/ui/badge";
 import { IconCirclePlus, IconEdit } from "@tabler/icons-react";
+import {
+  useCountries,
+  useRegions,
+  useDistricts,
+  useUpazillas,
+} from "./location-lookup-queries";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -194,10 +198,106 @@ const employeeSchema = z
     },
   );
 
-// ─── Reusable Address Fields ──────────────────────────────────────────────────
-function AddressFields({ form, prefix, disabled }) {
+// ─── CascadeCombobox — dumb controlled input, no FormField inside ─────────────
+function CascadeCombobox({
+  value,
+  items,
+  idKey,
+  nameKey,
+  placeholder,
+  disabled,
+  onSelect,
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover modal={true} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className={`w-full justify-between font-normal ${!value && "text-muted-foreground"}`}
+        >
+          <span className="truncate">{value || placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Search..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {items.map((item) => (
+                <CommandItem
+                  key={item[idKey]}
+                  value={item[nameKey]}
+                  onSelect={() => {
+                    onSelect(item);
+                    setOpen(false);
+                  }}
+                >
+                  {item[nameKey]}
+                  <Check
+                    className={`ml-auto h-4 w-4 ${
+                      value === item[nameKey] ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── AddressFields ────────────────────────────────────────────────────────────
+// initialCountryId / initialRegionId / initialDistrictId: IDs from the existing
+// employee record, used to seed the cascade state so downstream dropdowns are
+// unlocked and already showing the correct options on load.
+function AddressFields({
+  form,
+  prefix,
+  disabled,
+  initialCountryId = null,
+  initialRegionId = null,
+  initialDistrictId = null,
+}) {
+  const [selectedCountryId, setSelectedCountryId] = useState(initialCountryId);
+  const [selectedRegionId, setSelectedRegionId] = useState(initialRegionId);
+  const [selectedDistrictId, setSelectedDistrictId] =
+    useState(initialDistrictId);
+
+  // Sync if initial IDs arrive late (data loads after render)
+  useEffect(() => {
+    if (initialCountryId && !selectedCountryId)
+      setSelectedCountryId(initialCountryId);
+  }, [initialCountryId]);
+
+  useEffect(() => {
+    if (initialRegionId && !selectedRegionId)
+      setSelectedRegionId(initialRegionId);
+  }, [initialRegionId]);
+
+  useEffect(() => {
+    if (initialDistrictId && !selectedDistrictId)
+      setSelectedDistrictId(initialDistrictId);
+  }, [initialDistrictId]);
+
+  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+  const { data: regions = [], isLoading: regionsLoading } =
+    useRegions(selectedCountryId);
+  const { data: districts = [], isLoading: districtsLoading } =
+    useDistricts(selectedRegionId);
+  const { data: upazillas = [], isLoading: upazillasLoading } =
+    useUpazillas(selectedDistrictId);
+
   return (
     <div className="space-y-4">
+      {/* Address lines */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -234,6 +334,8 @@ function AddressFields({ form, prefix, disabled }) {
           )}
         />
       </div>
+
+      {/* Country → Region */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -242,16 +344,32 @@ function AddressFields({ form, prefix, disabled }) {
             <FormItem>
               <FormLabel>Country *</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Enter country"
-                  disabled={disabled}
-                  {...field}
+                <CascadeCombobox
+                  value={field.value}
+                  items={countries}
+                  idKey="COUNTRY_ID"
+                  nameKey="COUNTRY_NAME"
+                  placeholder={
+                    countriesLoading ? "Loading..." : "Select country"
+                  }
+                  disabled={disabled || countriesLoading}
+                  onSelect={(item) => {
+                    field.onChange(item.COUNTRY_NAME);
+                    setSelectedCountryId(item.COUNTRY_ID);
+                    // clear downstream
+                    form.setValue(`${prefix}.region`, "");
+                    form.setValue(`${prefix}.district`, "");
+                    form.setValue(`${prefix}.upazilla`, "");
+                    setSelectedRegionId(null);
+                    setSelectedDistrictId(null);
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name={`${prefix}.region`}
@@ -259,10 +377,26 @@ function AddressFields({ form, prefix, disabled }) {
             <FormItem>
               <FormLabel>Region / Division *</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Enter region"
-                  disabled={disabled}
-                  {...field}
+                <CascadeCombobox
+                  value={field.value}
+                  items={regions}
+                  idKey="REGION_ID"
+                  nameKey="REGION_NAME"
+                  placeholder={
+                    !selectedCountryId
+                      ? "Select country first"
+                      : regionsLoading
+                        ? "Loading..."
+                        : "Select region"
+                  }
+                  disabled={disabled || !selectedCountryId || regionsLoading}
+                  onSelect={(item) => {
+                    field.onChange(item.REGION_NAME);
+                    setSelectedRegionId(item.REGION_ID);
+                    form.setValue(`${prefix}.district`, "");
+                    form.setValue(`${prefix}.upazilla`, "");
+                    setSelectedDistrictId(null);
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -270,6 +404,8 @@ function AddressFields({ form, prefix, disabled }) {
           )}
         />
       </div>
+
+      {/* District → Upazilla */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -278,16 +414,31 @@ function AddressFields({ form, prefix, disabled }) {
             <FormItem>
               <FormLabel>District *</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Enter district"
-                  disabled={disabled}
-                  {...field}
+                <CascadeCombobox
+                  value={field.value}
+                  items={districts}
+                  idKey="DISTRICT_ID"
+                  nameKey="DISTRICT_NAME"
+                  placeholder={
+                    !selectedRegionId
+                      ? "Select region first"
+                      : districtsLoading
+                        ? "Loading..."
+                        : "Select district"
+                  }
+                  disabled={disabled || !selectedRegionId || districtsLoading}
+                  onSelect={(item) => {
+                    field.onChange(item.DISTRICT_NAME);
+                    setSelectedDistrictId(item.DISTRICT_ID);
+                    form.setValue(`${prefix}.upazilla`, "");
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name={`${prefix}.upazilla`}
@@ -295,10 +446,24 @@ function AddressFields({ form, prefix, disabled }) {
             <FormItem>
               <FormLabel>Upazilla *</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="Enter upazilla"
-                  disabled={disabled}
-                  {...field}
+                <CascadeCombobox
+                  value={field.value}
+                  items={upazillas}
+                  idKey="UPAZILLA_ID"
+                  nameKey="UPAZILLA_NAME"
+                  placeholder={
+                    !selectedDistrictId
+                      ? "Select district first"
+                      : upazillasLoading
+                        ? "Loading..."
+                        : "Select upazilla"
+                  }
+                  disabled={
+                    disabled || !selectedDistrictId || upazillasLoading
+                  }
+                  onSelect={(item) => {
+                    field.onChange(item.UPAZILLA_NAME);
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -306,6 +471,8 @@ function AddressFields({ form, prefix, disabled }) {
           )}
         />
       </div>
+
+      {/* Unions & Area — free text */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -342,6 +509,8 @@ function AddressFields({ form, prefix, disabled }) {
           )}
         />
       </div>
+
+      {/* Dates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -384,7 +553,7 @@ function AddressFields({ form, prefix, disabled }) {
   );
 }
 
-// ─── Reusable Combobox Field ──────────────────────────────────────────────────
+// ─── Reusable Combobox Field (form-aware, stores ID) ─────────────────────────
 function ComboboxField({
   form,
   name,
@@ -486,26 +655,28 @@ export default function UpdateEmployeePage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [newPersonId, setNewPersonId] = useState(null);
   const [selectedOrgId, setSelectedOrgId] = useState(null);
-
-  // FIX: track whether the form has been seeded from employee data, so we
-  // know when to apply the async second-pass (orgPositionId resolution).
   const [formSeeded, setFormSeeded] = useState(false);
+
+  // ── Address initial IDs — extracted from employee data so AddressFields
+  //    can unlock the cascade dropdowns and pre-load options on mount ──────────
+  const [presentAddressIds, setPresentAddressIds] = useState({
+    countryId: null,
+    regionId: null,
+    districtId: null,
+  });
+  const [permanentAddressIds, setPermanentAddressIds] = useState({
+    countryId: null,
+    regionId: null,
+    districtId: null,
+  });
 
   const isSubmitting = submissionType !== null;
 
-  const {
-    data: employee,
-    isLoading,
-    isError,
-    error,
-  } = useEmployeeById(personId);
-  const { data: personTypes = [], isLoading: personTypesLoading } =
-    usePersonTypes();
+  const { data: employee, isLoading, isError, error } = useEmployeeById(personId);
+  const { data: personTypes = [], isLoading: personTypesLoading } = usePersonTypes();
   const { data: companies = [], isLoading: companiesLoading } = useCompanies();
-  const { data: organizations = [], isLoading: organizationsLoading } =
-    useOrganizations();
-  const { data: orgPositions = [], isLoading: orgPositionsLoading } =
-    useOrgPositions();
+  const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
+  const { data: orgPositions = [], isLoading: orgPositionsLoading } = useOrgPositions();
   const { data: grades = [], isLoading: gradesLoading } = useGrades();
 
   const filteredPositions = useMemo(() => {
@@ -566,7 +737,7 @@ export default function UpdateEmployeePage() {
     },
   });
 
-  // ── 1. Populate form when employee data loads ─────────────────────────────
+  // ── 1. Populate form + seed cascade IDs when employee data loads ───────────
   useEffect(() => {
     if (!employee) return;
 
@@ -612,9 +783,7 @@ export default function UpdateEmployeePage() {
       companyId: employee.assignment?.COMPANY_ID?.toString() || "",
       ouId: employee.assignment?.OU_ID?.toString() || "",
       orgId: employee.assignment?.ORG_ID?.toString() || "",
-      // FIX: positionId and orgPositionId are resolved in the second useEffect
-      // once orgPositions has loaded. Leave them empty here so the second
-      // effect can set them correctly with the proper master POSITION_ID.
+      // positionId resolved in effect 2 once orgPositions loads
       positionId: "",
       orgPositionId: "",
       payrollId: employee.assignment?.PAYROLL_ID?.toString() || "",
@@ -629,19 +798,27 @@ export default function UpdateEmployeePage() {
       permanentAddress: addr(employee.permanentAddress),
     });
 
+    // Set cascade IDs AFTER form.reset so AddressFields mounts with correct
+    // initial values. formSeeded gates the render, so these IDs are passed
+    // as initial props to a not-yet-mounted AddressFields component.
+    setPresentAddressIds({
+      countryId: employee.presentAddress?.COUNTRY_ID || null,
+      regionId: employee.presentAddress?.REGION_ID || null,
+      districtId: employee.presentAddress?.DISTRICT_ID || null,
+    });
+    setPermanentAddressIds({
+      countryId: employee.permanentAddress?.COUNTRY_ID || null,
+      regionId: employee.permanentAddress?.REGION_ID || null,
+      districtId: employee.permanentAddress?.DISTRICT_ID || null,
+    });
+
     setFormSeeded(true);
   }, [employee]);
 
-  // ── 2. Resolve positionId + orgPositionId once orgPositions array is available ──
-  //
-  // KEY FIX: The assignment's POSITION_ID is actually HR_ORG_POSITION.ID (the
-  // junction row primary key), NOT the master position ID. We find the matching
-  // row by pos.ID to get pos.POSITION_ID (master) for display in the combobox,
-  // and keep pos.ID as orgPositionId to send to the backend.
+  // ── 2. Resolve positionId + orgPositionId once orgPositions loads ──────────
   useEffect(() => {
     if (!formSeeded || !employee || orgPositions.length === 0) return;
 
-    // assignment.POSITION_ID == HR_ORG_POSITION.ID (junction row)
     const assignedOrgPositionId =
       employee.assignment?.POSITION_ID?.toString() || "";
     const orgId = employee.assignment?.ORG_ID;
@@ -655,15 +832,12 @@ export default function UpdateEmployeePage() {
     );
 
     if (match) {
-      // positionId = master POSITION_ID → used for combobox display match
       form.setValue("positionId", String(match.POSITION_ID), {
         shouldValidate: false,
       });
-      // orgPositionId = junction row ID → sent to backend
       form.setValue("orgPositionId", String(match.ID), {
         shouldValidate: false,
       });
-      // Also auto-fill grade from the matched position
       if (match.GRADE) {
         const matchedGrade = grades.find((g) => g.GRADE === match.GRADE);
         if (matchedGrade) {
@@ -731,7 +905,7 @@ export default function UpdateEmployeePage() {
       COMPANY_ID: parseInt(data.companyId),
       OU_ID: parseInt(data.ouId),
       ORG_ID: parseInt(data.orgId),
-      POSITION_ID: parseInt(data.orgPositionId), // HR_ORG_POSITION.ID
+      POSITION_ID: parseInt(data.orgPositionId),
       PAYROLL_ID: parseInt(data.payrollId),
       GRADE_ID: parseInt(data.gradeId),
       EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
@@ -747,6 +921,9 @@ export default function UpdateEmployeePage() {
       setStatusMessage("");
 
       const payload = buildPayload(data);
+
+      console.log(payload);
+      
 
       if (operationType === "correction") {
         await updateEmployeeMutation.mutateAsync({
@@ -906,7 +1083,6 @@ export default function UpdateEmployeePage() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4">
-                      {/* Title */}
                       <FormField
                         control={form.control}
                         name="title"
@@ -921,14 +1097,8 @@ export default function UpdateEmployeePage() {
                                 className="flex flex-row gap-4"
                               >
                                 {["Mr.", "Mrs.", "Ms.", "Dr."].map((t) => (
-                                  <div
-                                    key={t}
-                                    className="flex items-center space-x-1"
-                                  >
-                                    <RadioGroupItem
-                                      value={t}
-                                      id={`title-${t}`}
-                                    />
+                                  <div key={t} className="flex items-center space-x-1">
+                                    <RadioGroupItem value={t} id={`title-${t}`} />
                                     <Label htmlFor={`title-${t}`}>{t}</Label>
                                   </div>
                                 ))}
@@ -940,36 +1110,18 @@ export default function UpdateEmployeePage() {
                       />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="firstName"
+                        <FormField control={form.control} name="firstName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>First Name *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter first name"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>First Name *</FormLabel>
+                              <FormControl><Input placeholder="Enter first name" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="lastName"
+                        <FormField control={form.control} name="lastName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Last Name *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter last name"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Last Name *</FormLabel>
+                              <FormControl><Input placeholder="Enter last name" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -977,36 +1129,18 @@ export default function UpdateEmployeePage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="fathersName"
+                        <FormField control={form.control} name="fathersName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Father's Name *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter father's name"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Father's Name *</FormLabel>
+                              <FormControl><Input placeholder="Enter father's name" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="fathersNameB"
+                        <FormField control={form.control} name="fathersNameB"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Father's Name (Bangla) *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="পিতার নাম"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Father's Name (Bangla) *</FormLabel>
+                              <FormControl><Input placeholder="পিতার নাম" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1014,36 +1148,18 @@ export default function UpdateEmployeePage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="mothersName"
+                        <FormField control={form.control} name="mothersName"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mother's Name *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter mother's name"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Mother's Name *</FormLabel>
+                              <FormControl><Input placeholder="Enter mother's name" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="mothersNameB"
+                        <FormField control={form.control} name="mothersNameB"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mother's Name (Bangla) *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="মাতার নাম"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Mother's Name (Bangla) *</FormLabel>
+                              <FormControl><Input placeholder="মাতার নাম" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1064,14 +1180,8 @@ export default function UpdateEmployeePage() {
                                 className="flex flex-row gap-3"
                               >
                                 {["Male", "Female", "Other"].map((g) => (
-                                  <div
-                                    key={g}
-                                    className="flex items-center space-x-1"
-                                  >
-                                    <RadioGroupItem
-                                      value={g}
-                                      id={`gender-${g}`}
-                                    />
+                                  <div key={g} className="flex items-center space-x-1">
+                                    <RadioGroupItem value={g} id={`gender-${g}`} />
                                     <Label htmlFor={`gender-${g}`}>{g}</Label>
                                   </div>
                                 ))}
@@ -1083,37 +1193,20 @@ export default function UpdateEmployeePage() {
                       />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="dateOfBirth"
+                        <FormField control={form.control} name="dateOfBirth"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Date of Birth *</FormLabel>
+                            <FormItem><FormLabel>Date of Birth *</FormLabel>
                               <FormControl>
-                                <DatePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="Select date of birth"
-                                  disabled={isSubmitting}
-                                />
+                                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select date of birth" disabled={isSubmitting} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="nid"
+                        <FormField control={form.control} name="nid"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>NID *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter NID number"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>NID *</FormLabel>
+                              <FormControl><Input placeholder="Enter NID number" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1121,36 +1214,18 @@ export default function UpdateEmployeePage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="birthRegNo"
+                        <FormField control={form.control} name="birthRegNo"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Birth Registration No *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter birth reg. no"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Birth Registration No *</FormLabel>
+                              <FormControl><Input placeholder="Enter birth reg. no" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="townOfBirth"
+                        <FormField control={form.control} name="townOfBirth"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Town of Birth *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter town of birth"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Town of Birth *</FormLabel>
+                              <FormControl><Input placeholder="Enter town of birth" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1158,36 +1233,18 @@ export default function UpdateEmployeePage() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="regionOfBirth"
+                        <FormField control={form.control} name="regionOfBirth"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Region of Birth *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter region"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Region of Birth *</FormLabel>
+                              <FormControl><Input placeholder="Enter region" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="countryOfBirth"
+                        <FormField control={form.control} name="countryOfBirth"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Country of Birth *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter country"
-                                  disabled={isSubmitting}
-                                  {...field}
-                                />
-                              </FormControl>
+                            <FormItem><FormLabel>Country of Birth *</FormLabel>
+                              <FormControl><Input placeholder="Enter country" disabled={isSubmitting} {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1208,17 +1265,9 @@ export default function UpdateEmployeePage() {
                                 className="flex flex-row gap-3 flex-wrap"
                               >
                                 {MARITAL_STATUS_OPTIONS.map((option) => (
-                                  <div
-                                    key={option.value}
-                                    className="flex items-center space-x-1"
-                                  >
-                                    <RadioGroupItem
-                                      value={option.value}
-                                      id={`marital-${option.value}`}
-                                    />
-                                    <Label htmlFor={`marital-${option.value}`}>
-                                      {option.label}
-                                    </Label>
+                                  <div key={option.value} className="flex items-center space-x-1">
+                                    <RadioGroupItem value={option.value} id={`marital-${option.value}`} />
+                                    <Label htmlFor={`marital-${option.value}`}>{option.label}</Label>
                                   </div>
                                 ))}
                               </RadioGroup>
@@ -1228,19 +1277,10 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="nationality"
+                      <FormField control={form.control} name="nationality"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nationality *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter nationality"
-                                disabled={isSubmitting}
-                                {...field}
-                              />
-                            </FormControl>
+                          <FormItem><FormLabel>Nationality *</FormLabel>
+                            <FormControl><Input placeholder="Enter nationality" disabled={isSubmitting} {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -1250,7 +1290,7 @@ export default function UpdateEmployeePage() {
                 </AccordionItem>
               </Accordion>
 
-              {/* Present Address */}
+              {/* Present Address — with initial IDs to unlock cascade on load */}
               <Accordion
                 type="single"
                 collapsible
@@ -1265,11 +1305,20 @@ export default function UpdateEmployeePage() {
                     Present Address
                   </AccordionTrigger>
                   <AccordionContent>
-                    <AddressFields
-                      form={form}
-                      prefix="presentAddress"
-                      disabled={isSubmitting}
-                    />
+                    {formSeeded ? (
+                      <AddressFields
+                        form={form}
+                        prefix="presentAddress"
+                        disabled={isSubmitting}
+                        initialCountryId={presentAddressIds.countryId}
+                        initialRegionId={presentAddressIds.regionId}
+                        initialDistrictId={presentAddressIds.districtId}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 py-4 text-muted-foreground text-sm">
+                        <Spinner className="h-4 w-4" /> Loading address...
+                      </div>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -1293,56 +1342,31 @@ export default function UpdateEmployeePage() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="empNo"
+                      <FormField control={form.control} name="empNo"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Employee Number *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter employee number"
-                                disabled={isSubmitting}
-                                {...field}
-                              />
-                            </FormControl>
+                          <FormItem><FormLabel>Employee Number *</FormLabel>
+                            <FormControl><Input placeholder="Enter employee number" disabled={isSubmitting} {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="joinDate"
+                        <FormField control={form.control} name="joinDate"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Join Date *</FormLabel>
+                            <FormItem><FormLabel>Join Date *</FormLabel>
                               <FormControl>
-                                <DatePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="Select join date"
-                                  disabled={isSubmitting}
-                                />
+                                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select join date" disabled={isSubmitting} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="effectiveStartDate"
+                        <FormField control={form.control} name="effectiveStartDate"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Effective Start Date *</FormLabel>
+                            <FormItem><FormLabel>Effective Start Date *</FormLabel>
                               <FormControl>
-                                <DatePicker
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="Select start date"
-                                  disabled={isSubmitting}
-                                />
+                                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" disabled={isSubmitting} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1350,33 +1374,17 @@ export default function UpdateEmployeePage() {
                         />
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="effectiveEndDate"
+                      <FormField control={form.control} name="effectiveEndDate"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Effective End Date *</FormLabel>
+                          <FormItem><FormLabel>Effective End Date *</FormLabel>
                             <FormControl>
-                              <DatePicker
-                                value={field.value}
-                                onChange={field.onChange}
-                                placeholder="Select end date"
-                                disabled={isSubmitting}
-                              />
+                              <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" disabled={isSubmitting} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      {/*
-                        FIX — Person Type Select:
-                        The `key` prop forces the Select to remount whenever `personTypeId`
-                        changes (i.e. after form.reset() sets it from the employee data).
-                        Without this, the shadcn Select renders before personTypes have
-                        loaded and never updates its displayed label even though the
-                        controlled `value` is correct.
-                      */}
                       <FormField
                         control={form.control}
                         name="personTypeId"
@@ -1391,21 +1399,12 @@ export default function UpdateEmployeePage() {
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={
-                                      personTypesLoading
-                                        ? "Loading..."
-                                        : "Select person type"
-                                    }
-                                  />
+                                  <SelectValue placeholder={personTypesLoading ? "Loading..." : "Select person type"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 {personTypes.map((type) => (
-                                  <SelectItem
-                                    key={type.PERSON_TYPE_ID}
-                                    value={String(type.PERSON_TYPE_ID)}
-                                  >
+                                  <SelectItem key={type.PERSON_TYPE_ID} value={String(type.PERSON_TYPE_ID)}>
                                     {type.PERSON_TYPE}
                                   </SelectItem>
                                 ))}
@@ -1416,7 +1415,6 @@ export default function UpdateEmployeePage() {
                         )}
                       />
 
-                      {/* Registered Disability */}
                       <FormField
                         control={form.control}
                         name="regDisability"
@@ -1431,19 +1429,9 @@ export default function UpdateEmployeePage() {
                                 className="flex flex-row gap-3"
                               >
                                 {REG_DISABILITY_OPTIONS.map((option) => (
-                                  <div
-                                    key={option.value}
-                                    className="flex items-center space-x-1"
-                                  >
-                                    <RadioGroupItem
-                                      value={option.value}
-                                      id={`disability-${option.value}`}
-                                    />
-                                    <Label
-                                      htmlFor={`disability-${option.value}`}
-                                    >
-                                      {option.label}
-                                    </Label>
+                                  <div key={option.value} className="flex items-center space-x-1">
+                                    <RadioGroupItem value={option.value} id={`disability-${option.value}`} />
+                                    <Label htmlFor={`disability-${option.value}`}>{option.label}</Label>
                                   </div>
                                 ))}
                               </RadioGroup>
@@ -1460,135 +1448,72 @@ export default function UpdateEmployeePage() {
                         </p>
                         <div className="space-y-4">
                           <ComboboxField
-                            form={form}
-                            name="companyId"
-                            label="Company"
-                            items={companies}
-                            idKey="COMPANY_ID"
-                            nameKey="COMPANY_NAME"
-                            placeholder={
-                              companiesLoading ? "Loading..." : "Select company"
-                            }
+                            form={form} name="companyId" label="Company"
+                            items={companies} idKey="COMPANY_ID" nameKey="COMPANY_NAME"
+                            placeholder={companiesLoading ? "Loading..." : "Select company"}
                             disabled={isSubmitting || companiesLoading}
                           />
-
                           <ComboboxField
-                            form={form}
-                            name="ouId"
-                            label="Operational Unit"
-                            items={organizations}
-                            idKey="ID"
-                            nameKey="NAME"
-                            placeholder={
-                              organizationsLoading
-                                ? "Loading..."
-                                : "Select operational unit"
-                            }
+                            form={form} name="ouId" label="Operational Unit"
+                            items={organizations} idKey="ID" nameKey="NAME"
+                            placeholder={organizationsLoading ? "Loading..." : "Select operational unit"}
                             disabled={isSubmitting || organizationsLoading}
                           />
-
                           <ComboboxField
-                            form={form}
-                            name="orgId"
-                            label="Organization"
-                            items={organizations}
-                            idKey="ID"
-                            nameKey="NAME"
-                            placeholder={
-                              organizationsLoading
-                                ? "Loading..."
-                                : "Select organization"
-                            }
+                            form={form} name="orgId" label="Organization"
+                            items={organizations} idKey="ID" nameKey="NAME"
+                            placeholder={organizationsLoading ? "Loading..." : "Select organization"}
                             disabled={isSubmitting || organizationsLoading}
                             onSelect={(org) => {
                               setSelectedOrgId(org.ID);
-                              form.setValue("positionId", "", {
-                                shouldValidate: false,
-                              });
-                              form.setValue("orgPositionId", "", {
-                                shouldValidate: false,
-                              });
-                              form.setValue("gradeId", "", {
-                                shouldValidate: false,
-                              });
+                              form.setValue("positionId", "", { shouldValidate: false });
+                              form.setValue("orgPositionId", "", { shouldValidate: false });
+                              form.setValue("gradeId", "", { shouldValidate: false });
                             }}
                           />
 
-                          {/*
-                            FIX — Position combobox:
-                            selectedPosition now looks up by pos.POSITION_ID (master)
-                            which is what positionId stores, so the label correctly
-                            shows after the second useEffect resolves the values.
-                          */}
                           <FormField
                             control={form.control}
                             name="positionId"
                             render={({ field }) => {
                               const [posOpen, setPosOpen] = useState(false);
-                              const isDisabled =
-                                isSubmitting ||
-                                !selectedOrgId ||
-                                orgPositionsLoading;
-
+                              const isDisabled = isSubmitting || !selectedOrgId || orgPositionsLoading;
                               const selectedPosition = filteredPositions.find(
-                                (pos) =>
-                                  String(pos.POSITION_ID) ===
-                                  String(field.value),
+                                (pos) => String(pos.POSITION_ID) === String(field.value),
                               );
-
                               const handlePositionSelect = (pos) => {
                                 field.onChange(String(pos.POSITION_ID));
-                                form.setValue("orgPositionId", String(pos.ID), {
-                                  shouldValidate: false,
-                                });
+                                form.setValue("orgPositionId", String(pos.ID), { shouldValidate: false });
                                 if (pos.GRADE) {
-                                  const matchedGrade = grades.find(
-                                    (g) => g.GRADE === pos.GRADE,
-                                  );
+                                  const matchedGrade = grades.find((g) => g.GRADE === pos.GRADE);
                                   if (matchedGrade) {
-                                    form.setValue(
-                                      "gradeId",
-                                      String(matchedGrade.ID),
-                                      { shouldValidate: true },
-                                    );
+                                    form.setValue("gradeId", String(matchedGrade.ID), { shouldValidate: true });
                                   }
                                 }
                                 setPosOpen(false);
                               };
-
                               return (
                                 <FormItem>
                                   <FormLabel>Position *</FormLabel>
-                                  <Popover
-                                    modal={true}
-                                    open={posOpen}
-                                    onOpenChange={setPosOpen}
-                                  >
+                                  <Popover modal={true} open={posOpen} onOpenChange={setPosOpen}>
                                     <PopoverTrigger asChild>
                                       <FormControl>
                                         <Button
-                                          variant="outline"
-                                          role="combobox"
-                                          disabled={isDisabled}
+                                          variant="outline" role="combobox" disabled={isDisabled}
                                           className={`w-full justify-between font-normal ${!field.value && "text-muted-foreground"}`}
                                         >
                                           {!selectedOrgId && !isSubmitting
                                             ? "Select an organization first"
-                                            : orgPositionsLoading
-                                              ? "Loading..."
-                                              : selectedPosition
-                                                ? selectedPosition.POSITION_TITLE
-                                                : "Select position"}
+                                            : orgPositionsLoading ? "Loading..."
+                                            : selectedPosition ? selectedPosition.POSITION_TITLE
+                                            : "Select position"}
                                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                         </Button>
                                       </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[300px] p-0">
                                       <Command>
-                                        <CommandInput
-                                          placeholder="Search positions..."
-                                          className="h-9"
-                                        />
+                                        <CommandInput placeholder="Search positions..." className="h-9" />
                                         <CommandList>
                                           <CommandEmpty>
                                             {filteredPositions.length === 0
@@ -1597,51 +1522,28 @@ export default function UpdateEmployeePage() {
                                           </CommandEmpty>
                                           <CommandGroup>
                                             {filteredPositions.map((pos) => {
-                                              const isFull =
-                                                pos.ACTUAL_COUNT >= pos.FTE;
+                                              const isFull = pos.ACTUAL_COUNT >= pos.FTE;
                                               return (
                                                 <CommandItem
-                                                  key={pos.ID}
-                                                  value={pos.POSITION_TITLE}
+                                                  key={pos.ID} value={pos.POSITION_TITLE}
                                                   disabled={isFull}
-                                                  onSelect={() => {
-                                                    if (isFull) return;
-                                                    handlePositionSelect(pos);
-                                                  }}
-                                                  className={
-                                                    isFull
-                                                      ? "opacity-50 cursor-not-allowed"
-                                                      : ""
-                                                  }
+                                                  onSelect={() => { if (isFull) return; handlePositionSelect(pos); }}
+                                                  className={isFull ? "opacity-50 cursor-not-allowed" : ""}
                                                 >
                                                   <div className="flex flex-col flex-1 min-w-0">
-                                                    <span className="truncate">
-                                                      {pos.POSITION_TITLE}
-                                                    </span>
+                                                    <span className="truncate">{pos.POSITION_TITLE}</span>
                                                     {pos.GRADE && (
                                                       <span className="text-xs text-muted-foreground">
-                                                        {pos.GRADE} ·{" "}
-                                                        {pos.LEVELS}
+                                                        {pos.GRADE} · {pos.LEVELS}
                                                       </span>
                                                     )}
                                                   </div>
                                                   {isFull ? (
-                                                    <Badge
-                                                      variant="secondary"
-                                                      className="ml-auto shrink-0 text-xs font-normal"
-                                                    >
-                                                      Full ({pos.ACTUAL_COUNT}/
-                                                      {pos.FTE})
+                                                    <Badge variant="secondary" className="ml-auto shrink-0 text-xs font-normal">
+                                                      Full ({pos.ACTUAL_COUNT}/{pos.FTE})
                                                     </Badge>
                                                   ) : (
-                                                    <Check
-                                                      className={`ml-auto h-4 w-4 shrink-0 ${
-                                                        String(field.value) ===
-                                                        String(pos.POSITION_ID)
-                                                          ? "opacity-100"
-                                                          : "opacity-0"
-                                                      }`}
-                                                    />
+                                                    <Check className={`ml-auto h-4 w-4 shrink-0 ${String(field.value) === String(pos.POSITION_ID) ? "opacity-100" : "opacity-0"}`} />
                                                   )}
                                                 </CommandItem>
                                               );
@@ -1657,27 +1559,15 @@ export default function UpdateEmployeePage() {
                             }}
                           />
 
-                          {/* Grade — read-only, auto-filled */}
-                          <FormField
-                            control={form.control}
-                            name="gradeId"
+                          <FormField control={form.control} name="gradeId"
                             render={({ field }) => {
-                              const selectedGrade = grades.find(
-                                (g) => String(g.ID) === String(field.value),
-                              );
+                              const selectedGrade = grades.find((g) => String(g.ID) === String(field.value));
                               return (
-                                <FormItem>
-                                  <FormLabel>Grade</FormLabel>
+                                <FormItem><FormLabel>Grade</FormLabel>
                                   <FormControl>
-                                    <Input
-                                      readOnly
-                                      disabled
-                                      value={
-                                        selectedGrade ? selectedGrade.GRADE : ""
-                                      }
+                                    <Input readOnly disabled value={selectedGrade ? selectedGrade.GRADE : ""}
                                       placeholder="Auto-filled from selected position"
-                                      className="bg-muted/50 cursor-not-allowed"
-                                    />
+                                      className="bg-muted/50 cursor-not-allowed" />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -1685,56 +1575,31 @@ export default function UpdateEmployeePage() {
                             }}
                           />
 
-                          <FormField
-                            control={form.control}
-                            name="payrollId"
+                          <FormField control={form.control} name="payrollId"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Payroll ID *</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter payroll ID"
-                                    disabled={isSubmitting}
-                                    {...field}
-                                  />
-                                </FormControl>
+                              <FormItem><FormLabel>Payroll ID *</FormLabel>
+                                <FormControl><Input placeholder="Enter payroll ID" disabled={isSubmitting} {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="assignmentEffectiveStartDate"
+                            <FormField control={form.control} name="assignmentEffectiveStartDate"
                               render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Assignment Start Date *</FormLabel>
+                                <FormItem><FormLabel>Assignment Start Date *</FormLabel>
                                   <FormControl>
-                                    <DatePicker
-                                      value={field.value}
-                                      onChange={field.onChange}
-                                      placeholder="Select start date"
-                                      disabled={isSubmitting}
-                                    />
+                                    <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" disabled={isSubmitting} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <FormField
-                              control={form.control}
-                              name="assignmentEffectiveEndDate"
+                            <FormField control={form.control} name="assignmentEffectiveEndDate"
                               render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Assignment End Date *</FormLabel>
+                                <FormItem><FormLabel>Assignment End Date *</FormLabel>
                                   <FormControl>
-                                    <DatePicker
-                                      value={field.value}
-                                      onChange={field.onChange}
-                                      placeholder="Select end date"
-                                      disabled={isSubmitting}
-                                    />
+                                    <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" disabled={isSubmitting} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -1748,7 +1613,7 @@ export default function UpdateEmployeePage() {
                 </AccordionItem>
               </Accordion>
 
-              {/* Permanent Address */}
+              {/* Permanent Address — with initial IDs to unlock cascade on load */}
               <Accordion
                 type="single"
                 collapsible
@@ -1763,11 +1628,20 @@ export default function UpdateEmployeePage() {
                     Permanent Address
                   </AccordionTrigger>
                   <AccordionContent>
-                    <AddressFields
-                      form={form}
-                      prefix="permanentAddress"
-                      disabled={isSubmitting}
-                    />
+                    {formSeeded ? (
+                      <AddressFields
+                        form={form}
+                        prefix="permanentAddress"
+                        disabled={isSubmitting}
+                        initialCountryId={permanentAddressIds.countryId}
+                        initialRegionId={permanentAddressIds.regionId}
+                        initialDistrictId={permanentAddressIds.districtId}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 py-4 text-muted-foreground text-sm">
+                        <Spinner className="h-4 w-4" /> Loading address...
+                      </div>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -1781,9 +1655,7 @@ export default function UpdateEmployeePage() {
                 <AlertDescription className="flex items-start gap-2">
                   <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-medium">
-                      Please fix the following errors:
-                    </p>
+                    <p className="font-medium">Please fix the following errors:</p>
                     <ul className="list-disc list-inside mt-1 text-sm">
                       {allErrors.map(({ key, message }) => (
                         <li key={key}>{message}</li>
@@ -1795,17 +1667,13 @@ export default function UpdateEmployeePage() {
             )}
 
             {submitStatus === "success" && (
-              <Alert className="max-w-lg " variant="success">
-                <AlertDescription className="flex items-center  gap-2">
+              <Alert className="max-w-lg" variant="success">
+                <AlertDescription className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
                   {statusMessage}
-                  <Link
-                    to="/core-hr/employees"
-                    className="ml-2  underline font-medium hover:no-underline"
-                  >
+                  <Link to="/core-hr/employees" className="ml-2 underline font-medium hover:no-underline">
                     View Employees
                   </Link>
-                  
                   <Link
                     to={`/core-hr/employee-management/employee-details/${newPersonId ?? personId}`}
                     className="underline font-medium hover:no-underline"
@@ -1827,15 +1695,13 @@ export default function UpdateEmployeePage() {
 
             <div className="flex items-center gap-3">
               <Button
-                type="button"
-                variant="outline"
+                type="button" variant="outline"
                 onClick={() => navigate("/core-hr/employee-management")}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
 
-              {/* Correction — PUT */}
               <Button
                 type="button"
                 onClick={form.handleSubmit(
@@ -1847,35 +1713,17 @@ export default function UpdateEmployeePage() {
                 className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 {submissionType === "correction" ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Processing...
-                  </>
+                  <><Spinner className="mr-2 h-4 w-4" />Processing...</>
                 ) : (
-                  <>
-                    <IconEdit  />
-                    Correction
-                  </>
+                  <><IconEdit />Correction</>
                 )}
               </Button>
 
-              {/* Update — POST */}
-              <Button
-                type="button"
-                onClick={handleUpdateClick}
-                disabled={isSubmitting}
-                variant="default"
-              >
+              <Button type="button" onClick={handleUpdateClick} disabled={isSubmitting}>
                 {submissionType === "update" ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Processing...
-                  </>
+                  <><Spinner className="mr-2 h-4 w-4" />Processing...</>
                 ) : (
-                  <>
-                    <IconCirclePlus />
-                    Update
-                  </>
+                  <><IconCirclePlus />Update</>
                 )}
               </Button>
             </div>
