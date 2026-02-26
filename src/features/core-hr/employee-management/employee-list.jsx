@@ -466,6 +466,10 @@ export default function EmployeeList() {
               <IconCirclePlus size={20}  />
               Add Employee
             </Button>
+            <Button onClick={() => navigate("/core-hr/employees/add-modern")}>
+              <IconCirclePlus size={20}  />
+              Add Employee Modern UI/UX
+            </Button>
           </div>
         </div>
       </div>
