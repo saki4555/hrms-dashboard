@@ -183,6 +183,26 @@ export const NAV_ITEMS = [
             roles: ["Admin", "HR"],
           },
           {
+            title: "Country",
+            url: "/settings/work-structure/country",
+            roles: ["Admin", "HR"],
+          },
+           {
+            title: "Region",
+            url: "/settings/work-structure/region",
+            roles: ["Admin", "HR"],
+          },
+           {
+            title: "District",
+            url: "/settings/work-structure/district",
+            roles: ["Admin", "HR"],
+          },
+           {
+            title: "Upazilla",
+            url: "/settings/work-structure/upazilla",
+            roles: ["Admin", "HR"],
+          },
+          {
             title: "Positions",
             url: "/settings/work-structure/positions",
             roles: ["Admin", "HR"],
