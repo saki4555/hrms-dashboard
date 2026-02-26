@@ -9,6 +9,10 @@ import Grades from "./work-structure/hr-grade";
 import Companies from "./work-structure/company";
 import OrgTypes from "./work-structure/organization-types";
 import Locations from "./work-structure/locations";
+import Countrys from "./work-structure/country";
+import Regions from "./work-structure/region";
+import Districts from "./work-structure/district";
+import Upazilla from "./work-structure/upazilla";
 
 
 
@@ -34,6 +38,38 @@ const SettingsRoutes = (
       element={
         <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
           <Organizations />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="settings/work-structure/country"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Countrys />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/region"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Regions />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/district"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Districts />
+        </PrivateRoute>
+      }
+    />
+     <Route
+      path="settings/work-structure/upazilla"
+      element={
+        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
+          <Upazilla />
         </PrivateRoute>
       }
     />
