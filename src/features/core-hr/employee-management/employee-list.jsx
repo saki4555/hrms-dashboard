@@ -103,6 +103,9 @@ export default function EmployeeList() {
   const handleEdit = (employee) => {
     navigate(`/core-hr/employee-management/update/${employee.PERSON_ID}`);
   };
+  const handleEditModern = (employee) => {
+    navigate(`/core-hr/employee-management/update-modern/${employee.PERSON_ID}`);
+  };
 
   const handleDelete = async (employee) => {
     const fullName = `${employee.FIRST_NAME} ${employee.LAST_NAME}`;
@@ -258,6 +261,15 @@ export default function EmployeeList() {
               size="icon"
               className="h-8 w-8"
               onClick={() => handleEdit(employee)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span className="sr-only">Edit</span>
+            </Button>
+             <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleEditModern(employee)}
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit</span>
