@@ -12,12 +12,12 @@ import UpdateEmployeePageModern from "./employee-management/update-employee-page
 
 
 
-const CoreHRPage = lazy(() => import("./pages"));
+
 const AddEmployeePage = lazy(
   () => import("./employee-management/AddEmployeePage"),
 );
-const EditEmployeePage = lazy(() => import("./pages/EditEmployeePage"));
-const EmployeeDetailsPage = lazy(() => import("./pages/EmployeeDetailsPage"));
+
+const EmployeeDetailsPage = lazy(() => import("./employee-management/EmployeeDetailsPage"));
 
 const CoreHRRoutes = (
   <>
@@ -80,14 +80,7 @@ const CoreHRRoutes = (
         </PrivateRoute>
       }
     />
-    <Route
-      path="core-hr/employee/edit/:empNo"
-      element={
-        <PrivateRoute allowedRoles={[ROLES.ADMIN, ROLES.HR]}>
-          <EditEmployeePage />
-        </PrivateRoute>
-      }
-    />
+    
     <Route
       path="core-hr/lifecycle"
       element={

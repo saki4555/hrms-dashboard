@@ -45,6 +45,7 @@ import { ErrorSummary } from "./components/error-summary";
 import { ReviewStep } from "./components/review-step";
 
 export default function UpdateEmployeePageModern() {
+  console.log("UpdateEmployeePageModern");
   const { personId } = useParams();
   const navigate = useNavigate();
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();

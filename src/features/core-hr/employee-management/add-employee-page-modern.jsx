@@ -68,7 +68,8 @@ export default function AddEmployeePageModern() {
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
-    mode: "onChange",
+    // mode: "onChange",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       empNo: "", title: "", firstName: "", lastName: "",

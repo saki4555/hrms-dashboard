@@ -61,7 +61,7 @@ import { useGrades, useDeleteGrade } from "./queries";
 import AddGradeDialog from "./add-grade-dialog";
 import UpdateGradeDialog from "./update-grade-dialog";
 import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
-import { useEmployeesOld } from "@/features/core-hr/hooks/useEmployees";
+
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 
 const formatDate = (dateStr) => {
@@ -93,8 +93,7 @@ export default function GradeList() {
     refetch,
     isFetching,
   } = useGrades();
-  const { data: employeeData = [] } = useEmployeesOld();
-  console.log("OLD DATA--------->", employeeData);
+ 
   const deleteGradeMutation = useDeleteGrade();
 
   const handleEdit = (grade) => {
