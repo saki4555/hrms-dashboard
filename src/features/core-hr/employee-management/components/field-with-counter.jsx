@@ -1,7 +1,14 @@
 import { Check } from "lucide-react";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
 
 export function FieldWithCounter({ form, name, label, placeholder, maxLength, disabled }) {
   const value = form.watch(name) || "";
@@ -46,3 +53,5 @@ export function FieldWithCounter({ form, name, label, placeholder, maxLength, di
     />
   );
 }
+
+
