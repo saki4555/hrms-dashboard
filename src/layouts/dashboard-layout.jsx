@@ -8,10 +8,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/features/authentication/hooks/useAuth";
 import React, { Suspense } from "react";
 import { Outlet, useLocation } from "react-router";
-import { Toaster } from "sonner";
+
 
 const DashboardLayout = () => {
   const { user } = useAuth();
@@ -37,7 +38,8 @@ const DashboardLayout = () => {
           </>
         )}
       </SidebarInset>
-      <Toaster richColors position="top-right" />
+      
+      <Toaster richColors />
     </SidebarProvider>
     
   );
