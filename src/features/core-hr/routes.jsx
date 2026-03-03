@@ -6,18 +6,18 @@ import { lazy } from "react";
 import Employees from "./employee-management";
 import EmployeeTypes from "./employee-types";
 import UpdateEmployeePage from "./employee-management/update-employee-page";
-import AddEmployeePageModern from "./employee-management/add-employee-page-modern";
+// import AddEmployeePageModern from "./employee-management/add-employee-page-modern";
 import UpdateEmployeePageModern from "./employee-management/update-employee-page-modern";
-
-
-
+import EmployeeDetailsPage from "./employee-management/EmployeeDetailsPage";
 
 
 const AddEmployeePage = lazy(
   () => import("./employee-management/AddEmployeePage"),
 );
 
-const EmployeeDetailsPage = lazy(() => import("./employee-management/EmployeeDetailsPage"));
+const AddEmployeePageModern = lazy(() => import('./employee-management/add-employee-page-modern'))
+
+
 
 const CoreHRRoutes = (
   <>
