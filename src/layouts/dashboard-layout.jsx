@@ -17,6 +17,7 @@ import { Outlet, useLocation } from "react-router";
 const DashboardLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
+  
   // console.log(location.pathname, "pathname")
   return (
     
@@ -25,6 +26,7 @@ const DashboardLayout = () => {
       <SidebarInset className="min-w-0 peer">
         <main className="@container/main peer-data-[state=collapsed]:bg-red-400">
           <DashboardNavbar />
+          {navigation.state === "loading" && <PageLoader />}
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>

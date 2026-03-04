@@ -26,8 +26,9 @@ import { Link, matchPath, NavLink, useLocation } from "react-router";
 import { NavUser } from "./nav-user";
 
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "@/constants/nav-items";
+
 import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
+import { NAV_ITEMS } from "@/config/nav-config";
 
 /* -------------------------------------------------------------------------- */
 /*                           UPDATED NAV CONFIG (WITH LABELS)                 */

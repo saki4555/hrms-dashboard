@@ -5,23 +5,7 @@ import {
   IconPerspectiveOff,
   IconReport,
   IconSettings,
-  IconFileText,
-  IconUsers,
-  IconLifebuoy,
-  IconFiles,
-  IconClipboardList,
-  IconUserPlus,
-  IconCalendar,
-  IconDatabase,
-  IconChartBar,
-  IconSettingsAutomation,
-  IconBuildingBank,
-  IconCheck,
-  IconFileExport,
-  IconTrophy,
-  IconBuilding,
-  IconBriefcase,
-  IconSitemap,
+ 
 } from "@tabler/icons-react";
 
 export const NAV_ITEMS = [
