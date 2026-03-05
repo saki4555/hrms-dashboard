@@ -58,19 +58,17 @@ export const PATHS = {
   },
 
   // ─── Settings / Work Structure ────────────────────────────────────────────
-  SETTINGS: {
+SETTINGS: {
     ORGANIZATION: "settings/work-structure/organization",
-    COUNTRY:      "settings/work-structure/country",
-    REGION:       "settings/work-structure/region",
-    DISTRICT:     "settings/work-structure/district",
-    UPAZILLA:     "settings/work-structure/upazilla",
+    GEO_SETUP:    "settings/work-structure/geo-setup",  
+
     POSITIONS:    "settings/work-structure/positions",
     HR_POSITIONS: "settings/work-structure/hr-positions",
     GRADES:       "settings/work-structure/grades",
     COMPANY:      "settings/work-structure/company",
     ORG_TYPES:    "settings/work-structure/org-types",
     LOCATIONS:    "settings/work-structure/locations",
-  },
+},
 
   // ─── Reports ──────────────────────────────────────────────────────────────
   REPORTS: {

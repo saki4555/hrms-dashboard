@@ -94,16 +94,14 @@ export const NAV_ITEMS = [
         roles: ADMIN_HR,
         subItems: [
           { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION, roles: ADMIN_HR },
-          { title: "Country",            url: PATHS.SETTINGS.COUNTRY,      roles: ADMIN_HR },
-          { title: "Region",             url: PATHS.SETTINGS.REGION,       roles: ADMIN_HR },
-          { title: "District",           url: PATHS.SETTINGS.DISTRICT,     roles: ADMIN_HR },
-          { title: "Upazilla",           url: PATHS.SETTINGS.UPAZILLA,     roles: ADMIN_HR },
+         
           { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,    roles: ADMIN_HR },
           { title: "Grades",             url: PATHS.SETTINGS.GRADES,       roles: ADMIN_HR },
           { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS, roles: ADMIN_HR },
           { title: "Company",            url: PATHS.SETTINGS.COMPANY,      roles: ADMIN_HR },
           { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,    roles: ADMIN_HR },
           { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,    roles: ADMIN_HR },
+          { title: "Geo Setup",    url: PATHS.SETTINGS.GEO_SETUP,    roles: ADMIN_HR },
         ],
       },
     ],

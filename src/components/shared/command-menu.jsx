@@ -18,8 +18,8 @@ export function CommandMenu() {
 
   const handleSelect = (url) => {
     setOpen(false)
-    // setTimeout(() => navigate(url), 10)
-    navigate(url)
+    setTimeout(() => navigate(url), 300)
+    // navigate(url)
     
   }
 

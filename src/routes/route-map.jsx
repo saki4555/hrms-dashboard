@@ -54,16 +54,7 @@ const OrgTypes = lazy(
 const Locations = lazy(
   () => import("@/features/settings/work-structure/locations"),
 );
-const Countries = lazy(
-  () => import("@/features/settings/work-structure/country"),
-);
-const Regions = lazy(() => import("@/features/settings/work-structure/region"));
-const Districts = lazy(
-  () => import("@/features/settings/work-structure/district"),
-);
-const Upazilla = lazy(
-  () => import("@/features/settings/work-structure/upazilla"),
-);
+const GeoSetup = lazy(() => import("@/features/settings/work-structure/geo-setup"))
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -223,10 +214,7 @@ export const ROUTE_MAP = [
     component: Organizations,
     roles: ADMIN_HR,
   },
-  { path: PATHS.SETTINGS.COUNTRY, component: Countries, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.REGION, component: Regions, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.DISTRICT, component: Districts, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.UPAZILLA, component: Upazilla, roles: ADMIN_HR },
+
   { path: PATHS.SETTINGS.POSITIONS, component: Positions, roles: ADMIN_HR },
   {
     path: PATHS.SETTINGS.HR_POSITIONS,
@@ -237,6 +225,7 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.COMPANY, component: Companies, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.ORG_TYPES, component: OrgTypes, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.LOCATIONS, component: Locations, roles: ADMIN_HR },
+  { path: PATHS.SETTINGS.GEO_SETUP, component: GeoSetup,  roles: ADMIN_HR },
 
   // ── Reports ────────────────────────────────────────────────────────────────
   {
