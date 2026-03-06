@@ -84,11 +84,11 @@ import { usePersonTypes } from "../employee-types/queries";
 import { Badge } from "@/components/ui/badge";
 import { IconCirclePlus, IconEdit } from "@tabler/icons-react";
 import {
-  useCountries,
-  useRegions,
-  useDistricts,
-  useUpazillas,
-} from "./location-lookup-queries";
+  useCountriesLookup,
+  useRegionsLookup,
+  useDistrictsLookup,
+  useUpazillasLookup,
+} from "../../../api/location-lookup-queries";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -287,13 +287,13 @@ function AddressFields({
       setSelectedDistrictId(initialDistrictId);
   }, [initialDistrictId]);
 
-  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+  const { data: countries = [], isLoading: countriesLoading } = useCountriesLookup();
   const { data: regions = [], isLoading: regionsLoading } =
-    useRegions(selectedCountryId);
+    useRegionsLookup(selectedCountryId);
   const { data: districts = [], isLoading: districtsLoading } =
-    useDistricts(selectedRegionId);
+    useDistrictsLookup(selectedRegionId);
   const { data: upazillas = [], isLoading: upazillasLoading } =
-    useUpazillas(selectedDistrictId);
+    useUpazillasLookup(selectedDistrictId);
 
   return (
     <div className="space-y-4">

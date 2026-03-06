@@ -6,11 +6,11 @@ import { DatePicker } from "@/components/DatePicker";
 import { cn } from "@/lib/utils";
 import { CascadeCombobox } from "./cascade-combobox";
 import {
-  useCountries,
-  useDistricts,
-  useRegions,
-  useUpazillas,
-} from "../location-lookup-queries";
+  useCountriesLookup,
+  useDistrictsLookup,
+  useRegionsLookup,
+  useUpazillasLookup,
+} from "../../../../api/location-lookup-queries";
 
 /**
  * AddressFields
@@ -43,10 +43,10 @@ export function AddressFields({
     if (initialDistrictId && !selectedDistrictId) setSelectedDistrictId(initialDistrictId);
   }, [initialDistrictId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: countries = [], isLoading: countriesLoading } = useCountries();
-  const { data: regions = [], isLoading: regionsLoading } = useRegions(selectedCountryId);
-  const { data: districts = [], isLoading: districtsLoading } = useDistricts(selectedRegionId);
-  const { data: upazillas = [], isLoading: upazillasLoading } = useUpazillas(selectedDistrictId);
+  const { data: countries = [], isLoading: countriesLoading } = useCountriesLookup();
+  const { data: regions = [], isLoading: regionsLoading } = useRegionsLookup(selectedCountryId);
+  const { data: districts = [], isLoading: districtsLoading } = useDistrictsLookup(selectedRegionId);
+  const { data: upazillas = [], isLoading: upazillasLoading } = useUpazillasLookup(selectedDistrictId);
 
   const fieldClass = (fieldState) => cn(
     "transition-all duration-200",
