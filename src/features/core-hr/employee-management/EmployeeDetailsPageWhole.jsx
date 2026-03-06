@@ -117,7 +117,7 @@ import {
   useRegions,
   useDistricts,
   useUpazillas,
-} from "./location-lookup-queries";
+} from "../../../api/location-lookup-queries";
 import {
   MARITAL_STATUS_OPTIONS,
   REG_DISABILITY_OPTIONS,

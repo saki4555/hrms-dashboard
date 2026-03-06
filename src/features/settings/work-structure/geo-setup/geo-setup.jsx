@@ -1,14 +1,23 @@
 /**
- * geo-setup-page.jsx
+ * geo-setup.jsx
  *
  * Replaces the 4 separate pages (Country, Region, District, Upazilla)
  * with a single drill-down page under one "Geo Setup" sidebar item.
  *
  * Drill stack:
- *   []                → showing all Countries
- *   [country]         → showing Regions inside that country
- *   [country, region] → showing Districts inside that region
+ *   []                          → showing all Countries
+ *   [country]                   → showing Regions inside that country
+ *   [country, region]           → showing Districts inside that region
  *   [country, region, district] → showing Upazillas inside that district
+ *
+ * Data strategy:
+ *   Uses lookup queries (filtered by parent ID) instead of fetching all data
+ *   and filtering on the client. Only the current level's data is fetched.
+ *
+ * Dialog strategy:
+ *   isDialogOpen     → Add (item=null) or Edit (item=object)
+ *   isMoveDialogOpen → Move to different parent (region/district/upazilla only)
+ *                      Country has no parent, so no Move action at level 0.
  */
 
 import { useState, useMemo } from "react";
@@ -29,6 +38,7 @@ import {
   Landmark,
   Building2,
   ChevronRight,
+  FolderInput,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,7 +57,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { Spinner } from "@/components/ui/spinner";
 import { IconEdit, IconPlus } from "@tabler/icons-react";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -58,26 +73,31 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router";
 
-import { useCountries, useDeleteCountry } from "../country/queries";
-import { useRegions, useDeleteRegion } from "../region/queries";
-import { useDistricts, useDeleteDistrict } from "../district/queries";
-import { useUpazillas, useDeleteUpazilla } from "../upazilla/queries";
-
-
-import UpdateCountryDialog from "../country/update-country-dialog";
-import AddRegionDialog from "./region/add-region-dialog";
-import UpdateRegionDialog from "./region/update-region-dialog";
-import AddDistrictDialog from "./district/add-district-dialog";
-import UpdateDistrictDialog from "./district/update-district-dialog";
-import AddUpazillaDialog from "./upazilla/add-upazilla-dialog";
-import UpdateUpazillaDialog from "./upazilla/update-upazilla-dialog";
+import { useDeleteCountry } from "./country/queries";
+import { useDeleteRegion } from "./region/queries";
+import { useDeleteDistrict } from "./district/queries";
+import { useDeleteUpazilla } from "./upazilla/queries";
+import {
+  useCountriesLookup,
+  useRegionsLookup,
+  useDistrictsLookup,
+  useUpazillasLookup,
+} from "@/api/location-lookup-queries";
 
 import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-column-header";
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
-import AddCountryDialog from "./country/add-country-dialog";
+
+import CountryFormDialog  from "./country/country-form-dialog";
+import RegionFormDialog   from "./region/region-form-dialog";
+import DistrictFormDialog from "./district/district-form-dialog";
+import UpazillaFormDialog from "./upazilla/upazilla-form-dialog";
+
+import RegionMoveDialog   from "./region/region-move-dialog";
+import DistrictMoveDialog from "./district/district-move-dialog";
+import UpazillaMoveDialog from "./upazilla/upazilla-move-dialog";
 
 
-// ─── Level config ────────────────────────────────────────────────────────────
+// ─── Level config ─────────────────────────────────────────────────────────────
 const LEVELS = {
   country: {
     label: "Countries",
@@ -87,6 +107,7 @@ const LEVELS = {
     nameKey: "COUNTRY_NAME",
     idKey: "COUNTRY_ID",
     loadingText: "Loading countries...",
+    canMove: false, // no parent to move to
   },
   region: {
     label: "Regions",
@@ -96,6 +117,7 @@ const LEVELS = {
     nameKey: "REGION_NAME",
     idKey: "REGION_ID",
     loadingText: "Loading regions...",
+    canMove: true,
   },
   district: {
     label: "Districts",
@@ -105,6 +127,7 @@ const LEVELS = {
     nameKey: "DISTRICT_NAME",
     idKey: "DISTRICT_ID",
     loadingText: "Loading districts...",
+    canMove: true,
   },
   upazilla: {
     label: "Upazillas",
@@ -114,17 +137,15 @@ const LEVELS = {
     nameKey: "UPAZILLA_NAME",
     idKey: "UPAZILLA_ID",
     loadingText: "Loading upazillas...",
+    canMove: true,
   },
 };
 
 const LEVEL_ORDER = ["country", "region", "district", "upazilla"];
 
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function GeoSetup() {
-  // drillStack: array of selected items as we go deeper
-  // []                          → country level
-  // [{ COUNTRY_ID, COUNTRY_NAME }]  → region level
-  // [..., { REGION_ID, REGION_NAME }]   → district level
-  // [..., ..., { DISTRICT_ID, DISTRICT_NAME }] → upazilla level
   const [drillStack, setDrillStack] = useState([]);
 
   const [sorting, setSorting] = useState([]);
@@ -132,136 +153,88 @@ export default function GeoSetup() {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+
+  // Form dialog — Add (item=null) or Edit (item=object)
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Move dialog — separate state
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [moveItem, setMoveItem] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
-  // Determine current level key
+  // ── Current level ─────────────────────────────────────────────────────────
   const currentLevelKey = LEVEL_ORDER[drillStack.length];
-  const currentLevel = LEVELS[currentLevelKey];
-  const isLastLevel = drillStack.length === LEVEL_ORDER.length - 1;
+  const currentLevel    = LEVELS[currentLevelKey];
+  const isLastLevel     = drillStack.length === LEVEL_ORDER.length - 1;
 
-  // ── Fetch all data (queries are cheap — already cached) ───────────────────
+  // ── Parent IDs from drill stack ───────────────────────────────────────────
+  const currentCountryId  = drillStack[0]?.COUNTRY_ID  ?? null;
+  const currentRegionId   = drillStack[1]?.REGION_ID   ?? null;
+  const currentDistrictId = drillStack[2]?.DISTRICT_ID ?? null;
+
+  // ── Fetch only current level data ─────────────────────────────────────────
   const {
-    data: allCountries = [],
+    data: countries = [],
     isLoading: isLoadingCountries,
     isError: isErrorCountries,
     error: errorCountries,
     refetch: refetchCountries,
     isFetching: isFetchingCountries,
-  } = useCountries();
+  } = useCountriesLookup();
 
   const {
-    data: allRegions = [],
+    data: regions = [],
     isLoading: isLoadingRegions,
     isError: isErrorRegions,
     error: errorRegions,
     refetch: refetchRegions,
     isFetching: isFetchingRegions,
-  } = useRegions();
+  } = useRegionsLookup(currentCountryId);
 
   const {
-    data: allDistricts = [],
+    data: districts = [],
     isLoading: isLoadingDistricts,
     isError: isErrorDistricts,
     error: errorDistricts,
     refetch: refetchDistricts,
     isFetching: isFetchingDistricts,
-  } = useDistricts();
+  } = useDistrictsLookup(currentRegionId);
 
   const {
-    data: allUpazillas = [],
+    data: upazillas = [],
     isLoading: isLoadingUpazillas,
     isError: isErrorUpazillas,
     error: errorUpazillas,
     refetch: refetchUpazillas,
     isFetching: isFetchingUpazillas,
-  } = useUpazillas();
+  } = useUpazillasLookup(currentDistrictId);
 
   // ── Delete mutations ──────────────────────────────────────────────────────
-  const deleteCountryMutation = useDeleteCountry();
-  const deleteRegionMutation = useDeleteRegion();
+  const deleteCountryMutation  = useDeleteCountry();
+  const deleteRegionMutation   = useDeleteRegion();
   const deleteDistrictMutation = useDeleteDistrict();
   const deleteUpazillaMutation = useDeleteUpazilla();
 
-  // ── Derive current data based on drill stack ──────────────────────────────
-  const currentData = useMemo(() => {
-    if (drillStack.length === 0) return allCountries;
-
-    if (drillStack.length === 1) {
-      const countryId = drillStack[0].COUNTRY_ID;
-      return allRegions.filter((r) => r.COUNTRY_ID === countryId);
-    }
-
-    if (drillStack.length === 2) {
-      const regionId = drillStack[1].REGION_ID;
-      return allDistricts.filter((d) => d.REGION_ID === regionId);
-    }
-
-    if (drillStack.length === 3) {
-      const districtId = drillStack[2].DISTRICT_ID;
-      return allUpazillas.filter((u) => u.DISTRICT_ID === districtId);
-    }
-
-    return [];
-  }, [drillStack, allCountries, allRegions, allDistricts, allUpazillas]);
-
-  // ── Loading / error state for current level ───────────────────────────────
-  const isLoading = [
-    isLoadingCountries,
-    isLoadingRegions,
-    isLoadingDistricts,
-    isLoadingUpazillas,
-  ][drillStack.length];
-
-  const isError = [
-    isErrorCountries,
-    isErrorRegions,
-    isErrorDistricts,
-    isErrorUpazillas,
-  ][drillStack.length];
-
-  const error = [
-    errorCountries,
-    errorRegions,
-    errorDistricts,
-    errorUpazillas,
-  ][drillStack.length];
-
-  const refetch = [
-    refetchCountries,
-    refetchRegions,
-    refetchDistricts,
-    refetchUpazillas,
-  ][drillStack.length];
-
-  const isFetching = [
-    isFetchingCountries,
-    isFetchingRegions,
-    isFetchingDistricts,
-    isFetchingUpazillas,
-  ][drillStack.length];
-
-  const deleteMutation = [
-    deleteCountryMutation,
-    deleteRegionMutation,
-    deleteDistrictMutation,
-    deleteUpazillaMutation,
-  ][drillStack.length];
+  // ── Index lookups by drill depth ──────────────────────────────────────────
+  const currentData    = [countries,          regions,          districts,          upazillas         ][drillStack.length];
+  const isLoading      = [isLoadingCountries,  isLoadingRegions,  isLoadingDistricts,  isLoadingUpazillas ][drillStack.length];
+  const isError        = [isErrorCountries,    isErrorRegions,    isErrorDistricts,    isErrorUpazillas   ][drillStack.length];
+  const error          = [errorCountries,      errorRegions,      errorDistricts,      errorUpazillas     ][drillStack.length];
+  const refetch        = [refetchCountries,    refetchRegions,    refetchDistricts,    refetchUpazillas   ][drillStack.length];
+  const isFetching     = [isFetchingCountries, isFetchingRegions, isFetchingDistricts, isFetchingUpazillas][drillStack.length];
+  const deleteMutation = [deleteCountryMutation, deleteRegionMutation, deleteDistrictMutation, deleteUpazillaMutation][drillStack.length];
 
   // ── Drill navigation ──────────────────────────────────────────────────────
   const drillInto = (item) => {
-    if (isLastLevel) return; // Upazilla has no children
+    if (isLastLevel) return;
     setDrillStack((prev) => [...prev, item]);
     setGlobalFilter("");
     setRowSelection({});
   };
 
   const navigateTo = (stackIndex) => {
-    // stackIndex = -1 means go back to root (Geo Setup)
-    // stackIndex = 0 means go back to country level (show all countries)
     if (stackIndex < 0) {
       setDrillStack([]);
     } else {
@@ -274,23 +247,25 @@ export default function GeoSetup() {
   // ── Add button label ──────────────────────────────────────────────────────
   const addButtonLabel = useMemo(() => {
     if (drillStack.length === 0) return "Add Country";
-    if (drillStack.length === 1)
-      return `Add Region to ${drillStack[0].COUNTRY_NAME}`;
-    if (drillStack.length === 2)
-      return `Add District to ${drillStack[1].REGION_NAME}`;
-    if (drillStack.length === 3)
-      return `Add Upazilla to ${drillStack[2].DISTRICT_NAME}`;
+    if (drillStack.length === 1) return `Add Region to ${drillStack[0].COUNTRY_NAME}`;
+    if (drillStack.length === 2) return `Add District to ${drillStack[1].REGION_NAME}`;
+    if (drillStack.length === 3) return `Add Upazilla to ${drillStack[2].DISTRICT_NAME}`;
   }, [drillStack]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleEdit = (item) => {
     setSelectedItem(item);
-    setIsUpdateDialogOpen(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleMove = (item) => {
+    setMoveItem(item);
+    setIsMoveDialogOpen(true);
   };
 
   const handleDelete = async (item) => {
     const name = item[currentLevel.nameKey];
-    const id = item[currentLevel.idKey];
+    const id   = item[currentLevel.idKey];
 
     const confirmed = await showConfirmation({
       title: `Delete ${currentLevel.singular.toLowerCase()}?`,
@@ -313,7 +288,7 @@ export default function GeoSetup() {
     }
   };
 
-  // ── Table columns (dynamic per level) ────────────────────────────────────
+  // ── Table columns ─────────────────────────────────────────────────────────
   const columns = useMemo(() => {
     const nameKey = currentLevel.nameKey;
 
@@ -326,9 +301,7 @@ export default function GeoSetup() {
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onCheckedChange={(value) =>
-              table.toggleAllPageRowsSelected(!!value)
-            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
             aria-label="Select all"
           />
         ),
@@ -354,7 +327,6 @@ export default function GeoSetup() {
           const item = row.original;
           const name = row.getValue(nameKey);
 
-          // Countries, Regions, Districts are drillable (not Upazillas)
           if (!isLastLevel) {
             return (
               <button
@@ -379,6 +351,7 @@ export default function GeoSetup() {
 
           return (
             <div className="flex items-center gap-1">
+              {/* Edit */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -389,6 +362,20 @@ export default function GeoSetup() {
                 <span className="sr-only">Edit</span>
               </Button>
 
+              {/* Move — region / district / upazilla only, not country */}
+              {currentLevel.canMove && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-amber-500 hover:text-amber-600"
+                  onClick={() => handleMove(item)}
+                >
+                  <FolderInput className="h-4 w-4" />
+                  <span className="sr-only">Move</span>
+                </Button>
+              )}
+
+              {/* Delete */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -410,7 +397,7 @@ export default function GeoSetup() {
     ];
   }, [currentLevelKey, isLastLevel, deleteMutation.isPending]);
 
-  // ── React Table instance ──────────────────────────────────────────────────
+  // ── React Table ───────────────────────────────────────────────────────────
   const table = useReactTable({
     data: currentData,
     columns,
@@ -432,7 +419,7 @@ export default function GeoSetup() {
     },
   });
 
-  // ── Shared header (used in loading/error states too) ──────────────────────
+  // ── Page header ───────────────────────────────────────────────────────────
   const PageHeader = ({ disabled = false }) => (
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -441,7 +428,6 @@ export default function GeoSetup() {
             Geo Setup
           </h1>
 
-          {/* ── BREADCRUMB ── */}
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -451,13 +437,9 @@ export default function GeoSetup() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
 
-              {/* Root: "Geo Setup" — clickable if we're drilled in */}
               <BreadcrumbItem>
                 {drillStack.length > 0 ? (
-                  <BreadcrumbLink
-                    className="cursor-pointer"
-                    onClick={() => navigateTo(-1)}
-                  >
+                  <BreadcrumbLink className="cursor-pointer" onClick={() => navigateTo(-1)}>
                     Geo Setup
                   </BreadcrumbLink>
                 ) : (
@@ -465,21 +447,17 @@ export default function GeoSetup() {
                 )}
               </BreadcrumbItem>
 
-              {/* Dynamic drill-down breadcrumb items */}
               {drillStack.map((item, idx) => {
                 const levelKey = LEVEL_ORDER[idx];
-                const nameKey = LEVELS[levelKey].nameKey;
-                const isLast = idx === drillStack.length - 1;
+                const nameKey  = LEVELS[levelKey].nameKey;
+                const isLast   = idx === drillStack.length - 1;
 
                 return (
                   <span key={idx} className="flex items-center gap-1.5">
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                       {!isLast ? (
-                        <BreadcrumbLink
-                          className="cursor-pointer"
-                          onClick={() => navigateTo(idx)}
-                        >
+                        <BreadcrumbLink className="cursor-pointer" onClick={() => navigateTo(idx)}>
                           {item[nameKey]}
                         </BreadcrumbLink>
                       ) : (
@@ -499,14 +477,15 @@ export default function GeoSetup() {
             onClick={() => refetch()}
             disabled={isFetching || disabled}
           >
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             <span className="sr-only">Refresh data</span>
           </Button>
 
           <Button
-            onClick={() => setIsAddDialogOpen(true)}
+            onClick={() => {
+              setSelectedItem(null);
+              setIsDialogOpen(true);
+            }}
             disabled={disabled}
           >
             <IconPlus />
@@ -554,15 +533,9 @@ export default function GeoSetup() {
                 className="w-fit"
               >
                 {isFetching ? (
-                  <>
-                    <Spinner className="mr-2 h-4 w-4" />
-                    Retrying...
-                  </>
+                  <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
                 ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Retry
-                  </>
+                  <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
                 )}
               </Button>
             </AlertDescription>
@@ -579,7 +552,6 @@ export default function GeoSetup() {
     <div>
       <PageHeader />
 
-      {/* Table */}
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
           <CustomDataTableToolbar
@@ -596,10 +568,7 @@ export default function GeoSetup() {
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -609,31 +578,20 @@ export default function GeoSetup() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
+                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
                       <Empty>
                         <EmptyHeader>
-                          <EmptyMedia variant="icon">
-                            <EmptyIcon />
-                          </EmptyMedia>
+                          <EmptyMedia variant="icon"><EmptyIcon /></EmptyMedia>
                           <EmptyTitle>{currentLevel.emptyTitle}</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
@@ -648,85 +606,74 @@ export default function GeoSetup() {
         </div>
       </div>
 
-      {/* ── ADD DIALOGS ── */}
+      {/* ── FORM DIALOGS — Add (item=null) or Edit (item=object) ─────────── */}
 
-      {/* Country */}
-      {isAddDialogOpen && drillStack.length === 0 && (
-        <AddCountryDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
+      {isDialogOpen && drillStack.length === 0 && (
+        <CountryFormDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
           showConfirmation={showConfirmation}
+          item={selectedItem}
         />
       )}
 
-      {/* Region — pass prefilledCountry so modal shows context header */}
-      {isAddDialogOpen && drillStack.length === 1 && (
-        <AddRegionDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
+      {isDialogOpen && drillStack.length === 1 && (
+        <RegionFormDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
           showConfirmation={showConfirmation}
+          item={selectedItem}
           prefilledCountry={drillStack[0]}
         />
       )}
 
-      {/* District — pass prefilledRegion */}
-      {isAddDialogOpen && drillStack.length === 2 && (
-        <AddDistrictDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
+      {isDialogOpen && drillStack.length === 2 && (
+        <DistrictFormDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
           showConfirmation={showConfirmation}
+          item={selectedItem}
+          prefilledCountry={drillStack[0]}
           prefilledRegion={drillStack[1]}
-          prefilledCountry={drillStack[0]}
         />
       )}
 
-      {/* Upazilla — pass prefilledDistrict */}
-      {isAddDialogOpen && drillStack.length === 3 && (
-        <AddUpazillaDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
+      {isDialogOpen && drillStack.length === 3 && (
+        <UpazillaFormDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
           showConfirmation={showConfirmation}
+          item={selectedItem}
+          prefilledCountry={drillStack[0]}
+          prefilledRegion={drillStack[1]}
           prefilledDistrict={drillStack[2]}
-          prefilledRegion={drillStack[1]}
-          prefilledCountry={drillStack[0]}
         />
       )}
 
-      {/* ── UPDATE DIALOGS ── */}
+      {/* ── MOVE DIALOGS — change parent only ───────────────────────────── */}
+      {/* Country (level 0) has no parent — no move dialog needed           */}
 
-      {isUpdateDialogOpen && drillStack.length === 0 && selectedItem && (
-        <UpdateCountryDialog
-          open={isUpdateDialogOpen}
-          onOpenChange={setIsUpdateDialogOpen}
-          showConfirmation={showConfirmation}
-          country={selectedItem}
+      {isMoveDialogOpen && drillStack.length === 1 && moveItem && (
+        <RegionMoveDialog
+          open={isMoveDialogOpen}
+          onOpenChange={setIsMoveDialogOpen}
+          item={moveItem}
         />
       )}
 
-      {isUpdateDialogOpen && drillStack.length === 1 && selectedItem && (
-        <UpdateRegionDialog
-          open={isUpdateDialogOpen}
-          onOpenChange={setIsUpdateDialogOpen}
-          showConfirmation={showConfirmation}
-          region={selectedItem}
+      {isMoveDialogOpen && drillStack.length === 2 && moveItem && (
+        <DistrictMoveDialog
+          open={isMoveDialogOpen}
+          onOpenChange={setIsMoveDialogOpen}
+          item={moveItem}
         />
       )}
 
-      {isUpdateDialogOpen && drillStack.length === 2 && selectedItem && (
-        <UpdateDistrictDialog
-          open={isUpdateDialogOpen}
-          onOpenChange={setIsUpdateDialogOpen}
-          showConfirmation={showConfirmation}
-          district={selectedItem}
-        />
-      )}
-
-      {isUpdateDialogOpen && drillStack.length === 3 && selectedItem && (
-        <UpdateUpazillaDialog
-          open={isUpdateDialogOpen}
-          onOpenChange={setIsUpdateDialogOpen}
-          showConfirmation={showConfirmation}
-          upazilla={selectedItem}
+      {isMoveDialogOpen && drillStack.length === 3 && moveItem && (
+        <UpazillaMoveDialog
+          open={isMoveDialogOpen}
+          onOpenChange={setIsMoveDialogOpen}
+          item={moveItem}
         />
       )}
 

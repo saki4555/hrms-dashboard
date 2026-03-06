@@ -84,7 +84,7 @@ import {
   useDistricts,
   useRegions,
   useUpazillas,
-} from "./location-lookup-queries";
+} from "../../../api/location-lookup-queries";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 

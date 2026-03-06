@@ -76,7 +76,7 @@ import { useOrgPositions } from "@/features/settings/work-structure/position/que
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { Badge } from "@/components/ui/badge";
-import { useCountries, useDistricts, useRegions, useUpazillas } from "./location-lookup-queries";
+import { useCountriesLookup, useDistrictsLookup, useRegionsLookup, useUpazillasLookup } from "../../../api/location-lookup-queries";
 
 // ─── Address sub-schema ───────────────────────────────────────────────────────
 const addressSchema = z
@@ -427,11 +427,11 @@ function AddressFields({ form, prefix, disabled }) {
   const [selectedRegionId, setSelectedRegionId]   = useState(null);
   const [selectedDistrictId, setSelectedDistrictId] = useState(null);
 
-  const { data: countries = [], isLoading: countriesLoading } = useCountries();
+  const { data: countries = [], isLoading: countriesLoading } = useCountriesLookup();
   console.log("countries", countries);
-  const { data: regions = [],   isLoading: regionsLoading }   = useRegions(selectedCountryId);
-  const { data: districts = [], isLoading: districtsLoading } = useDistricts(selectedRegionId);
-  const { data: upazillas = [], isLoading: upazillasLoading } = useUpazillas(selectedDistrictId);
+  const { data: regions = [],   isLoading: regionsLoading }   = useRegionsLookup(selectedCountryId);
+  const { data: districts = [], isLoading: districtsLoading } = useDistrictsLookup(selectedRegionId);
+  const { data: upazillas = [], isLoading: upazillasLoading } = useUpazillasLookup(selectedDistrictId);
 
   return (
     <div className="space-y-4">
