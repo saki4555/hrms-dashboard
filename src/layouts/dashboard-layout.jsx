@@ -9,20 +9,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { useAuth } from "@/features/authentication/hooks/useAuth";
+import { useAuth } from "@/features/authentication/use-auth";
 import React, { Suspense } from "react";
 import { Outlet, useLocation } from "react-router";
 
 
 const DashboardLayout = () => {
   const { user } = useAuth();
+
+  console.log("user ---------->>>>>>>>>>>", user);
   const location = useLocation();
   
   // console.log(location.pathname, "pathname")
   return (
     
       <SidebarProvider defaultOpen={false} >
-      <AppSidebar userRole={user?.role}  collapsible="icon"  />
+      <AppSidebar userRoles={user?.roles}  collapsible="icon"  />
       <SidebarInset className="min-w-0 peer">
         <main className="@container/main peer-data-[state=collapsed]:bg-red-400">
           <DashboardNavbar />

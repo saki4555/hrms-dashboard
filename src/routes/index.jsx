@@ -9,12 +9,13 @@ import { ROUTE_MAP } from "./route-map";
 import { ALL_ROLES } from "@/config/roles";
 import DashboardLayout from "@/layouts/dashboard-layout";
 import Welcome from "@/pages/welcome";
-import Login from "@/pages/login";
-import Unauthorized from "@/features/authentication/pages/Unauthorized";
+
+import Unauthorized from "@/features/authentication-old/pages/Unauthorized";
 
 import { PrivateRoute } from "./PrivateRoute";
 import { PageLoader } from "@/components/loading-spinner";
 import { NotFoundError } from "@/components/shared/not-found-error";
+import Login from "@/features/authentication";
 
 export default function AppRoutes() {
   return (
@@ -22,6 +23,7 @@ export default function AppRoutes() {
       {/* ── Public ─────────────────────────────────────────────────────────── */}
       <Route path="/login"        element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      
 
       {/* ── Protected (layout wrapper) ─────────────────────────────────────── */}
       <Route
@@ -42,7 +44,7 @@ export default function AppRoutes() {
               element={
                 <PrivateRoute allowedRoles={roles}>
                   <Component />
-                </PrivateRoute>
+                 </PrivateRoute>
               }
             />
           ))}
