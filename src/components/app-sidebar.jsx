@@ -29,23 +29,20 @@ import { cn } from "@/lib/utils";
 
 import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
 import { NAV_ITEMS } from "@/config/nav-config";
+import { useAuth } from "@/features/authentication/use-auth";
 
 /* -------------------------------------------------------------------------- */
 /*                           UPDATED NAV CONFIG (WITH LABELS)                 */
 /* -------------------------------------------------------------------------- */
 
-const user = {
-  name: "Asm Saki",
-  email: "saki@example.com",
-  avatar: "/avatars/user.jpg",
-};
-
 /* -------------------------------------------------------------------------- */
 /*                               APP SIDEBAR                                  */
 /* -------------------------------------------------------------------------- */
 
-export function AppSidebar({ userRole, ...props }) {
+export function AppSidebar({ userRoles, ...props }) {
+  console.log("userRoles", userRoles);
   const location = useLocation();
+  const { user } = useAuth();
   return (
     <Sidebar {...props}>
       {/* HEADER */}
@@ -67,10 +64,10 @@ export function AppSidebar({ userRole, ...props }) {
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
 
             {section.items
-              .filter((item) => item.roles.includes(userRole))
+              .filter((item) => item.roles.some((r) => userRoles?.includes(r)))
               .map((item) => {
                 const filteredSubItems = item.subItems?.filter((sub) =>
-                  sub.roles.includes(userRole)
+                  sub.roles.some((r) => userRoles?.includes(r)),
                 );
 
                 return (
@@ -93,10 +90,7 @@ export function AppSidebar({ userRole, ...props }) {
                               <item.icon className="text-foreground/90" />
                             )}
                             <span>{item.title}</span>
-                            <IconCaretRightFilled
-                              
-                              className="ml-auto  text-foreground/80 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                            />
+                            <IconCaretRightFilled className="ml-auto  text-foreground/80 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
 
@@ -105,7 +99,7 @@ export function AppSidebar({ userRole, ...props }) {
                             {filteredSubItems?.map((sub) => {
                               const isSubActive = matchPath(
                                 { path: sub.url, end: true },
-                                location.pathname
+                                location.pathname,
                               );
 
                               return (
@@ -120,7 +114,6 @@ export function AppSidebar({ userRole, ...props }) {
                                       )} */}
                                       <span>{sub.title}</span>
                                     </Link>
-                                    
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
                               );

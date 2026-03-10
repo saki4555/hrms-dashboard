@@ -1,29 +1,26 @@
 import { useId } from "react";
-
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/features/authentication-old/hooks/useAuth";
-
+import { useAuth } from "./use-auth";
 
 export default function LoginForm() {
   const id = useId();
-  const {login} = useAuth()
+  const navigate = useNavigate();
+  const { login, loginError, loginPending } = useAuth();
 
-  const handleSubmit = (e) =>{
-     e.preventDefault();
-    const email = e.target.email.value.trim();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const username = e.target.username.value.trim();
     const password = e.target.password.value.trim();
+    try {
+      await login({ username, password });
+      navigate("/");
+    } catch (_) {}
+  };
 
-    if (email && password) {
-      login();
-      console.log("Logged in");
-    } else {
-      alert("Please fill in both fields");
-    }
-  }
   return (
     <div className="max-w-sm mx-auto">
       <div className="flex flex-col items-center gap-2">
@@ -53,29 +50,27 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-4">
           <div className="*:not-first:mt-2">
-            <Label htmlFor={`${id}-email`}>Email</Label>
+            <Label htmlFor={`${id}-username`}>Username</Label>
             <Input
-              id={`${id}-email`}
-              placeholder="hi@yourcompany.com"
-              name="email"
-              type="email"
-              defaultValue="test@example.com" 
+              id={`${id}-username`}
+              name="username"
+              type="text"
+              placeholder="your_username"
               required
             />
-           
           </div>
           <div className="*:not-first:mt-2">
             <Label htmlFor={`${id}-password`}>Password</Label>
             <Input
               id={`${id}-password`}
-              placeholder="Enter your password"
+              name="password"
               type="password"
-               defaultValue="12345678uid452" 
-               name="password"
+              placeholder="Enter your password"
               required
             />
           </div>
         </div>
+
         <div className="flex justify-between gap-2">
           <div className="flex items-center gap-2">
             <Checkbox id={`${id}-remember`} />
@@ -90,12 +85,15 @@ export default function LoginForm() {
             Forgot password?
           </a>
         </div>
-        <Button type="submit" className="w-full">
-          Sign in
+
+        {loginError && (
+          <p className="text-sm text-destructive">{loginError.message}</p>
+        )}
+
+        <Button type="submit" className="w-full" disabled={loginPending}>
+          {loginPending ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-     
     </div>
   );
 }

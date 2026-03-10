@@ -10,21 +10,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
+ server: {
     proxy: {
       "/api": {
-        target: "http://103.172.44.99:8989",
+        target: "http://localhost:4000",
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, "/hcm/api"),
-         configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            // Preserve Authorization header
-            if (req.headers.authorization) {
-              proxyReq.setHeader('Authorization', req.headers.authorization);
-            }
-          });
-        },
       },
     },
   },
