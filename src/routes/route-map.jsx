@@ -54,7 +54,16 @@ const OrgTypes = lazy(
 const Locations = lazy(
   () => import("@/features/settings/work-structure/locations"),
 );
-const GeoSetup = lazy(() => import("@/features/settings/work-structure/geo-setup"))
+const GeoSetup = lazy(
+  () => import("@/features/settings/work-structure/geo-setup"),
+);
+const Holidays = lazy(
+  () => import("@/features/settings/work-structure/holiday"),
+);
+const HolidayTypes = lazy(
+  () => import("@/features/settings/work-structure/holiday-type"),
+);
+const Shifts = lazy(() => import("@/features/settings/work-structure/shift"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -225,7 +234,10 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.COMPANY, component: Companies, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.ORG_TYPES, component: OrgTypes, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.LOCATIONS, component: Locations, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.GEO_SETUP, component: GeoSetup,  roles: ADMIN_HR },
+  { path: PATHS.SETTINGS.GEO_SETUP, component: GeoSetup, roles: ADMIN_HR },
+  { path: PATHS.SETTINGS.HOLIDAYS, component: Holidays, roles: ADMIN_HR },
+  { path: PATHS.SETTINGS.HOLIDAY_TYPES, component: HolidayTypes, roles: ADMIN_HR },
+  { path: PATHS.SETTINGS.SHIFTS, component: Shifts, roles: ADMIN_HR },
 
   // ── Reports ────────────────────────────────────────────────────────────────
   {
