@@ -1,3 +1,5 @@
+
+
 export const PATHS = {
   // ─── Dashboard ────────────────────────────────────────────────────────────
   DASHBOARD: "/",
@@ -68,6 +70,9 @@ SETTINGS: {
     COMPANY:      "settings/work-structure/company",
     ORG_TYPES:    "settings/work-structure/org-types",
     LOCATIONS:    "settings/work-structure/locations",
+    HOLIDAYS:    "settings/work-structure/holidays",
+    HOLIDAY_TYPES:    "settings/work-structure/holiday-types",
+    SHIFTS:    "settings/work-structure/shifts",
 },
 
   // ─── Reports ──────────────────────────────────────────────────────────────
