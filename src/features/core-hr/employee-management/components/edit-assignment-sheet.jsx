@@ -128,7 +128,7 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleAttemptClose(); }}>
-      <SheetContent className="sm:max-w-xl w-full flex flex-col gap-0 p-0">
+      <SheetContent className="sm:max-w-xl  flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">

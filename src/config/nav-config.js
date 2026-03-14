@@ -105,6 +105,7 @@ export const NAV_ITEMS = [
           { title: "Holidays",    url: PATHS.SETTINGS.HOLIDAYS,    roles: ADMIN_HR },
           { title: "Holiday Types",    url: PATHS.SETTINGS.HOLIDAY_TYPES,    roles: ADMIN_HR },
           { title: "Shifts",    url: PATHS.SETTINGS.SHIFTS,    roles: ADMIN_HR },
+          { title: "Contracts",    url: PATHS.SETTINGS.CONTRACTS,    roles: ADMIN_HR },
         ],
       },
     ],
