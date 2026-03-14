@@ -14,6 +14,7 @@ const getHolidayTypes = async () => {
     throw new Error(
       `Failed to fetch holiday types: ${res.status} ${res.statusText}`,
     );
+    console.log(res);
   const json = await res.json();
   return json.data || json;
 };
@@ -49,6 +50,7 @@ const updateHolidayType = async ({ id, data }) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(

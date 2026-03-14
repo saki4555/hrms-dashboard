@@ -73,6 +73,7 @@ SETTINGS: {
     HOLIDAYS:    "settings/work-structure/holidays",
     HOLIDAY_TYPES:    "settings/work-structure/holiday-types",
     SHIFTS:    "settings/work-structure/shifts",
+    CONTRACTS:    "settings/work-structure/contracts",
 },
 
   // ─── Reports ──────────────────────────────────────────────────────────────
