@@ -63,7 +63,8 @@ import { useCompanies } from "@/features/settings/work-structure/company/queries
 import { usePositions } from "@/features/settings/work-structure/hr-position/queries";
 import { useCountries } from "@/features/settings/work-structure/country/queries";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getAvatarColor } from "@/lib/avatar-utils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -88,22 +89,8 @@ const REVERSE_SORT_MAP = {
 };
 
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
-const hashName = (str) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash);
-};
 
-const AVATAR_COLORS = [
-  "bg-red-500",    "bg-orange-500", "bg-amber-500",
-  "bg-green-500",  "bg-teal-500",   "bg-blue-500",
-  "bg-indigo-500", "bg-violet-500", "bg-pink-500",
-  "bg-rose-500",   "bg-cyan-500",   "bg-emerald-500",
-];
 // ── Sortable Column Header ────────────────────────────────────────────────────
 
 function SortHeader({ column, children, className }) {
@@ -343,11 +330,14 @@ const sorting = useMemo(() => {
     const fullName = `${emp.FIRST_NAME ?? ""} ${emp.LAST_NAME ?? ""}`.trim();
     const initials = `${emp.FIRST_NAME?.[0] ?? ""}${emp.LAST_NAME?.[0] ?? ""}`.toUpperCase();
 
-   const avatarColor = AVATAR_COLORS[hashName(fullName) % AVATAR_COLORS.length];
+   const avatarColor = getAvatarColor(fullName);
 
     return (
       <div className="flex items-center gap-3 py-1">
         <Avatar className="h-8 w-8 shrink-0">
+           <AvatarImage
+          src={`http://localhost:4000/api/emp-images/person/${emp.PERSON_ID}`}
+        />
           <AvatarFallback className={cn("text-xs font-semibold text-white", avatarColor)}>
             {initials}
           </AvatarFallback>
