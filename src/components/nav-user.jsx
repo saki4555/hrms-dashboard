@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/features/authentication/use-auth";
 import { useNavigate } from "react-router";
+import { cn } from "@/lib/utils";
+import { getAvatarColor } from "@/lib/avatar-utils";
 
 export function NavUser({ user }) {
   console.log("user form nav user", user)
@@ -37,6 +39,8 @@ export function NavUser({ user }) {
     navigate("/login");
   };
 
+  const avatarColor = getAvatarColor(user?.username);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -46,16 +50,16 @@ export function NavUser({ user }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback className="rounded-lg">
-                  {user?.name?.[0] || "U"}
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage src={user?.avatar} alt={user?.username} />
+                <AvatarFallback className={cn("rounded-lg", avatarColor)}>
+                  {user?.username?.slice(0, 2) || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.name}</span>
+                <span className="truncate font-medium">{user?.username}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {user?.email}
+                  {user?.roles?.join(", ")}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -72,9 +76,9 @@ export function NavUser({ user }) {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user?.avatar} alt={user?.name} />
-                  <AvatarFallback className="rounded-lg">
-                    {user?.name?.[0] || "U"}
-                  </AvatarFallback>
+                 <AvatarFallback className={cn("rounded-lg", avatarColor)}>
+  {user?.username?.slice(0, 2) || "U"}
+</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   {/* <span className="truncate font-medium">{user.name}</span>
@@ -84,7 +88,8 @@ export function NavUser({ user }) {
                   
                   <span className="truncate font-medium">{user?.username}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {user?.roles?.[0]} {/* show role instead of email */}
+                    {user?.roles?.join(", ")} 
+                   
                   </span>
                 </div>
               </div>
