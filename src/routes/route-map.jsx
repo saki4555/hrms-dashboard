@@ -67,6 +67,10 @@ const Shifts = lazy(() => import("@/features/settings/work-structure/shift"));
 const Contracts = lazy(
   () => import("@/features/settings/work-structure/contract"),
 );
+const LeaveRequests = lazy(
+  () => import("@/features/settings/work-structure/leave-request"),
+);
+
 
 const LeaveTypes = lazy(
   () => import("@/features/attendance-management/leave-type"),
@@ -148,6 +152,8 @@ export const ROUTE_MAP = [
     roles: ADMIN_HR_SUP,
   },
   {
+    path: PATHS.ATTENDANCE.LEAVE_REQUEST,
+    component: LeaveRequests,
     path: PATHS.ATTENDANCE.LEAVE_TYPES,
     component: LeaveTypes,
     roles: ADMIN_HR,

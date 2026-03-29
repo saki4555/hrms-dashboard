@@ -87,6 +87,12 @@ export const NAV_ITEMS = [
             url: "/attendance/reports",
             roles: ["Admin", "HR", "Supervisor"],
           },
+           {
+            title: "Leave Requests",
+            url: "/attendance/leave-requests",
+            roles: ["Admin", "HR", "Supervisor"],
+          },
+
         ],
       },
     ],
