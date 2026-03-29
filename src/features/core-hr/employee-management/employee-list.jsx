@@ -336,7 +336,7 @@ const sorting = useMemo(() => {
       <div className="flex items-center gap-3 py-1">
         <Avatar className="h-8 w-8 shrink-0">
            <AvatarImage
-          src={`http://localhost:4000/api/emp-images/person/${emp.PERSON_ID}`}
+          src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${emp.PERSON_ID}`}
         />
           <AvatarFallback className={cn("text-xs font-semibold text-white", avatarColor)}>
             {initials}
