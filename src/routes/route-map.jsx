@@ -68,6 +68,10 @@ const Contracts = lazy(
   () => import("@/features/settings/work-structure/contract"),
 );
 
+const LeaveTypes = lazy(
+  () => import("@/features/attendance-management/leave-type"),
+)
+
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
   // ── Core HR ────────────────────────────────────────────────────────────────
@@ -142,6 +146,11 @@ export const ROUTE_MAP = [
     path: PATHS.ATTENDANCE.REPORTS,
     component: p("Attendance Reports"),
     roles: ADMIN_HR_SUP,
+  },
+  {
+    path: PATHS.ATTENDANCE.LEAVE_TYPES,
+    component: LeaveTypes,
+    roles: ADMIN_HR,
   },
 
   // ── Payroll ────────────────────────────────────────────────────────────────
