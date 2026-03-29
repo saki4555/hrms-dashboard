@@ -162,7 +162,7 @@ export default function LeaveRequestList() {
       ),
       cell: ({ row }) => (
         <div className="font-medium text-muted-foreground">
-          #{row.getValue("LEAVE_ID")}
+          {row.getValue("LEAVE_ID")}
         </div>
       ),
     },

@@ -154,6 +154,11 @@ export const ROUTE_MAP = [
   {
     path: PATHS.ATTENDANCE.LEAVE_REQUEST,
     component: LeaveRequests,
+    
+    roles: ADMIN_HR,
+  },
+  {
+   
     path: PATHS.ATTENDANCE.LEAVE_TYPES,
     component: LeaveTypes,
     roles: ADMIN_HR,
