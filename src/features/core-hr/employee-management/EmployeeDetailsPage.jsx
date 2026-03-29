@@ -895,7 +895,7 @@ function EmployeeAvatar({ employee }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState(
-    `http://localhost:4000/api/emp-images/person/${employee.PERSON_ID}`,
+    `${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${employee.PERSON_ID}`,
   );
   console.log("imageurl", imageUrl);
   const [hasImage, setHasImage] = useState(false); // optimistic — fallback handles 404
@@ -911,13 +911,13 @@ function EmployeeAvatar({ employee }) {
     try {
       // Try PUT first (update), fall back to POST (create)
       let res = await fetch(
-        `http://localhost:4000/api/emp-images/${employee.PERSON_ID}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/emp-images/${employee.PERSON_ID}`,
         { method: "PUT", body: formData },
       );
 
       if (res.status === 404) {
         res = await fetch(
-          `http://localhost:4000/api/emp-images/${employee.PERSON_ID}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/emp-images/${employee.PERSON_ID}`,
           { method: "POST", body: formData },
         );
       }
@@ -926,7 +926,7 @@ function EmployeeAvatar({ employee }) {
 
       // Bust the cache so the img tag re-fetches
       setImageUrl(
-        `http://localhost:4000/api/emp-images/person/${employee.PERSON_ID}?t=${Date.now()}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${employee.PERSON_ID}?t=${Date.now()}`,
       );
       setHasImage(true);
     } catch (err) {

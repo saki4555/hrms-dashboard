@@ -198,6 +198,34 @@ export default function ShiftList() {
       },
     },
     {
+  accessorKey: "WEEKLY_HOLIDAY_1",
+  header: ({ column }) => (
+    <CustomDataTableColumnHeader column={column} title="Holiday 1" />
+  ),
+  cell: ({ row }) => (
+    <div className="ps-2">
+      {row.getValue("WEEKLY_HOLIDAY_1")
+        ? <Badge variant="outline">{row.getValue("WEEKLY_HOLIDAY_1")}</Badge>
+        : <span className="text-muted-foreground text-sm">—</span>
+      }
+    </div>
+  ),
+},
+{
+  accessorKey: "WEEKLY_HOLIDAY_2",
+  header: ({ column }) => (
+    <CustomDataTableColumnHeader column={column} title="Holiday 2" />
+  ),
+  cell: ({ row }) => (
+    <div className="ps-2">
+      {row.getValue("WEEKLY_HOLIDAY_2")
+        ? <Badge variant="outline">{row.getValue("WEEKLY_HOLIDAY_2")}</Badge>
+        : <span className="text-muted-foreground text-sm">—</span>
+      }
+    </div>
+  ),
+},
+    {
       id: "actions",
       header: "Actions",
       enableHiding: false,
