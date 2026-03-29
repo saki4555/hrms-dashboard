@@ -47,6 +47,7 @@ export const NAV_ITEMS = [
           { title: "Work Schedule",       url: PATHS.ATTENDANCE.SCHEDULE,   roles: ADMIN_HR_SUP },
           { title: "Attendance Data",     url: PATHS.ATTENDANCE.DATA,       roles: ADMIN_HR     },
           { title: "Attendance Reports",  url: PATHS.ATTENDANCE.REPORTS,    roles: ADMIN_HR_SUP },
+          { title: "Leave Types",         url: PATHS.ATTENDANCE.LEAVE_TYPES,roles: ADMIN_HR     },
         ],
       },
     ],

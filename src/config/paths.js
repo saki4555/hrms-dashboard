@@ -25,6 +25,7 @@ export const PATHS = {
     SCHEDULE:   "attendance/schedule",
     DATA:       "attendance/data",
     REPORTS:    "attendance/reports",
+    LEAVE_TYPES:"attendance/leave-types",
   },
 
   // ─── Payroll ──────────────────────────────────────────────────────────────
