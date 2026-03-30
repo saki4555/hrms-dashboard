@@ -12,6 +12,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/features/authentication/use-auth";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -58,7 +59,10 @@ const formSchema = z
     start_date: z.string().min(1, "Start date is required"),
     end_date: z.string().min(1, "End date is required"),
     days: z.string().optional(),
-    reason: z.string().max(2000, "Reason cannot exceed 2000 characters").optional(),
+    reason: z
+      .string()
+      .max(2000, "Reason cannot exceed 2000 characters")
+      .optional(),
     status: z.string().min(1, "Status is required"),
   })
   .refine((data) => new Date(data.end_date) >= new Date(data.start_date), {
@@ -72,44 +76,51 @@ export default function UpdateLeaveRequestSheet({
   showConfirmation,
   leaveRequest,
 }) {
-  const updateMutation  = useUpdateLeaveRequest();
-  const { data: leaveTypes = [], isLoading: leaveTypesLoading } = useLeaveTypes();
+  const updateMutation = useUpdateLeaveRequest();
+  const { data: leaveTypes = [], isLoading: leaveTypesLoading } =
+    useLeaveTypes();
 
   const [empOpen, setEmpOpen] = useState(false);
+  const { user } = useAuth();
+  console.log("user", user)
   const [empSearch, setEmpSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const { data: employees = [], isFetching: empFetching } = useEmployeeLiteSearch(empSearch);
+  const { data: employees = [], isFetching: empFetching } =
+    useEmployeeLiteSearch(empSearch);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      employeeId:    undefined,
+      employeeId: undefined,
       leave_type_id: "",
-      start_date:    "",
-      end_date:      "",
-      days:          "",
-      reason:        "",
-      status:        "PENDING",
+      start_date: "",
+      end_date: "",
+      days: "",
+      reason: "",
+      status: "PENDING",
     },
   });
 
-  const { formState: { isDirty } } = form;
+  const {
+    formState: { isDirty },
+  } = form;
 
   // Populate form when leaveRequest changes
   useEffect(() => {
     if (leaveRequest) {
       form.reset({
-        employeeId:    leaveRequest.EMPLOYEE_ID,
-        leave_type_id: leaveRequest.LEAVE_TYPE_ID != null
-          ? String(leaveRequest.LEAVE_TYPE_ID)
-          : "",
+        employeeId: leaveRequest.EMPLOYEE_ID,
+        leave_type_id:
+          leaveRequest.LEAVE_TYPE_ID != null
+            ? String(leaveRequest.LEAVE_TYPE_ID)
+            : "",
         start_date: leaveRequest.START_DATE
           ? format(new Date(leaveRequest.START_DATE), "yyyy-MM-dd")
           : "",
         end_date: leaveRequest.END_DATE
           ? format(new Date(leaveRequest.END_DATE), "yyyy-MM-dd")
           : "",
-        days:   leaveRequest.DAYS != null ? String(leaveRequest.DAYS) : "",
+        days: leaveRequest.DAYS != null ? String(leaveRequest.DAYS) : "",
         reason: leaveRequest.REASON || "",
         status: leaveRequest.STATUS || "PENDING",
       });
@@ -117,9 +128,11 @@ export default function UpdateLeaveRequestSheet({
       // Pre-populate employee display
       if (leaveRequest.EMPLOYEE_ID) {
         setSelectedEmployee({
-          id:    leaveRequest.EMPLOYEE_ID,
-          name:  [leaveRequest.FIRST_NAME, leaveRequest.LAST_NAME]
-                   .filter(Boolean).join(" ") || `Employee #${leaveRequest.EMPLOYEE_ID}`,
+          id: leaveRequest.EMPLOYEE_ID,
+          name:
+            [leaveRequest.FIRST_NAME, leaveRequest.LAST_NAME]
+              .filter(Boolean)
+              .join(" ") || `Employee #${leaveRequest.EMPLOYEE_ID}`,
           empNo: leaveRequest.EMP_NO || "",
         });
       }
@@ -128,12 +141,12 @@ export default function UpdateLeaveRequestSheet({
 
   // Auto-recalculate days only when user changes dates (isDirty guard)
   const startDate = form.watch("start_date");
-  const endDate   = form.watch("end_date");
+  const endDate = form.watch("end_date");
 
   useEffect(() => {
     if (startDate && endDate && isDirty) {
       const start = new Date(startDate);
-      const end   = new Date(endDate);
+      const end = new Date(endDate);
       if (end >= start) {
         const diff = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
         form.setValue("days", String(diff), { shouldDirty: true });
@@ -147,20 +160,28 @@ export default function UpdateLeaveRequestSheet({
       return;
     }
     try {
-      const payload = {
-        start_date:  data.start_date,
-        end_date:    data.end_date,
-        days:        data.days ? Number(data.days) : null,
-        reason:      data.reason || null,
-        status:      data.status,
-        updated_by:  "SYSTEM", // TODO: replace with auth user
-      };
-      await updateMutation.mutateAsync({ id: leaveRequest.LEAVE_ID, data: payload });
+     const payload = {
+  employee_id:   data.employeeId,
+  leave_type_id: Number(data.leave_type_id),
+  start_date:    data.start_date,
+  end_date:      data.end_date,
+  days:          data.days ? Number(data.days) : null,
+  reason:        data.reason || null,
+  status:        data.status,
+  approver_id:   user?.id ?? null,        // ← USERS.ID
+  updated_by:    user?.username ?? null,  // ← USERS.USERNAME
+};
+      await updateMutation.mutateAsync({
+        id: leaveRequest.LEAVE_ID,
+        data: payload,
+      });
       toast.success("Leave request updated successfully!");
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(error?.message || "Failed to update leave request. Please try again.");
+      toast.error(
+        error?.message || "Failed to update leave request. Please try again.",
+      );
     }
   };
 
@@ -168,7 +189,8 @@ export default function UpdateLeaveRequestSheet({
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description: "You have unsaved changes. Are you sure you want to close without saving?",
+        description:
+          "You have unsaved changes. Are you sure you want to close without saving?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -182,9 +204,13 @@ export default function UpdateLeaveRequestSheet({
   const isSubmitting = updateMutation.isPending;
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
+    <Sheet
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleCancel();
+      }}
+    >
       <SheetContent className="sm:max-w-xl w-full flex flex-col gap-0 p-0">
-
         {/* ── Header ─────────────────────────────────────────────────── */}
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
@@ -207,7 +233,6 @@ export default function UpdateLeaveRequestSheet({
             className="flex flex-col flex-1 overflow-hidden"
           >
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
               {/* Employee Search */}
               <FormField
                 control={form.control}
@@ -226,7 +251,7 @@ export default function UpdateLeaveRequestSheet({
                             disabled={isSubmitting}
                             className={cn(
                               "w-full justify-between font-normal",
-                              !selectedEmployee && "text-muted-foreground"
+                              !selectedEmployee && "text-muted-foreground",
                             )}
                           >
                             {selectedEmployee
@@ -249,11 +274,15 @@ export default function UpdateLeaveRequestSheet({
                                 <Spinner className="h-4 w-4" />
                               </div>
                             )}
-                            {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
-                              <CommandEmpty>No employees found.</CommandEmpty>
-                            )}
+                            {!empFetching &&
+                              empSearch.length >= 2 &&
+                              employees.length === 0 && (
+                                <CommandEmpty>No employees found.</CommandEmpty>
+                              )}
                             {!empFetching && empSearch.length < 2 && (
-                              <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
+                              <CommandEmpty>
+                                Type at least 2 characters to search.
+                              </CommandEmpty>
                             )}
                             <CommandGroup>
                               {employees.map((emp) => (
@@ -269,7 +298,9 @@ export default function UpdateLeaveRequestSheet({
                                   <Check
                                     className={cn(
                                       "mr-2 h-4 w-4",
-                                      selectedEmployee?.id === emp.id ? "opacity-100" : "opacity-0"
+                                      selectedEmployee?.id === emp.id
+                                        ? "opacity-100"
+                                        : "opacity-0",
                                     )}
                                   />
                                   <span>{emp.name}</span>
@@ -306,15 +337,24 @@ export default function UpdateLeaveRequestSheet({
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue
-                              placeholder={leaveTypesLoading ? "Loading..." : "Select leave type"}
+                              placeholder={
+                                leaveTypesLoading
+                                  ? "Loading..."
+                                  : "Select leave type"
+                              }
                             />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {leaveTypes.map((lt) => (
-                            <SelectItem key={lt.LEAVE_TYPE_ID} value={String(lt.LEAVE_TYPE_ID)}>
+                            <SelectItem
+                              key={lt.LEAVE_TYPE_ID}
+                              value={String(lt.LEAVE_TYPE_ID)}
+                            >
                               <span>{lt.NAME}</span>
-                              <span className="ml-2 text-xs text-muted-foreground">({lt.CODE})</span>
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                ({lt.CODE})
+                              </span>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -344,7 +384,9 @@ export default function UpdateLeaveRequestSheet({
                         </FormControl>
                         <SelectContent>
                           {STATUS_OPTIONS.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -369,9 +411,13 @@ export default function UpdateLeaveRequestSheet({
                           className="w-full"
                           placeholder="Select start date"
                           disabled={isSubmitting}
-                          value={field.value ? new Date(field.value) : undefined}
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                            field.onChange(
+                              date ? format(date, "yyyy-MM-dd") : "",
+                            )
                           }
                         />
                       </FormControl>
@@ -393,9 +439,13 @@ export default function UpdateLeaveRequestSheet({
                           className="w-full"
                           placeholder="Select end date"
                           disabled={isSubmitting}
-                          value={field.value ? new Date(field.value) : undefined}
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                            field.onChange(
+                              date ? format(date, "yyyy-MM-dd") : "",
+                            )
                           }
                         />
                       </FormControl>
@@ -450,12 +500,20 @@ export default function UpdateLeaveRequestSheet({
 
             {/* ── Footer ───────────────────────────────────────────────── */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
-              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Updating...</>
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Updating...
+                  </>
                 ) : (
                   "Update Request"
                 )}
