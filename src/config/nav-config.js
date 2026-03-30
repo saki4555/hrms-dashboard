@@ -5,6 +5,7 @@ import {
   IconPerspectiveOff,
   IconReport,
   IconSettings,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 
 import { PATHS } from "./paths";
@@ -125,6 +126,20 @@ export const NAV_ITEMS = [
           { title: "Attendance Reports",     url: PATHS.REPORTS.ATTENDANCE, roles: ADMIN_HR },
           { title: "Payroll Reports",        url: PATHS.REPORTS.PAYROLL,    roles: ADMIN_HR },
           { title: "HR Analytics Dashboard", url: PATHS.REPORTS.ANALYTICS,  roles: ADMIN_HR },
+        ],
+      },
+    ],
+  },
+   {
+    label: "Users",
+    items: [
+      {
+        title: "User Management",
+        icon: IconUsersGroup,
+        roles: ADMIN_HR,
+        subItems: [
+          { title: "User Mangement",        url: PATHS.USERS.USER_MANAGEMENT,    roles: ADMIN_HR },
+         
         ],
       },
     ],

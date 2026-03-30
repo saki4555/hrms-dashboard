@@ -74,7 +74,13 @@ const LeaveRequests = lazy(
 
 const LeaveTypes = lazy(
   () => import("@/features/attendance-management/leave-type"),
-)
+);
+
+const UserManagement = lazy(
+  () => import("@/features/user-management"),
+);
+
+const User = lazy(() => import("@/features/user-management/user-details"))
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -288,4 +294,17 @@ export const ROUTE_MAP = [
     component: p("HR Analytics Dashboard"),
     roles: ADMIN_HR,
   },
+
+
+  // ── USER MANAGEMENT ────────────────────────────────────────────────────────────────
+  {
+    path: PATHS.USERS.USER_MANAGEMENT,
+    component: UserManagement,
+    roles: ADMIN_HR,
+  },
+  {
+    path: PATHS.USERS.USER,
+    component: User,
+    roles: ADMIN_HR,
+  }
 ];
