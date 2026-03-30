@@ -79,6 +79,15 @@ const LeaveTypes = lazy(
 const UserManagement = lazy(
   () => import("@/features/user-management"),
 );
+const RoleManagement = lazy(
+  () => import("@/features/users/role"),
+);
+const PermissionManagement = lazy(
+  () => import("@/features/users/permission"),
+);
+const ModuleManagement = lazy(
+  () => import("@/features/users/module"),
+);
 
 const User = lazy(() => import("@/features/user-management/user-details"))
 
@@ -306,5 +315,21 @@ export const ROUTE_MAP = [
     path: PATHS.USERS.USER,
     component: User,
     roles: ADMIN_HR,
+  },
+ 
+  {
+    path: PATHS.USERS.ROLE,
+    component: RoleManagement,
+    roles: ADMIN_HR,
+  },
+  {
+    path: PATHS.USERS.PERMISSION,
+    component: PermissionManagement,
+    roles: ADMIN_HR
+  },
+  {
+    path: PATHS.USERS.MODULE,
+    component: ModuleManagement,
+    roles: ADMIN_HR
   }
 ];

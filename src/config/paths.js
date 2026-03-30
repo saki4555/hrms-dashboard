@@ -87,5 +87,8 @@ export const PATHS = {
   USERS: {
     USER_MANAGEMENT: "user-management/users",
     USER: "user-management/users/:id",
+    ROLE: "user-management/roles",
+    PERMISSION: "user-management/permissions",
+    MODULE: "user-management/modules",
   },
 };

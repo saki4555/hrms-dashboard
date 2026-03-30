@@ -139,7 +139,9 @@ export const NAV_ITEMS = [
         roles: ADMIN_HR,
         subItems: [
           { title: "User Mangement",        url: PATHS.USERS.USER_MANAGEMENT,    roles: ADMIN_HR },
-         
+          { title: "Role",                url: PATHS.USERS.ROLE,    roles: ADMIN_HR },
+          { title: "Permission",          url: PATHS.USERS.PERMISSION,    roles: ADMIN_HR },
+          { title: "Module",            url: PATHS.USERS.MODULE,    roles: ADMIN_HR },
         ],
       },
     ],
