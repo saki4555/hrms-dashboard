@@ -272,6 +272,19 @@ export default function LeaveRequestList() {
       cell: ({ row }) => <StatusBadge status={row.getValue("STATUS")} />,
     },
 
+    // ── Approved By ──────────────────────────────────────────────────────────────
+{
+  accessorKey: "APPROVER_USERNAME",
+  header: "Approved By",
+  cell: ({ row }) => {
+    const username = row.getValue("APPROVER_USERNAME");
+    const status   = row.original.STATUS;
+    return status === "APPROVED" && username
+      ? <div className="text-sm font-medium">{username}</div>
+      : <span className="text-muted-foreground">—</span>;
+  },
+},
+
     // ── Applied On ───────────────────────────────────────────────────────────
     {
       accessorKey: "APPLIED_ON",
