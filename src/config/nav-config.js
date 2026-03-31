@@ -36,6 +36,7 @@ export const NAV_ITEMS = [
           { title: "Employment Lifecycle",        url: PATHS.CORE_HR.LIFECYCLE,      roles: ADMIN_HR },
           { title: "Digital Document Management", url: PATHS.CORE_HR.DOCUMENTS,      roles: ADMIN_HR },
           { title: "Employee Types",              url: PATHS.CORE_HR.EMPLOYEE_TYPES, roles: ADMIN_HR },
+          { title: "Supervisor Assignment",             url: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,roles: ADMIN_HR },
         ],
       },
       {
