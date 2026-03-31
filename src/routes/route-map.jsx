@@ -89,7 +89,8 @@ const ModuleManagement = lazy(
   () => import("@/features/users/module"),
 );
 
-const User = lazy(() => import("@/features/user-management/user-details"))
+const User = lazy(() => import("@/features/user-management/user-details"));
+const Supervisors = lazy(() => import("@/features/employee-supervisor"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -138,6 +139,11 @@ export const ROUTE_MAP = [
     path: PATHS.CORE_HR.EMPLOYEE_TYPES,
     component: EmployeeTypes,
     roles: ADMIN_HR,
+  },
+  {
+      path: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,
+      component: Supervisors,
+      roles: ADMIN_HR
   },
 
   // ── Attendance ─────────────────────────────────────────────────────────────

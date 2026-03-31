@@ -115,7 +115,10 @@ export const useCreateLeaveRequest = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createLeaveRequest,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: leaveRequestQueryKeys.lists() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leaveRequestQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }); 
+    },
     onError: (err) => console.error("Create leave request failed:", err),
   });
 };

@@ -15,6 +15,7 @@ export const PATHS = {
     LIFECYCLE: "core-hr/lifecycle",
     DOCUMENTS: "core-hr/documents",
     EMPLOYEE_TYPES: "core-hr/employee-types",
+    SUPERVISOR_ASSIGNMENT: "core-hr/supervisor-assignment",
   },
 
   // ─── Attendance ───────────────────────────────────────────────────────────
