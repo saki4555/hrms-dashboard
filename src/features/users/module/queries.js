@@ -6,7 +6,7 @@ const moduleQueryKeys = {
   detail: (id) => [...moduleQueryKeys.all, "detail", id],
 };
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/modules`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/modules`;
 
 /**
  * =========================
@@ -15,7 +15,9 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/m
  */
 const getModules = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/all`);
+    const res = await fetch(`${API_BASE_URL}/all`, {
+  credentials: "include",
+});;
 
     if (!res.ok) {
       throw new Error(`Failed to fetch modules: ${res.status} ${res.statusText}`);
@@ -39,6 +41,7 @@ const createModule = async (data) => {
     const res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+       credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -64,6 +67,7 @@ const updateModule = async ({ id, data }) => {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+       credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -88,6 +92,7 @@ const deleteModule = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
+       credentials: "include",
     });
 
     if (!res.ok) {

@@ -6,7 +6,7 @@ const roleQueryKeys = {
   detail: (id) => [...roleQueryKeys.all, "detail", id],
 };
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/roles`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/roles`;
 
 /**
  * =========================
@@ -15,7 +15,10 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/r
  */
 const getRoles = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/all`);
+   const res = await fetch(`${API_BASE_URL}/all`, {
+  credentials: "include",
+});
+   
 
     if (!res.ok) {
       throw new Error(`Failed to fetch roles: ${res.status} ${res.statusText}`);
@@ -39,6 +42,7 @@ const createRole = async (data) => {
     const res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+       credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -64,6 +68,7 @@ const updateRole = async ({ id, data }) => {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
+       credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -88,6 +93,7 @@ const deleteRole = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
+       credentials: "include",
     });
 
     if (!res.ok) {
