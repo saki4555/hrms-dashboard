@@ -6,8 +6,8 @@ const permissionQueryKeys = {
   detail: (id) => [...permissionQueryKeys.all, "detail", id],
 };
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/permissions`;
-const MODULES_API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-management/modules`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/permissions`;
+const MODULES_API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/modules`;
 
 /**
  * =========================
@@ -16,7 +16,9 @@ const MODULES_API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user-managemen
  */
 const getPermissions = async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/all`);
+   const res = await fetch(`${API_BASE_URL}/all`, {
+  credentials: "include",
+});
 
     if (!res.ok) {
       throw new Error(`Failed to fetch permissions: ${res.status} ${res.statusText}`);
@@ -37,7 +39,10 @@ const getPermissions = async () => {
  */
 const getModulesForSelect = async () => {
   try {
-    const res = await fetch(`${MODULES_API_URL}/all`);
+    const res = await fetch(`${MODULES_API_URL}/all`, {
+  credentials: "include",
+});
+
 
     if (!res.ok) {
       throw new Error(`Failed to fetch modules: ${res.status} ${res.statusText}`);
@@ -61,6 +66,7 @@ const createPermission = async (data) => {
     const res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -85,6 +91,7 @@ const deletePermission = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
+      credentials: "include",
     });
 
     if (!res.ok) {
