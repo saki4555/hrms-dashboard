@@ -2,6 +2,9 @@ import { lazy } from "react";
 
 import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "@/config/roles";
 import { PATHS } from "@/config/paths";
+import InventoriesPage from "@/features/inventory";
+import ItemsPage from "@/features/item";
+import ItemStockPage from "@/features/item-stock";
 
 const { ADMIN, HR, EMPLOYEE } = ROLES;
 
@@ -287,6 +290,11 @@ export const ROUTE_MAP = [
   },
   { path: PATHS.SETTINGS.SHIFTS, component: Shifts, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.CONTRACTS, component: Contracts, roles: ADMIN_HR },
+
+  { path: PATHS.SETTINGS.INVENTORYS, component:InventoriesPage, roles: ADMIN },
+  { path: PATHS.SETTINGS.ITEMS, component: ItemsPage, roles: ADMIN},
+   { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
+
 
   // ── Reports ────────────────────────────────────────────────────────────────
   {

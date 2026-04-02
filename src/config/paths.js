@@ -76,6 +76,9 @@ export const PATHS = {
     HOLIDAY_TYPES: "settings/work-structure/holiday-types",
     SHIFTS: "settings/work-structure/shifts",
     CONTRACTS: "settings/work-structure/contracts",
+    INVENTORYS: "settings/work-structure/inventory",
+    ITEMS: "settings/work-structure/item",
+    ITEM_STOCKS: "settings/work-structure/item-stock"
   },
 
   // ─── Reports ──────────────────────────────────────────────────────────────

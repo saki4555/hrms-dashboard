@@ -9,7 +9,7 @@ import {
 } from "@tabler/icons-react";
 
 import { PATHS } from "./paths";
-import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "./roles";
+import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES, ADMIN_ONLY } from "./roles";
 
 const { ADMIN } = ROLES;
 
@@ -110,6 +110,9 @@ export const NAV_ITEMS = [
           { title: "Holiday Types",    url: PATHS.SETTINGS.HOLIDAY_TYPES,    roles: ADMIN_HR },
           { title: "Shifts",    url: PATHS.SETTINGS.SHIFTS,    roles: ADMIN_HR },
           { title: "Contracts",    url: PATHS.SETTINGS.CONTRACTS,    roles: ADMIN_HR },
+          { title: "Inventorys",    url: PATHS.SETTINGS.INVENTORYS,    roles: ADMIN_HR},
+          { title: "Items",         url: PATHS.SETTINGS.ITEMS,              roles: ADMIN_HR },
+           { title: "Item Stocks",         url: PATHS.SETTINGS.ITEM_STOCKS,              roles: ADMIN_HR },
         ],
       },
     ],
