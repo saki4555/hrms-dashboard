@@ -21,6 +21,7 @@ import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -166,19 +167,19 @@ export default function InventoryList() {
     },
 
     // PO No
-    {
-      accessorKey: "PONO",
-      header: "PO No",
-      cell: ({ row }) => <div>{row.getValue("PONO") ?? "—"}</div>,
-    },
+    // {
+    //   accessorKey: "PONO",
+    //   header: "PO No",
+    //   cell: ({ row }) => <div>{row.getValue("PONO") ?? "—"}</div>,
+    // },
 
     // Store ID
-    {
-      accessorKey: "STOREID",
-      header: "Store",
-      cell: ({ row }) => <div>{row.getValue("STOREID") ?? "—"}</div>,
-    },
-
+   // ✅ Fix
+{
+  accessorKey: "STORE_NAME",      // ← STORE_NAME করুন
+  header: "Store Name",
+  cell: ({ row }) => <div>{row.getValue("STORE_NAME") ?? "—"}</div>,
+},
     // Inv Qty
     {
       accessorKey: "INVQTY",
@@ -189,23 +190,23 @@ export default function InventoryList() {
     },
 
     // Stock Qty (from ITEM_STOCK join)
-    {
-      accessorKey: "STOCK_QTY",
-      header: "Stock Qty",
-      cell: ({ row }) => {
-        const qty = row.getValue("STOCK_QTY");
-        const min = row.original.MINIMUM_LEVEL;
-        const isLow = qty != null && min != null && Number(qty) <= Number(min);
-        return (
-          <div className="flex items-center gap-1">
-            <span className={`font-medium ${isLow ? "text-destructive" : ""}`}>
-              {qty ?? "—"}
-            </span>
-            {isLow && <Badge variant="destructive" className="text-xs">Low</Badge>}
-          </div>
-        );
-      },
-    },
+    // {
+    //   accessorKey: "STOCK_QTY",
+    //   header: "Stock Qty",
+    //   cell: ({ row }) => {
+    //     const qty = row.getValue("STOCK_QTY");
+    //     const min = row.original.MINIMUM_LEVEL;
+    //     const isLow = qty != null && min != null && Number(qty) <= Number(min);
+    //     return (
+    //       <div className="flex items-center gap-1">
+    //         <span className={`font-medium ${isLow ? "text-destructive" : ""}`}>
+    //           {qty ?? "—"}
+    //         </span>
+    //         {isLow && <Badge variant="destructive" className="text-xs">Low</Badge>}
+    //       </div>
+    //     );
+    //   },
+    // },
 
     // Price
     {
@@ -217,15 +218,24 @@ export default function InventoryList() {
       },
     },
 
-    // Selling Price
-    {
-      accessorKey: "SELLING_UNIT_PRICE",
-      header: "Selling Price",
+     {
+      accessorKey: "UNIT_PRICE",
+      header: "Unit Price",
       cell: ({ row }) => {
-        const p = row.getValue("SELLING_UNIT_PRICE");
+        const p = row.getValue("UNIT_PRICE");
         return <div>{p != null ? Number(p).toFixed(2) : "—"}</div>;
       },
     },
+
+    // Selling Price
+    // {
+    //   accessorKey: "SELLING_UNIT_PRICE",
+    //   header: "Selling Price",
+    //   cell: ({ row }) => {
+    //     const p = row.getValue("SELLING_UNIT_PRICE");
+    //     return <div>{p != null ? Number(p).toFixed(2) : "—"}</div>;
+    //   },
+    // },
 
     // Unit
     {
@@ -245,26 +255,121 @@ export default function InventoryList() {
     },
 
     // Inv Status
-    {
-      accessorKey: "INVSTATUS",
-      header: "Status",
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("INVSTATUS") === 1 ? "success" : "secondary"}>
-          {row.getValue("INVSTATUS") === 1 ? "Active" : "Pending"}
+//    {
+//   accessorKey: "INVSTATUS",
+//   header: "Inv Status",
+//   cell: ({ row }) => {
+//     const status = row.getValue("INVSTATUS");
+//     return (
+//       <Badge variant={status === 2 ? "success" : "warning"}>
+//         {status === 2 ? "Transferred" : "Pending"}
+//       </Badge>
+//     );
+//   },
+// },
+
+{
+  accessorKey: "INVSTATUS",
+  header: "Inv Status",
+  cell: ({ row }) => {
+    const inv = row.original;
+    const status = row.getValue("INVSTATUS");
+
+    // ✅ Already transferred — শুধু text দেখাবে
+    if (status === 2) {
+      return (
+        <span className="text-xs font-medium text-green-600 dark:text-green-400">
+          ✓ Transferred
+        </span>
+      );
+    }
+
+    // ✅ Pending — দুটো icon button দেখাবে
+    return (
+      <div className="flex items-center gap-1">
+        {/* Pending badge */}
+        <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">
+          Pending
         </Badge>
-      ),
-    },
+
+        {/* Transfer button */}
+      
+
+
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+        onClick={async () => {
+          const confirmed = await showConfirmation({
+            title: "Transfer to Stock?",
+            description: `TID #${inv.TID} — Are you sure you want to transfer this inventory to stock?`,
+            confirmText: "Transfer",
+            cancelText: "Cancel",
+            variant: "default",
+          });
+          if (!confirmed) return;
+
+          try {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventory/${inv.TID}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                item:          inv.INV_ITEM_ID,
+                storeId:       inv.STOREID,
+                invQty:        inv.INVQTY,
+                grnNo:         inv.GRNNO          || null,
+                poNo:          inv.PONO            || null,
+                price:         inv.INV_PRICE       || null,
+                unit:          inv.INV_UNIT        || null,
+                unitPrice:     inv.UNIT_PRICE      ? String(inv.UNIT_PRICE) : null,
+                unitId:        inv.INV_UNIT_ID     || null,
+                inventoryType: inv.INVENTORY_TYPE  || null,
+                itemType:      inv.ITEMTYPE        || null,
+                accounted:     inv.ACCOUNTED       || null,
+                invtDate:      inv.INVTDATE        || null,
+                invStatus:     2,
+                invoiceStatus: inv.INVOICE_STATUS  ?? 0,
+              }),
+            }).then(res => {
+              if (!res.ok) throw new Error("Failed");
+            });
+
+            toast.success(`TID #${inv.TID} transferred to stock!`);
+            refetch();
+          } catch {
+            toast.error("Transfer failed. Please try again.");
+          }
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </Button>
+    </TooltipTrigger>
+    <TooltipContent side="top">
+      <p>Transfer to stock</p>
+    </TooltipContent>
+  </Tooltip>
+</TooltipProvider>
+      </div>
+    );
+  },
+},
 
     // Invoice Status
-    {
-      accessorKey: "INVOICE_STATUS",
-      header: "Invoice",
-      cell: ({ row }) => (
-        <Badge variant={row.getValue("INVOICE_STATUS") === 1 ? "success" : "outline"}>
-          {row.getValue("INVOICE_STATUS") === 1 ? "Invoiced" : "Pending"}
-        </Badge>
-      ),
-    },
+    // {
+    //   accessorKey: "INVOICE_STATUS",
+    //   header: "Invoice",
+    //   cell: ({ row }) => (
+    //     <Badge variant={row.getValue("INVOICE_STATUS") === 1 ? "success" : "outline"}>
+    //       {row.getValue("INVOICE_STATUS") === 1 ? "Invoiced" : "Pending"}
+    //     </Badge>
+    //   ),
+    // },
 
     // Actions
     {
@@ -368,7 +473,7 @@ export default function InventoryList() {
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
-            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Inventories</h1>
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Inventory</h1>
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>

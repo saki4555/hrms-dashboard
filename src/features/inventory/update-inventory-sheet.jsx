@@ -1,121 +1,239 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/DatePicker";
 import { ArchiveIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { useQuery } from "@tanstack/react-query";
 import { useUpdateInventory } from "./queries";
 
+const BASE = import.meta.env.VITE_API_BASE_URL;
+
+const fetchJSON = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `${res.status} ${res.statusText}`);
+  }
+  const json = await res.json();
+  return json.data ?? json;
+};
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+const useItemSearch = (query) =>
+  useQuery({
+    queryKey: ["items", "search", query],
+    queryFn: () => fetchJSON(`${BASE}/api/item?q=${encodeURIComponent(query)}&limit=20`),
+    enabled: typeof query === "string" && query.trim().length >= 2,
+    staleTime: 60 * 1000,
+  });
+
+// ✅ Store list — STORE table থেকে
+const useStores = () =>
+  useQuery({
+    queryKey: ["inv-stores"],
+    queryFn: () => fetchJSON(`${BASE}/api/stores`),
+    staleTime: 5 * 60 * 1000,
+  });
+
+// ✅ UOM list — INV_UOM table থেকে
+const useUoms = () =>
+  useQuery({
+    queryKey: ["inv-uoms"],
+    queryFn: () => fetchJSON(`${BASE}/api/inv-uom`),
+    staleTime: 10 * 60 * 1000,
+  });
+
+// ─── ItemSearchCombobox ───────────────────────────────────────────────────────
+function ItemSearchCombobox({ value, onChange, disabled }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  const { data: items = [], isFetching } = useItemSearch(query);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative">
+        <Input
+          placeholder="Search item by name or model..."
+          value={open ? query : (value?.name ?? "")}
+          disabled={disabled}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (!e.target.value) onChange(null);
+          }}
+          onFocus={() => { if (!value) setOpen(true); }}
+          className={value && !open ? "pr-8" : ""}
+          autoComplete="off"
+        />
+        {isFetching && open && (
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+            <Spinner className="h-4 w-4" />
+          </span>
+        )}
+        {value && !open && !disabled && (
+          <button
+            type="button"
+            onClick={() => { onChange(null); setQuery(""); setOpen(false); }}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-lg leading-none"
+          >×</button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {items.length > 0
+            ? items.map((item) => (
+                <button
+                  key={item.ITEM_ID}
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                  onMouseDown={() => {
+                    onChange({ id: item.ITEM_ID, name: item.NAME });
+                    setQuery(""); setOpen(false);
+                  }}
+                >
+                  <div className="font-medium">{item.NAME}</div>
+                  {item.MODEL && <div className="text-xs text-muted-foreground">{item.MODEL}</div>}
+                </button>
+              ))
+            : query.trim().length >= 2 && !isFetching && (
+                <div className="px-3 py-2 text-sm text-muted-foreground">No items found.</div>
+              )}
+          {query.trim().length < 2 && (
+            <div className="px-3 py-2 text-sm text-muted-foreground">
+              Type at least 2 characters to search...
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
 const formSchema = z.object({
-  storeId:          z.coerce.number({ required_error: "Store ID is required" }).min(1, "Store ID is required"),
-  item:             z.coerce.number({ required_error: "Item ID is required" }).min(1, "Item ID is required"),
+  item:             z.object({ id: z.number(), name: z.string() }, { required_error: "Item is required" }),
+  storeId:          z.coerce.number({ required_error: "Store is required" }).min(1, "Store is required"),
   invQty:           z.coerce.number().min(0).optional(),
   grnNo:            z.string().max(30).optional(),
-  poNo:             z.coerce.number().optional(),
   price:            z.coerce.number().min(0).optional(),
-  sellingUnitPrice: z.coerce.number().min(0).optional(),
   unit:             z.string().max(10).optional(),
   unitPrice:        z.string().max(10).optional(),
   unitId:           z.coerce.number().optional(),
-  inventoryType:    z.coerce.number().optional(),
-  itemType:         z.coerce.number().optional(),
-  accounted:        z.coerce.number().optional(),
-  invDate:          z.string().optional(),
+  invtDate:         z.string().optional(),
   invStatus:        z.string().optional(),
   invoiceStatus:    z.string().optional(),
 });
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function UpdateInventorySheet({ open, onOpenChange, showConfirmation, inventory }) {
   const updateMutation = useUpdateInventory();
+  const { data: stores = [], isLoading: storesLoading } = useStores();
+  const { data: uoms   = [], isLoading: uomsLoading   } = useUoms();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      storeId: "", item: "", invQty: "", grnNo: "", poNo: "",
-      price: "", sellingUnitPrice: "", unit: "", unitPrice: "", unitId: "",
-      inventoryType: "", itemType: "", accounted: "", invDate: "",
-      invStatus: "0", invoiceStatus: "0",
+      item: null, storeId: "", invQty: "", grnNo: "",
+      price: "", unit: "", unitPrice: "", unitId: "",
+      invtDate: "", invStatus: "1", invoiceStatus: "0",
     },
   });
 
   const { formState: { isDirty } } = form;
 
+  // ✅ inventory data আসলে form populate করুন
   useEffect(() => {
-    if (inventory) {
-      form.reset({
-        storeId:          inventory.STOREID            ?? "",
-        item:             inventory.INV_ITEM_ID        ?? "",
-        invQty:           inventory.INVQTY             ?? "",
-        grnNo:            inventory.GRNNO              || "",
-        poNo:             inventory.PONO               ?? "",
-        price:            inventory.INV_PRICE          ?? "",
-        sellingUnitPrice: inventory.SELLING_UNIT_PRICE ?? "",
-        unit:             inventory.INV_UNIT           || "",
-        unitPrice:        inventory.UNIT_PRICE         || "",
-        unitId:           inventory.INV_UNIT_ID        ?? "",
-        inventoryType:    inventory.INVENTORY_TYPE     ?? "",
-        itemType:         inventory.ITEMTYPE           ?? "",
-        accounted:        inventory.ACCOUNTED          ?? "",
-        invDate:          inventory.INVDATE
-          ? format(new Date(inventory.INVDATE), "yyyy-MM-dd") : "",
-        invStatus:        inventory.INVSTATUS       != null ? String(inventory.INVSTATUS)      : "0",
-        invoiceStatus:    inventory.INVOICE_STATUS  != null ? String(inventory.INVOICE_STATUS) : "0",
-      });
-    }
+    if (!inventory) return;
+
+    form.reset({
+      item: inventory.INV_ITEM_ID && inventory.ITEM_NAME
+        ? { id: inventory.INV_ITEM_ID, name: inventory.ITEM_NAME }
+        : null,
+      storeId:      inventory.STOREID      ?? "",
+      invQty:       inventory.INVQTY       ?? "",
+      grnNo:        inventory.GRNNO        || "",
+      price:        inventory.INV_PRICE    ?? "",
+      unit:         inventory.INV_UNIT     || "",
+      unitPrice:    inventory.UNIT_PRICE   || "",
+      unitId:       inventory.INV_UNIT_ID  ?? "",
+      invtDate:     inventory.INVTDATE
+        ? format(new Date(inventory.INVTDATE), "yyyy-MM-dd")
+        : "",
+      invStatus:    inventory.INVSTATUS      != null ? String(inventory.INVSTATUS)      : "1",
+      invoiceStatus: inventory.INVOICE_STATUS != null ? String(inventory.INVOICE_STATUS) : "0",
+    });
   }, [inventory]);
+
+  // ✅ UOM list লোড হলে unit field auto-fill করুন
+  useEffect(() => {
+    if (!uoms.length || !inventory?.INV_UNIT_ID) return;
+    const matched = uoms.find((u) => u.ID === inventory.INV_UNIT_ID);
+    if (matched) form.setValue("unit", matched.NAME);
+  }, [uoms, inventory]);
 
   const onSubmit = async (data) => {
     if (!inventory?.TID) { toast.error("TID is missing."); return; }
+
+    if (inventory.INVSTATUS === 2 && Number(data.invStatus) === 2) {
+      toast.warning("This inventory is already transferred.");
+      return;
+    }
+
     try {
       await updateMutation.mutateAsync({
         tid: inventory.TID,
         data: {
-          storeId:          data.storeId,
-          item:             data.item,
-          invQty:           data.invQty           || null,
-          grnNo:            data.grnNo            || null,
-          poNo:             data.poNo             || null,
-          price:            data.price            || null,
-          sellingUnitPrice: data.sellingUnitPrice || null,
-          unit:             data.unit             || null,
-          unitPrice:        data.unitPrice        || null,
-          unitId:           data.unitId           || null,
-          inventoryType:    data.inventoryType    || null,
-          itemType:         data.itemType         || null,
-          accounted:        data.accounted        || null,
-          invDate:          data.invDate          || null,
-          invStatus:        Number(data.invStatus     ?? 0),
-          invoiceStatus:    Number(data.invoiceStatus ?? 0),
+          item:          data.item.id,
+          storeId:       Number(data.storeId),
+          invQty:        data.invQty    ? Number(data.invQty)    : null,
+          grnNo:         data.grnNo    || null,
+          price:         data.price    ? Number(data.price)      : null,
+          unit:          data.unit     || null,
+          unitPrice:     data.unitPrice ? String(data.unitPrice) : null,
+          unitId:        data.unitId   ? Number(data.unitId)     : null,
+          invtDate:      data.invtDate || null,
+          invStatus:     Number(data.invStatus    ?? 1),
+          invoiceStatus: Number(data.invoiceStatus ?? 0),
+          // unchanged fields
+          sellingUnitPrice: null,
+          poNo:             null,
+          itemType:         null,
+          accounted:        null,
+          inventoryType:    null,
         },
       });
-      toast.success("Inventory updated successfully!");
+
+      if (Number(data.invStatus) === 2 && inventory.INVSTATUS !== 2) {
+        toast.success("Inventory transferred! Stock updated successfully.");
+      } else {
+        toast.success("Inventory updated successfully!");
+      }
+
       form.reset();
       onOpenChange(false);
     } catch (err) {
@@ -157,28 +275,46 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
           </div>
         </SheetHeader>
 
-        {/* Form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
-              {/* Item ID + Store ID */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="item" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Item ID <span className="text-destructive">*</span></FormLabel>
-                    <FormControl><Input type="number" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="storeId" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Store ID <span className="text-destructive">*</span></FormLabel>
-                    <FormControl><Input type="number" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
+              {/* Item */}
+              <FormField control={form.control} name="item" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Item <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <ItemSearchCombobox value={field.value} onChange={field.onChange} disabled={isSubmitting} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {/* ✅ Store — STORE_NAME দেখাবে, STORE_ID পাঠাবে */}
+              <FormField control={form.control} name="storeId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Store <span className="text-destructive">*</span></FormLabel>
+                  <Select
+                    disabled={isSubmitting || storesLoading}
+                    onValueChange={field.onChange}
+                    value={String(field.value ?? "")}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={storesLoading ? "Loading..." : "Select store"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {stores.map((s) => (
+                        <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
+                          {s.STORE_NAME}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               {/* Inv Qty + GRN No */}
               <div className="grid grid-cols-2 gap-4">
@@ -198,18 +334,18 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 )} />
               </div>
 
-              {/* PO No + Inv Date */}
+              {/* Price + Invt Date */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="poNo" render={({ field }) => (
+                <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>PO No</FormLabel>
-                    <FormControl><Input type="number" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="invDate" render={({ field }) => (
+                <FormField control={form.control} name="invtDate" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Inv Date</FormLabel>
+                    <FormLabel>Invt Date</FormLabel>
                     <FormControl>
                       <DatePicker
                         className="w-full"
@@ -224,85 +360,42 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 )} />
               </div>
 
-              {/* Price + Selling Unit Price */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="sellingUnitPrice" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Selling Unit Price</FormLabel>
-                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              {/* Unit + Unit Price */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="unit" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit</FormLabel>
-                    <FormControl><Input disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="unitPrice" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit Price</FormLabel>
-                    <FormControl><Input disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              {/* Unit ID + Inventory Type */}
+              {/* ✅ UOM dropdown + Unit Price */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="unitId" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit ID</FormLabel>
-                    <FormControl><Input type="number" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormLabel>UOM</FormLabel>
+                    <Select
+                      disabled={isSubmitting || uomsLoading}
+                      onValueChange={(val) => {
+                        field.onChange(Number(val));
+                        // ✅ unit name auto-fill
+                        const selected = uoms.find((u) => String(u.ID) === val);
+                        if (selected) form.setValue("unit", selected.NAME);
+                      }}
+                      value={field.value ? String(field.value) : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={uomsLoading ? "Loading..." : "Select UOM"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {uoms.map((u) => (
+                          <SelectItem key={u.ID} value={String(u.ID)}>
+                            {u.NAME}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="inventoryType" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Inventory Type</FormLabel>
-                    <FormControl><Input type="number" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
 
-              {/* Inv Status + Invoice Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="invStatus" render={({ field }) => (
+                <FormField control={form.control} name="unitPrice" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Inv Status</FormLabel>
-                    <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="0">Pending</SelectItem>
-                        <SelectItem value="1">Active</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="invoiceStatus" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Invoice Status</FormLabel>
-                    <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="0">Pending</SelectItem>
-                        <SelectItem value="1">Invoiced</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Unit Price</FormLabel>
+                    <FormControl><Input placeholder="0.00" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -316,11 +409,9 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Updating...</>
-                ) : (
-                  "Update Inventory"
-                )}
+                {isSubmitting
+                  ? <><Spinner className="mr-2 h-4 w-4" />Updating...</>
+                  : "Update Inventory"}
               </Button>
             </div>
           </form>
