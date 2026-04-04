@@ -79,6 +79,10 @@ const LeaveTypes = lazy(
   () => import("@/features/attendance-management/leave-type"),
 );
 
+const Supervisors = lazy(
+  () => import("@/features/employee-supervisor"),
+);
+
 const UserManagement = lazy(
   () => import("@/features/user-management"),
 );
@@ -92,12 +96,11 @@ const ModuleManagement = lazy(
   () => import("@/features/users/module"),
 );
 
-const User = lazy(() => import("@/features/user-management/user-details"));
+const User = lazy(() => import("@/features/user-management/user-details"))
 
 const Attendance = lazy(
   () => import("@/features/attendance"),
 );
-const Supervisors = lazy(() => import("@/features/employee-supervisor"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -171,6 +174,7 @@ export const ROUTE_MAP = [
   },
   {
     path: PATHS.ATTENDANCE.DATA,
+    component: Attendance,
     component: Attendance,
     roles: ADMIN_HR,
   },

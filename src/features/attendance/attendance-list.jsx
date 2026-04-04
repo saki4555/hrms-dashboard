@@ -586,9 +586,8 @@ export default function AttendanceList() {
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
 
-          {/* ── Filter Bar ─────────────────────────────────────────────── */}
+        {/* ── Filter Bar ─────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
-
             {/* Filter mode toggle */}
             <Select
               value={filterMode}
@@ -678,22 +677,32 @@ export default function AttendanceList() {
 
             {/* Reset */}
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-9 border border-dashed" onClick={clearAllFilters}>
+              <Button variant="ghost" size="sm" className="h-9 border border-dashed text-muted-foreground hover:text-foreground" onClick={clearAllFilters}>
                 Reset <IconX className="ml-2 h-4 w-4" />
               </Button>
             )}
+          </div>
+
+          {/* ── Table Toolbar (Results & Actions) ──────────────────────── */}
+          <div className="flex items-center justify-between py-1">
+            {/* Result count */}
+            <p className="text-sm font-medium text-muted-foreground">
+              {isFetching
+                ? "Loading records..."
+                : `${total.toLocaleString()} record${total !== 1 ? "s" : ""} found`}
+            </p>
 
             {/* Right side — Export + Column visibility */}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <ExportButton exportParams={exportParams} />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
+                  <Button variant="outline" size="sm" className="h-9 font-medium shadow-sm">
+                    Columns <ChevronDown className="ml-2 h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-[160px]">
                   {table.getAllColumns()
                     .filter((col) => col.getCanHide())
                     .map((col) => (
@@ -711,12 +720,11 @@ export default function AttendanceList() {
             </div>
           </div>
 
-          {/* Result count */}
-          <p className="text-sm text-muted-foreground">
-            {isFetching
-              ? "Loading..."
-              : `${total.toLocaleString()} record${total !== 1 ? "s" : ""} found`}
-          </p>
+        
+
+
+
+          
 
           {/* ── Table ──────────────────────────────────────────────────── */}
           <div className="overflow-hidden rounded-md border">

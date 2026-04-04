@@ -27,6 +27,8 @@ export default function AttendanceDetailDialog({ open, onOpenChange, employeeId,
     open ? date       : null
   );
 
+  console.log("logs", logs);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px] max-h-[90vh]">
@@ -66,7 +68,7 @@ export default function AttendanceDetailDialog({ open, onOpenChange, employeeId,
 
               <div className="space-y-3">
                 {logs.map((log, idx) => {
-                  const isIn      = log.AM_TYPE_IN_OUT === 0;
+                  const isIn      = log.AM_TYPE_IN_OUT === 1;
                   const isFirst   = idx === 0;
                   const isLast    = idx === logs.length - 1;
 
@@ -166,8 +168,8 @@ export default function AttendanceDetailDialog({ open, onOpenChange, employeeId,
           <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
             <span>{logs.length} total punch{logs.length !== 1 ? "es" : ""}</span>
             <span>
-              {logs.filter((l) => l.AM_TYPE_IN_OUT === 0).length} IN ·{" "}
-              {logs.filter((l) => l.AM_TYPE_IN_OUT === 1).length} OUT
+              {logs.filter((l) => l.AM_TYPE_IN_OUT === 1).length} IN ·{" "}
+              {logs.filter((l) => l.AM_TYPE_IN_OUT === 2).length} OUT
             </span>
           </div>
         )}
