@@ -15,6 +15,7 @@ export const PATHS = {
     LIFECYCLE: "core-hr/lifecycle",
     DOCUMENTS: "core-hr/documents",
     EMPLOYEE_TYPES: "core-hr/employee-types",
+    SUPERVISOR_ASSIGNMENT: "core-hr/supervisor-assignment",
   },
 
   // ─── Attendance ───────────────────────────────────────────────────────────
@@ -75,6 +76,9 @@ export const PATHS = {
     HOLIDAY_TYPES: "settings/work-structure/holiday-types",
     SHIFTS: "settings/work-structure/shifts",
     CONTRACTS: "settings/work-structure/contracts",
+    INVENTORYS: "settings/work-structure/inventory",
+    ITEMS: "settings/work-structure/item",
+    ITEM_STOCKS: "settings/work-structure/item-stock"
   },
 
   // ─── Reports ──────────────────────────────────────────────────────────────
@@ -87,5 +91,8 @@ export const PATHS = {
   USERS: {
     USER_MANAGEMENT: "user-management/users",
     USER: "user-management/users/:id",
+    ROLE: "user-management/roles",
+    PERMISSION: "user-management/permissions",
+    MODULE: "user-management/modules",
   },
 };

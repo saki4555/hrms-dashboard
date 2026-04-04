@@ -2,6 +2,9 @@ import { lazy } from "react";
 
 import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "@/config/roles";
 import { PATHS } from "@/config/paths";
+import InventoriesPage from "@/features/inventory";
+import ItemsPage from "@/features/item";
+import ItemStockPage from "@/features/item-stock";
 
 const { ADMIN, HR, EMPLOYEE } = ROLES;
 
@@ -79,12 +82,22 @@ const LeaveTypes = lazy(
 const UserManagement = lazy(
   () => import("@/features/user-management"),
 );
+const RoleManagement = lazy(
+  () => import("@/features/users/role"),
+);
+const PermissionManagement = lazy(
+  () => import("@/features/users/permission"),
+);
+const ModuleManagement = lazy(
+  () => import("@/features/users/module"),
+);
 
 const User = lazy(() => import("@/features/user-management/user-details"));
 
 const Attendance = lazy(
   () => import("@/features/attendance"),
 );
+const Supervisors = lazy(() => import("@/features/employee-supervisor"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
@@ -133,6 +146,11 @@ export const ROUTE_MAP = [
     path: PATHS.CORE_HR.EMPLOYEE_TYPES,
     component: EmployeeTypes,
     roles: ADMIN_HR,
+  },
+  {
+      path: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,
+      component: Supervisors,
+      roles: ADMIN_HR
   },
 
   // ── Attendance ─────────────────────────────────────────────────────────────
@@ -277,6 +295,11 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.SHIFTS, component: Shifts, roles: ADMIN_HR },
   { path: PATHS.SETTINGS.CONTRACTS, component: Contracts, roles: ADMIN_HR },
 
+  { path: PATHS.SETTINGS.INVENTORYS, component:InventoriesPage, roles: ADMIN },
+  { path: PATHS.SETTINGS.ITEMS, component: ItemsPage, roles: ADMIN},
+   { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
+
+
   // ── Reports ────────────────────────────────────────────────────────────────
   {
     path: PATHS.REPORTS.GENERAL,
@@ -310,5 +333,21 @@ export const ROUTE_MAP = [
     path: PATHS.USERS.USER,
     component: User,
     roles: ADMIN_HR,
+  },
+ 
+  {
+    path: PATHS.USERS.ROLE,
+    component: RoleManagement,
+    roles: ADMIN_HR,
+  },
+  {
+    path: PATHS.USERS.PERMISSION,
+    component: PermissionManagement,
+    roles: ADMIN_HR
+  },
+  {
+    path: PATHS.USERS.MODULE,
+    component: ModuleManagement,
+    roles: ADMIN_HR
   }
 ];
