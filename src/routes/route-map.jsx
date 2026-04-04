@@ -93,6 +93,10 @@ const ModuleManagement = lazy(
 );
 
 const User = lazy(() => import("@/features/user-management/user-details"));
+
+const Attendance = lazy(
+  () => import("@/features/attendance"),
+);
 const Supervisors = lazy(() => import("@/features/employee-supervisor"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
@@ -167,7 +171,7 @@ export const ROUTE_MAP = [
   },
   {
     path: PATHS.ATTENDANCE.DATA,
-    component: p("Attendance Data"),
+    component: Attendance,
     roles: ADMIN_HR,
   },
   {
