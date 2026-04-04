@@ -33,7 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCreateItem } from "./queries";
 
 const formSchema = z.object({
-  itemId:      z.coerce.number({ required_error: "Item ID is required" }).min(1, "Item ID is required"),
+  // itemId:      z.coerce.number({ required_error: "Item ID is required" }).min(1, "Item ID is required"),
   name:        z.string().min(1, "Name is required").max(1000),
   description: z.string().max(1000).optional(),
   model:       z.string().max(50).optional(),
@@ -140,13 +140,13 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
 
               {/* Item ID + Status */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="itemId" render={({ field }) => (
+                {/* <FormField control={form.control} name="itemId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Item ID <span className="text-destructive">*</span></FormLabel>
                     <FormControl><Input type="number" placeholder="e.g. 1001" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
                 <FormField control={form.control} name="status" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
