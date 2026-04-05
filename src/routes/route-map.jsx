@@ -5,6 +5,7 @@ import { PATHS } from "@/config/paths";
 import InventoriesPage from "@/features/inventory";
 import ItemsPage from "@/features/item";
 import ItemStockPage from "@/features/item-stock";
+import RequisitionsPage from "@/features/requisition";
 
 const { ADMIN, HR, EMPLOYEE } = ROLES;
 
@@ -302,6 +303,9 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.INVENTORYS, component:InventoriesPage, roles: ADMIN },
   { path: PATHS.SETTINGS.ITEMS, component: ItemsPage, roles: ADMIN},
    { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
+   
+     { path: PATHS.SETTINGS.REQUISITION,  component: RequisitionsPage, roles: ADMIN},
+    
 
 
   // ── Reports ────────────────────────────────────────────────────────────────

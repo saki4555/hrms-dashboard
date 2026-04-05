@@ -78,7 +78,10 @@ export const PATHS = {
     CONTRACTS: "settings/work-structure/contracts",
     INVENTORYS: "settings/work-structure/inventory",
     ITEMS: "settings/work-structure/item",
-    ITEM_STOCKS: "settings/work-structure/item-stock"
+    ITEM_STOCKS: "settings/work-structure/item-stock",
+    REQUISITION: "settings/work-structure/req-master",
+   
+  
   },
 
   // ─── Reports ──────────────────────────────────────────────────────────────
