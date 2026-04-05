@@ -291,7 +291,8 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
               )} />
 
               {/* ✅ Store — STORE_NAME দেখাবে, STORE_ID পাঠাবে */}
-              <FormField control={form.control} name="storeId" render={({ field }) => (
+              <div className="grid grid-cols-2 gap-4">
+                 <FormField control={form.control} name="storeId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Store <span className="text-destructive">*</span></FormLabel>
                   <Select
@@ -316,6 +317,16 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 </FormItem>
               )} />
 
+               <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+              </div>
+             
               {/* Inv Qty + GRN No */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="invQty" render={({ field }) => (
@@ -334,32 +345,7 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 )} />
               </div>
 
-              {/* Price + Invt Date */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="invtDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Invt Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        className="w-full"
-                        placeholder="Select date"
-                        disabled={isSubmitting}
-                        value={field.value ? new Date(field.value) : undefined}
-                        onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
+             
               {/* ✅ UOM dropdown + Unit Price */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="unitId" render={({ field }) => (
@@ -400,6 +386,26 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                   </FormItem>
                 )} />
               </div>
+               {/* Price + Invt Date */}
+              <div className="grid grid-cols-2 gap-4">
+               
+                <FormField control={form.control} name="invtDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invt Date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        className="w-full"
+                        placeholder="Select date"
+                        disabled={isSubmitting}
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
 
             </div>
 

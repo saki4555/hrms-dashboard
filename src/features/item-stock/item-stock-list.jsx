@@ -54,6 +54,120 @@ import {
 import { useItemStocks, useDeleteItemStock } from "./queries";
 import AddItemStockSheet from "./add-item-stock-sheet";
 import UpdateItemStockSheet from "./update-item-stock-sheet";
+import {  useRef, useEffect } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { useUpdateItemStock } from "./queries"; // already আছে কিনা দেখো
+
+function MinLevelCell({ stock, onUpdate }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(stock.MINIMUM_LEVEL ?? 0);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
+
+  const stockQty = stock.STOCK_QTY ?? 0;
+  const minLevel = stock.MINIMUM_LEVEL ?? 0;
+  const isLow = Number(stockQty) <= Number(minLevel);
+
+  useEffect(() => {
+    if (open) {
+      setValue(stock.MINIMUM_LEVEL ?? 0);
+      setTimeout(() => inputRef.current?.select(), 50);
+    }
+  }, [open, stock.MINIMUM_LEVEL]);
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await onUpdate(stock, Number(value));
+      setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0  bg-background/20 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={`
+              relative z-[9999] px-2 py-0.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+              border border-transparent hover:border-border
+              ${isLow
+                ? "text-destructive bg-destructive/10 hover:bg-destructive/20"
+                : "text-foreground bg-muted hover:bg-muted/80"
+              }
+            `}
+            title="Click to edit minimum level"
+          >
+            {minLevel}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-56 p-3 z-[9999]"
+          side="top"
+          align="center"
+          onInteractOutside={(e) => e.preventDefault()} // backdrop দিয়ে close হবে
+        >
+          <div className="space-y-3">
+            {/* <div>
+              <p className="text-sm font-medium">Edit Minimum Level</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {stock.ITEM_NAME || `Item #${stock.ITEM_ID}`}
+              </p>
+            </div> */}
+            <div className="space-y-1.5">
+              <Label htmlFor="min-level-input" className="text-xs">Min Level</Label>
+              <Input
+                id="min-level-input"
+                ref={inputRef}
+                type="number"
+                min={0}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSave();
+                  if (e.key === "Escape") setOpen(false);
+                }}
+                className="h-8 text-sm"
+                disabled={loading}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={handleSave}
+                disabled={loading}
+              >
+                {loading ? <Spinner className="h-3 w-3" /> : "Save"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-7 text-xs"
+                onClick={() => setOpen(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+}
 
 export default function ItemStockList() {
   const [sorting, setSorting] = useState([]);
@@ -64,6 +178,7 @@ export default function ItemStockList() {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isUpdateSheetOpen, setIsUpdateSheetOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
+  const updateMutation = useUpdateItemStock(); // queries থেকে import করো
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
   const {
@@ -80,6 +195,31 @@ export default function ItemStockList() {
     setSelectedStock(stock);
     setIsUpdateSheetOpen(true);
   };
+
+  const handleMinLevelUpdate = async (stock, newMinLevel) => {
+  try {
+    await deleteMutation.mutateAsync; // এটা না, updateMutation লাগবে
+    // তোমার update mutation call:
+    await updateMutation.mutateAsync({  
+      storeId: stock.STORE_ID,
+      itemId: stock.ITEM_ID,
+      data: {
+        stockQty:     stock.STOCK_QTY     ?? 0,
+        minimumLevel: newMinLevel,
+        status:       stock.STOCK_STATUS  ?? 1,
+        price:        stock.STOCK_PRICE   || null,
+        lastPrice:    stock.LAST_PRICE    || null,
+        unitId:       stock.STOCK_UNIT_ID || null,
+        uom:          stock.UOM           || null,
+        booked:       stock.BOOKED        ?? 0,
+      },
+    });
+    toast.success("Minimum level updated!");
+  } catch (err) {
+    toast.error(err?.message || "Failed to update minimum level.");
+    throw err; // popover-এ loading reset করার জন্য
+  }
+};
 
   const handleDelete = async (stock) => {
     const confirmed = await showConfirmation({
@@ -176,11 +316,21 @@ export default function ItemStockList() {
     },
 
     // Min Level
+    // {
+    //   accessorKey: "MINIMUM_LEVEL",
+    //   header: "Min Level",
+    //   cell: ({ row }) => <div>{row.getValue("MINIMUM_LEVEL") ?? "—"}</div>,
+    // },
     {
-      accessorKey: "MINIMUM_LEVEL",
-      header: "Min Level",
-      cell: ({ row }) => <div>{row.getValue("MINIMUM_LEVEL") ?? "—"}</div>,
-    },
+  accessorKey: "MINIMUM_LEVEL",
+  header: "Min Level",
+  cell: ({ row }) => (
+    <MinLevelCell
+      stock={row.original}
+      onUpdate={handleMinLevelUpdate}
+    />
+  ),
+},
 
     // Stock Price
     {

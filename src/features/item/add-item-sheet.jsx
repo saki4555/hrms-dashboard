@@ -31,6 +31,28 @@ import {
 import { Package } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateItem } from "./queries";
+import { useQuery } from "@tanstack/react-query";
+
+// ১. Top-এ BASE এবং fetchJSON যোগ করো (existing imports এর পরে)
+const BASE = import.meta.env.VITE_API_BASE_URL;
+const fetchJSON = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `${res.status} ${res.statusText}`);
+  }
+  const json = await res.json();
+  return json.data ?? json;
+};
+
+
+// ৩. UOM hook যোগ করো
+const useUoms = () =>
+  useQuery({
+    queryKey: ["uoms"],
+    queryFn: () => fetchJSON(`${BASE}/api/inv-uom`),
+    staleTime: 10 * 60 * 1000,
+  });
 
 const formSchema = z.object({
   // itemId:      z.coerce.number({ required_error: "Item ID is required" }).min(1, "Item ID is required"),
@@ -99,6 +121,8 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
     }
   };
 
+  
+
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
@@ -115,6 +139,8 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
   };
 
   const isSubmitting = createMutation.isPending;
+  // ৪. Component এর ভেতরে hook call করো (createMutation এর পরে)
+const { data: uoms = [], isLoading: uomsLoading } = useUoms();
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
@@ -139,7 +165,7 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
               {/* Item ID + Status */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-2 gap-4"> */}
                 {/* <FormField control={form.control} name="itemId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Item ID <span className="text-destructive">*</span></FormLabel>
@@ -147,20 +173,8 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
                     <FormMessage />
                   </FormItem>
                 )} /> */}
-                <FormField control={form.control} name="status" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                    <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="1">Active</SelectItem>
-                        <SelectItem value="0">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
+               
+              {/* </div> */}
 
               {/* Name */}
               <FormField control={form.control} name="name" render={({ field }) => (
@@ -183,22 +197,44 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
               )} />
 
               {/* Model + Unit */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="model" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Model</FormLabel>
-                    <FormControl><Input placeholder="Model" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="unit" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit</FormLabel>
-                    <FormControl><Input placeholder="e.g. PCS, BOX" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
+           
+<div className="grid grid-cols-2 gap-4">
+  <FormField control={form.control} name="model" render={({ field }) => (
+    <FormItem>
+      <FormLabel>Model</FormLabel>
+      <FormControl><Input placeholder="Model" disabled={isSubmitting} {...field} /></FormControl>
+      <FormMessage />
+    </FormItem>
+  )} />
+  <FormField control={form.control} name="unitId" render={({ field }) => (
+    <FormItem>
+      <FormLabel>Unit</FormLabel>
+      <Select
+        disabled={isSubmitting || uomsLoading}
+        onValueChange={(val) => {
+          field.onChange(Number(val));
+          const selected = uoms.find(u => String(u.ID) === val);
+          if (selected) form.setValue("unit", selected.NAME);
+        }}
+        value={field.value ? String(field.value) : ""}
+      >
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder={uomsLoading ? "Loading..." : "Select unit"} />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          {uoms.map((u) => (
+            <SelectItem key={u.ID} value={String(u.ID)}>
+              {u.NAME}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )} />
+</div>
 
               {/* Brand + Size */}
               <div className="grid grid-cols-2 gap-4">
@@ -274,17 +310,30 @@ export default function AddItemSheet({ open, onOpenChange, showConfirmation }) {
 
               {/* Unit ID + Subcat */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="unitId" render={({ field }) => (
+                {/* <FormField control={form.control} name="unitId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unit ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Unit ID" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
                 <FormField control={form.control} name="subcatId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Subcat ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Subcategory" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                    <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">Active</SelectItem>
+                        <SelectItem value="0">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )} />
