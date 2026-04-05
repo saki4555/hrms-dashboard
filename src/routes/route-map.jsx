@@ -176,7 +176,7 @@ export const ROUTE_MAP = [
   {
     path: PATHS.ATTENDANCE.DATA,
     component: Attendance,
-    component: Attendance,
+    
     roles: ADMIN_HR,
   },
   {

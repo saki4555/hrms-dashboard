@@ -40,7 +40,7 @@ export const useAttendance = (params) =>
       return json;
     },
     refetchOnMount: true,
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
     ...queryDefaults,
   });
 

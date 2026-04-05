@@ -16,11 +16,11 @@ import {
   ChevronDown, EyeOff, Download, FileText,
   ArrowUp, ArrowDown, CheckCircle2,
   XCircle, AlertTriangle, LogOut,
+  ChevronsUpDown, Check, CalendarIcon,
 } from "lucide-react";
 import { IconSelector, IconX } from "@tabler/icons-react";
 
 import { Button }   from "@/components/ui/button";
-import { Input }    from "@/components/ui/input";
 import { Badge }    from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem,
@@ -47,19 +47,20 @@ import {
 } from "@/components/ui/empty";
 import { Spinner }             from "@/components/ui/spinner";
 import { DataTablePagination } from "@/components/DataTablePagination";
-import { DatePicker }          from "@/components/DatePicker";
+import { Calendar }            from "@/components/ui/calendar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Combobox, ComboboxContent, ComboboxEmpty,
-  ComboboxInput, ComboboxItem, ComboboxList,
-} from "@/components/ui/combobox";
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup,
+  CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
 
-import { cn }                from "@/lib/utils";
-import { getAvatarColor }    from "@/lib/avatar-utils";
-import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
+import { cn }             from "@/lib/utils";
+import { getAvatarColor } from "@/lib/avatar-utils";
 
-import { useCompanies }      from "@/features/settings/work-structure/company/queries";
-import { useOrganizations }  from "@/features/settings/work-structure/organization/queries";
+import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
 
 import {
   useAttendance,
@@ -68,16 +69,31 @@ import {
 } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  PRESENT:     { label: "Present",     icon: CheckCircle2, class: "bg-green-500/10 text-green-600 border-green-500/20"  },
-  LATE:        { label: "Late",        icon: AlertTriangle, class: "bg-amber-500/10 text-amber-600 border-amber-500/20"  },
-  EARLY_LEAVE: { label: "Early Leave", icon: LogOut,        class: "bg-blue-500/10 text-blue-600 border-blue-500/20"    },
-  ABSENT:      { label: "Absent",      icon: XCircle,       class: "bg-red-500/10 text-red-600 border-red-500/20"       },
-  PENDING:     { label: "Pending",     icon: Clock,         class: "bg-muted text-muted-foreground border-border"        },
+  PRESENT:     { label: "Present",     icon: CheckCircle2,  class: "bg-green-500/10 text-green-600 border-green-500/20" },
+  LATE:        { label: "Late",        icon: AlertTriangle, class: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  EARLY_LEAVE: { label: "Early Leave", icon: LogOut,        class: "bg-blue-500/10 text-blue-600 border-blue-500/20"   },
+  ABSENT:      { label: "Absent",      icon: XCircle,       class: "bg-red-500/10 text-red-600 border-red-500/20"      },
+  PENDING:     { label: "Pending",     icon: Clock,         class: "bg-muted text-muted-foreground border-border"       },
+};
+
+// Maps TanStack column id → Oracle column name
+const SORT_COLUMN_MAP = {
+  employee:        "FIRST_NAME",
+  ATTENDANCE_DATE: "ATTENDANCE_DATE",
+  
+};
+
+// Reverse: Oracle column name → TanStack column id
+const REVERSE_SORT_MAP = {
+  FIRST_NAME:      "employee",
+  ATTENDANCE_DATE: "ATTENDANCE_DATE",
+  
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,7 +120,7 @@ const toISO = (dateObj) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
+  const cfg  = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
   const Icon = cfg.icon;
   return (
     <Badge variant="outline" className={cn("gap-1 text-xs font-medium", cfg.class)}>
@@ -120,11 +136,11 @@ function StatusBadge({ status }) {
 
 function SummaryCards({ summary, isLoading }) {
   const cards = [
-    { key: "TOTAL",       label: "Total",       icon: Users,        color: "text-foreground",  bg: "bg-muted/50"           },
-    { key: "PRESENT",     label: "Present",     icon: CheckCircle2, color: "text-green-600",   bg: "bg-green-500/10"       },
-    { key: "LATE",        label: "Late",        icon: AlertTriangle, color: "text-amber-600",  bg: "bg-amber-500/10"       },
-    { key: "EARLY_LEAVE", label: "Early Leave", icon: LogOut,       color: "text-blue-600",    bg: "bg-blue-500/10"        },
-    { key: "ABSENT",      label: "Absent",      icon: XCircle,      color: "text-red-600",     bg: "bg-red-500/10"         },
+    { key: "TOTAL",       label: "Total",       icon: Users,         color: "text-foreground", bg: "bg-muted/50"     },
+    { key: "PRESENT",     label: "Present",     icon: CheckCircle2,  color: "text-green-600",  bg: "bg-green-500/10" },
+    { key: "LATE",        label: "Late",        icon: AlertTriangle, color: "text-amber-600",  bg: "bg-amber-500/10" },
+    { key: "EARLY_LEAVE", label: "Early Leave", icon: LogOut,        color: "text-blue-600",   bg: "bg-blue-500/10"  },
+    { key: "ABSENT",      label: "Absent",      icon: XCircle,       color: "text-red-600",    bg: "bg-red-500/10"   },
   ];
 
   return (
@@ -139,9 +155,7 @@ function SummaryCards({ summary, isLoading }) {
               <p className="text-xs text-muted-foreground">{label}</p>
               {isLoading
                 ? <div className="h-5 w-8 bg-muted animate-pulse rounded mt-0.5" />
-                : <p className={cn("text-xl font-bold", color)}>
-                    {summary?.[key] ?? 0}
-                  </p>}
+                : <p className={cn("text-xl font-bold", color)}>{summary?.[key] ?? 0}</p>}
             </div>
           </CardContent>
         </Card>
@@ -160,12 +174,12 @@ function SortHeader({ column, children, className }) {
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={cn(
-        "-ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5",
-        "hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring",
-        "data-[state=open]:bg-accent [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
-        className
-      )}>
+      <DropdownMenuTrigger
+        className={cn(
+          "-ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring data-[state=open]:bg-accent [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
+          className
+        )}
+      >
         {children}
         {column.getCanSort() && (
           column.getIsSorted() === "desc" ? <ArrowDown /> :
@@ -181,15 +195,26 @@ function SortHeader({ column, children, className }) {
               checked={column.getIsSorted() === "asc"}
               onClick={() => column.toggleSorting(false)}
             >
-              <ArrowUp /> Asc
+              <ArrowUp />
+              Asc
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
               checked={column.getIsSorted() === "desc"}
               onClick={() => column.toggleSorting(true)}
             >
-              <ArrowDown /> Desc
+              <ArrowDown />
+              Desc
             </DropdownMenuCheckboxItem>
+            {column.getIsSorted() && (
+              <DropdownMenuItem
+                className="pl-2 [&_svg]:text-muted-foreground"
+                onClick={() => column.clearSorting()}
+              >
+                <IconX />
+                Reset
+              </DropdownMenuItem>
+            )}
           </>
         )}
         {column.getCanHide() && (
@@ -198,7 +223,8 @@ function SortHeader({ column, children, className }) {
             checked={!column.getIsVisible()}
             onClick={() => column.toggleVisibility(false)}
           >
-            <EyeOff /> Hide
+            <EyeOff />
+            Hide
           </DropdownMenuCheckboxItem>
         )}
       </DropdownMenuContent>
@@ -207,36 +233,74 @@ function SortHeader({ column, children, className }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FILTER COMBOBOX (reused from employee list pattern)
+//  DATE RANGE PICKER
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FilterCombobox({ placeholder, options, value, onValueChange }) {
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
-  const hasValue = !!value;
+function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
+  const [open, setOpen] = useState(false);
+
+  const dateRange = useMemo(() => {
+    const from = fromDate ? new Date(fromDate) : undefined;
+    const to   = toDate   ? new Date(toDate)   : undefined;
+    if (!from) return undefined;
+    return { from, to };
+  }, [fromDate, toDate]);
+
+  const handleSelect = (range) => {
+    if (!range) {
+      onChange({ from: null, to: null });
+      return;
+    }
+    onChange({
+      from: range.from ? toISO(range.from) : null,
+      to:   range.to   ? toISO(range.to)   : null,
+    });
+    if (range.from && range.to) setOpen(false);
+  };
+
+  const hasValue = !!fromDate;
+
+  const label = useMemo(() => {
+    if (!fromDate) return null;
+    const from = format(new Date(fromDate), "LLL dd, yy");
+    if (!toDate || toDate === fromDate) return from;
+    const to = format(new Date(toDate), "LLL dd, yy");
+    return `${from} – ${to}`;
+  }, [fromDate, toDate]);
+
   return (
-    <Combobox
-      items={options.map((o) => o.label)}
-      value={selectedLabel}
-      onValueChange={(label) => {
-        if (!label) { onValueChange(""); return; }
-        const opt = options.find((o) => o.label === label);
-        onValueChange(opt?.value ?? "");
-      }}
-    >
-      <ComboboxInput
-        placeholder={placeholder}
-        showTrigger={!hasValue}
-        showClear={hasValue}
-      />
-      <ComboboxContent>
-        <ComboboxEmpty>No results.</ComboboxEmpty>
-        <ComboboxList>
-          {(label) => (
-            <ComboboxItem key={label} value={label}>{label}</ComboboxItem>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-9 min-w-[160px] justify-start gap-2 px-2.5 font-normal",
+            !hasValue && "text-muted-foreground"
           )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+        >
+          <CalendarIcon className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left">{label ?? "Pick a date"}</span>
+          {hasValue && (
+            <span
+              role="button"
+              className="ml-1 rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+            >
+              <IconX className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="range"
+          defaultMonth={dateRange?.from}
+          selected={dateRange}
+          onSelect={handleSelect}
+          numberOfMonths={2}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -265,16 +329,13 @@ function ExportButton({ exportParams }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => handleExport("csv")} className="gap-2 cursor-pointer">
-          <FileText className="h-4 w-4 text-green-600" />
-          CSV
+          <FileText className="h-4 w-4 text-green-600" /> CSV
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("excel")} className="gap-2 cursor-pointer">
-          <FileText className="h-4 w-4 text-blue-600" />
-          Excel (.xlsx)
+          <FileText className="h-4 w-4 text-blue-600" /> Excel (.xlsx)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleExport("pdf")} className="gap-2 cursor-pointer">
-          <FileText className="h-4 w-4 text-red-600" />
-          PDF
+          <FileText className="h-4 w-4 text-red-600" /> PDF
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -289,45 +350,40 @@ export default function AttendanceList() {
   // ── URL state via nuqs ──────────────────────────────────────────────────────
   const [page,       setPage]       = useQueryState("page",       parseAsInteger.withDefault(1));
   const [limit,      setLimit]      = useQueryState("limit",      parseAsInteger.withDefault(20));
-  const [search,     setSearch]     = useQueryState("search",     parseAsString.withDefault(""));
-  const [date,       setDate]       = useQueryState("date",       parseAsString.withDefault(""));
   const [fromDate,   setFromDate]   = useQueryState("fromDate",   parseAsString.withDefault(""));
   const [toDate,     setToDate]     = useQueryState("toDate",     parseAsString.withDefault(""));
   const [employeeId, setEmployeeId] = useQueryState("employeeId", parseAsString.withDefault(""));
-  const [companyId,  setCompanyId]  = useQueryState("companyId",  parseAsString.withDefault(""));
-  const [orgId,      setOrgId]      = useQueryState("orgId",      parseAsString.withDefault(""));
-  const [locationId, setLocationId] = useQueryState("locationId", parseAsString.withDefault(""));
   const [status,     setStatus]     = useQueryState("status",     parseAsString.withDefault(""));
+  const [sortBy,     setSortBy]     = useQueryState("sortBy",     parseAsString.withDefault("ATTENDANCE_DATE"));
+  const [sortOrder,  setSortOrder]  = useQueryState("sortOrder",  parseAsString.withDefault("DESC"));
 
-  // Local state — search input is local before debounce
-  const [searchInput,      setSearchInput]      = useState(search);
+  // ── Local UI state ──────────────────────────────────────────────────────────
   const [columnVisibility, setColumnVisibility] = useState({});
 
-  // Detail dialog state
-  const [detailOpen,        setDetailOpen]        = useState(false);
-  const [detailEmployeeId,  setDetailEmployeeId]  = useState(null);
-  const [detailDate,        setDetailDate]        = useState(null);
+  // Employee combobox
+  const [empOpen,          setEmpOpen]          = useState(false);
+  const [empSearch,        setEmpSearch]        = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const { data: employees = [], isFetching: empFetching } = useEmployeeLiteSearch(empSearch);
+
+  // Detail dialog
+  const [detailOpen,         setDetailOpen]         = useState(false);
+  const [detailEmployeeId,   setDetailEmployeeId]   = useState(null);
+  const [detailDate,         setDetailDate]         = useState(null);
   const [detailEmployeeName, setDetailEmployeeName] = useState("");
 
-  // ── Filter mode: "single-date" | "range" ───────────────────────────────────
-  const [filterMode, setFilterMode] = useQueryState(
-    "mode",
-    parseAsString.withDefault("single-date")
-  );
-
-  // ── Lookup data ─────────────────────────────────────────────────────────────
-  const { data: companies     = [] } = useCompanies();
-  const { data: organizations = [] } = useOrganizations();
-
   // ── Backend params ──────────────────────────────────────────────────────────
-  const backendParams = useMemo(() => ({
-    page, limit, search,
-    date:       filterMode === "single-date" ? date     : "",
-    fromDate:   filterMode === "range"       ? fromDate : "",
-    toDate:     filterMode === "range"       ? toDate   : "",
-    employeeId, companyId, orgId, locationId, status,
-  }), [page, limit, search, date, fromDate, toDate,
-      employeeId, companyId, orgId, locationId, status, filterMode]);
+  const backendParams = useMemo(() => {
+    const isSingleDay = fromDate && (!toDate || toDate === fromDate);
+    return {
+      page, limit,
+      date:     isSingleDay ? fromDate : "",
+      fromDate: !isSingleDay ? fromDate : "",
+      toDate:   !isSingleDay ? toDate   : "",
+      employeeId, status,
+      sortBy, sortOrder,
+    };
+  }, [page, limit, fromDate, toDate, employeeId, status, sortBy, sortOrder]);
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
@@ -336,26 +392,37 @@ export default function AttendanceList() {
   } = useAttendance(backendParams);
 
   const { data: summary, isLoading: summaryLoading } = useAttendanceSummary({
-    date:     filterMode === "single-date" ? date     : "",
-    fromDate: filterMode === "range"       ? fromDate : "",
-    toDate:   filterMode === "range"       ? toDate   : "",
+    date:     backendParams.date,
+    fromDate: backendParams.fromDate,
+    toDate:   backendParams.toDate,
   });
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const rows      = response?.data            ?? [];
+  const rows      = response?.data                  ?? [];
   const total     = response?.pagination?.total     ?? 0;
   const pageCount = response?.pagination?.totalPages ?? 1;
 
-  // ── Debounced search ────────────────────────────────────────────────────────
-  const debouncedSearch = useDebouncedCallback((val) => {
-    setSearch(val || null);
-    setPage(1);
-  }, 300);
+  // ── Sorting bridge ──────────────────────────────────────────────────────────
+  const sorting = useMemo(() => {
+    if (!sortBy) return [];
+    const columnId = REVERSE_SORT_MAP[sortBy] ?? sortBy;
+    return [{ id: columnId, desc: sortOrder === "DESC" }];
+  }, [sortBy, sortOrder]);
 
-  const handleSearchChange = (e) => {
-    setSearchInput(e.target.value);
-    debouncedSearch(e.target.value);
-  };
+  const onSortingChange = useCallback((updaterOrValue) => {
+    const next = typeof updaterOrValue === "function"
+      ? updaterOrValue(sorting)
+      : updaterOrValue;
+    if (next.length === 0) {
+      setSortBy("ATTENDANCE_DATE");
+      setSortOrder("DESC");
+    } else {
+      const col = SORT_COLUMN_MAP[next[0].id] ?? "ATTENDANCE_DATE";
+      setSortBy(col);
+      setSortOrder(next[0].desc ? "DESC" : "ASC");
+      setPage(1);
+    }
+  }, [sorting, setSortBy, setSortOrder, setPage]);
 
   // ── Pagination bridge ───────────────────────────────────────────────────────
   const pagination = useMemo(() => ({
@@ -372,14 +439,12 @@ export default function AttendanceList() {
   }, [pagination, setPage, setLimit]);
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
-  const hasActiveFilters = search || date || fromDate || toDate ||
-                           employeeId || companyId || orgId || locationId || status;
+  const hasActiveFilters = employeeId || fromDate || toDate || status;
 
   const clearAllFilters = () => {
-    setSearchInput(""); setSearch(null);
-    setDate(null); setFromDate(null); setToDate(null);
-    setEmployeeId(null); setCompanyId(null); setOrgId(null);
-    setLocationId(null); setStatus(null);
+    setFromDate(null); setToDate(null);
+    setEmployeeId(null); setStatus(null);
+    setSelectedEmployee(null); setEmpSearch("");
     setPage(1);
   };
 
@@ -395,27 +460,15 @@ export default function AttendanceList() {
     setDetailOpen(true);
   };
 
-  // ── Combobox options ────────────────────────────────────────────────────────
-  const companyOptions = companies.map((c) => ({
-    label: c.COMPANY_NAME,
-    value: String(c.COMPANY_ID),
-  }));
-  const orgOptions = organizations.map((o) => ({
-    label: o.NAME,
-    value: String(o.ID),
-  }));
-
-  // ── Export params (same filters, no pagination) ─────────────────────────────
+  // ── Export params ───────────────────────────────────────────────────────────
   const exportParams = useMemo(() => ({
-    search,
-    date:       filterMode === "single-date" ? date     : "",
-    fromDate:   filterMode === "range"       ? fromDate : "",
-    toDate:     filterMode === "range"       ? toDate   : "",
-    employeeId, companyId, orgId, locationId, status,
-  }), [search, date, fromDate, toDate, employeeId,
-      companyId, orgId, locationId, status, filterMode]);
+    date:     backendParams.date,
+    fromDate: backendParams.fromDate,
+    toDate:   backendParams.toDate,
+    employeeId, status,
+  }), [backendParams, employeeId, status]);
 
-  // ── Columns ──────────────────────────────────────────────────────────────────
+  // ── Columns ─────────────────────────────────────────────────────────────────
   const columns = useMemo(() => [
     {
       id: "employee",
@@ -452,7 +505,7 @@ export default function AttendanceList() {
     },
     {
       accessorKey: "IN_TIME",
-      header: "In Time",
+      header: ({ column }) => <SortHeader column={column}>In Time</SortHeader>,
       enableSorting: false,
       cell: ({ row }) => (
         <div className="text-sm font-mono text-green-600 font-medium">
@@ -462,7 +515,7 @@ export default function AttendanceList() {
     },
     {
       accessorKey: "OUT_TIME",
-      header: "Out Time",
+      header: ({ column }) => <SortHeader column={column}>Out Time</SortHeader>,
       enableSorting: false,
       cell: ({ row }) => (
         <div className="text-sm font-mono text-red-500 font-medium">
@@ -513,7 +566,7 @@ export default function AttendanceList() {
     {
       id: "actions",
       header: "Details",
-      enableHiding: false,
+      enableHiding:  false,
       enableSorting: false,
       cell: ({ row }) => (
         <Button
@@ -532,8 +585,9 @@ export default function AttendanceList() {
     data:     rows,
     columns,
     pageCount,
-    state:    { pagination, columnVisibility },
+    state:    { pagination, columnVisibility, sorting },
     onPaginationChange,
+    onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel:          getCoreRowModel(),
     manualPagination: true,
@@ -580,64 +634,129 @@ export default function AttendanceList() {
     <div>
       <PageHeader onRefetch={refetch} isFetching={isFetching} />
 
-      {/* Summary cards */}
       <SummaryCards summary={summary} isLoading={summaryLoading} />
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
 
-        {/* ── Filter Bar ─────────────────────────────────────────────── */}
+          {/* ── Filter Bar ─────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filter mode toggle */}
-            <Select
-              value={filterMode}
-              onValueChange={(v) => {
-                setFilterMode(v);
-                setDate(null); setFromDate(null); setToDate(null);
+
+            <DateRangePicker
+              fromDate={fromDate}
+              toDate={toDate}
+              onChange={({ from, to }) => {
+                setFromDate(from || null);
+                setToDate(to || null);
                 setPage(1);
               }}
-            >
-              <SelectTrigger className="h-9 w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="single-date">Single Date</SelectItem>
-                <SelectItem value="range">Date Range</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Date picker(s) */}
-            {filterMode === "single-date" ? (
-              <DatePicker
-                value={date ? new Date(date) : undefined}
-                onChange={(d) => { setDate(toISO(d) || null); setPage(1); }}
-                placeholder="Pick a date"
-                className="h-9 w-[160px]"
-              />
-            ) : (
-              <>
-                <DatePicker
-                  value={fromDate ? new Date(fromDate) : undefined}
-                  onChange={(d) => { setFromDate(toISO(d) || null); setPage(1); }}
-                  placeholder="From date"
-                  className="h-9 w-[150px]"
-                />
-                <DatePicker
-                  value={toDate ? new Date(toDate) : undefined}
-                  onChange={(d) => { setToDate(toISO(d) || null); setPage(1); }}
-                  placeholder="To date"
-                  className="h-9 w-[150px]"
-                />
-              </>
-            )}
-
-            {/* Search */}
-            <Input
-              placeholder="Search name, emp no..."
-              value={searchInput}
-              onChange={handleSearchChange}
-              className="h-9 w-[200px]"
+              onClear={() => {
+                setFromDate(null);
+                setToDate(null);
+                setPage(1);
+              }}
             />
+
+            {/* Employee combobox */}
+            <Popover open={empOpen} onOpenChange={setEmpOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "h-9 w-[240px] justify-between font-normal px-2",
+                    !selectedEmployee && "text-muted-foreground"
+                  )}
+                >
+                  {selectedEmployee ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage
+                          src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${selectedEmployee.id}`}
+                        />
+                        <AvatarFallback className={cn("text-[10px] font-semibold text-white", getAvatarColor(selectedEmployee.name))}>
+                          {selectedEmployee.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-sm text-foreground">{selectedEmployee.name}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">({selectedEmployee.empNo})</span>
+                    </div>
+                  ) : (
+                    <span>Filter by employee...</span>
+                  )}
+                  <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                    {selectedEmployee && (
+                      <span
+                        role="button"
+                        className="rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEmployee(null);
+                          setEmpSearch("");
+                          setEmployeeId(null);
+                          setPage(1);
+                        }}
+                      >
+                        <IconX className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </div>
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Type 2+ characters..."
+                    value={empSearch}
+                    onValueChange={setEmpSearch}
+                  />
+                  <CommandList>
+                    {empFetching && (
+                      <div className="flex items-center justify-center py-4">
+                        <Spinner className="h-4 w-4" />
+                      </div>
+                    )}
+                    {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
+                      <CommandEmpty>No employees found.</CommandEmpty>
+                    )}
+                    {!empFetching && empSearch.length < 2 && (
+                      <CommandEmpty>Type at least 2 characters.</CommandEmpty>
+                    )}
+                    <CommandGroup>
+                      {employees.map((emp) => (
+                        <CommandItem
+                          key={emp.id}
+                          value={String(emp.id)}
+                          onSelect={() => {
+                            setSelectedEmployee(emp);
+                            setEmployeeId(String(emp.id));
+                            setPage(1);
+                            setEmpOpen(false);
+                          }}
+                        >
+                          <Avatar className="h-6 w-6 shrink-0 mr-2">
+                            <AvatarImage
+                              src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${emp.id}`}
+                            />
+                            <AvatarFallback className={cn("text-[10px] font-semibold text-white", getAvatarColor(emp.name))}>
+                              {emp.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{emp.name}</span>
+                          <span className="ml-auto text-xs text-muted-foreground shrink-0">{emp.empNo}</span>
+                          <Check className={cn(
+                            "ml-2 h-4 w-4 shrink-0",
+                            selectedEmployee?.id === emp.id ? "opacity-100" : "opacity-0"
+                          )} />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
             {/* Status */}
             <Select
@@ -659,40 +778,26 @@ export default function AttendanceList() {
               </SelectContent>
             </Select>
 
-            {/* Company */}
-            <FilterCombobox
-              placeholder="Company"
-              options={companyOptions}
-              value={companyId}
-              onValueChange={(v) => { setCompanyId(v || null); setPage(1); }}
-            />
-
-            {/* Organization */}
-            <FilterCombobox
-              placeholder="Organization"
-              options={orgOptions}
-              value={orgId}
-              onValueChange={(v) => { setOrgId(v || null); setPage(1); }}
-            />
-
-            {/* Reset */}
+            {/* Reset all */}
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-9 border border-dashed text-muted-foreground hover:text-foreground" onClick={clearAllFilters}>
+              <Button
+                variant="ghost" size="sm"
+                className="h-9 border border-dashed text-muted-foreground hover:text-foreground"
+                onClick={clearAllFilters}
+              >
                 Reset <IconX className="ml-2 h-4 w-4" />
               </Button>
             )}
           </div>
 
-          {/* ── Table Toolbar (Results & Actions) ──────────────────────── */}
+          {/* ── Table Toolbar ───────────────────────────────────────────── */}
           <div className="flex items-center justify-between py-1">
-            {/* Result count */}
             <p className="text-sm font-medium text-muted-foreground">
               {isFetching
                 ? "Loading records..."
                 : `${total.toLocaleString()} record${total !== 1 ? "s" : ""} found`}
             </p>
 
-            {/* Right side — Export + Column visibility */}
             <div className="flex items-center gap-2">
               <ExportButton exportParams={exportParams} />
 
@@ -720,14 +825,16 @@ export default function AttendanceList() {
             </div>
           </div>
 
-        
-
-
-
-          
-
           {/* ── Table ──────────────────────────────────────────────────── */}
-          <div className="overflow-hidden rounded-md border">
+          <div className="relative overflow-hidden rounded-md border">
+            {isFetching && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 rounded-md">
+                <div className="flex items-center gap-2.5 rounded-lg bg-background/90 px-4 py-2.5 shadow-md border text-sm font-medium">
+                  <Spinner className="h-4 w-4" />
+                  Loading Attendances…
+                </div>
+              </div>
+            )}
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((hg) => (
@@ -742,17 +849,7 @@ export default function AttendanceList() {
               </TableHeader>
 
               <TableBody>
-                {isFetching ? (
-                  Array.from({ length: limit }).map((_, i) => (
-                    <TableRow key={i} className="animate-pulse">
-                      {columns.map((_, j) => (
-                        <TableCell key={j}>
-                          <div className="h-4 bg-muted rounded w-3/4" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : rows.length ? (
+                {rows.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
@@ -782,7 +879,6 @@ export default function AttendanceList() {
         </div>
       </div>
 
-      {/* Detail dialog */}
       <AttendanceDetailDialog
         open={detailOpen}
         onOpenChange={setDetailOpen}
