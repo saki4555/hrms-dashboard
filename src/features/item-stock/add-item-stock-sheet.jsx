@@ -45,6 +45,13 @@ const fetchJSON = async (url) => {
   return json.data ?? json;
 };
 
+const useUoms = () =>
+  useQuery({
+    queryKey: ["uoms"],
+    queryFn: () => fetchJSON(`${BASE}/api/inv-uom`),
+    staleTime: 10 * 60 * 1000,
+  });
+
 // ─── Inline hook ──────────────────────────────────────────────────────────────
 const useItemSearch = (query) =>
   useQuery({
@@ -75,6 +82,8 @@ function ItemSearchCombobox({ value, onChange, disabled }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  
+
   const handleInputChange = (e) => {
     const val = e.target.value;
     setQuery(val);
@@ -98,6 +107,7 @@ function ItemSearchCombobox({ value, onChange, disabled }) {
   };
 
   const inputValue = open ? query : (value?.name ?? "");
+
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -247,6 +257,7 @@ export default function AddItemStockSheet({ open, onOpenChange, showConfirmation
   };
 
   const isSubmitting = createMutation.isPending;
+    const { data: uoms = [], isLoading: uomsLoading } = useUoms();
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
@@ -323,20 +334,42 @@ export default function AddItemStockSheet({ open, onOpenChange, showConfirmation
 
               {/* UOM + Unit ID */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="uom" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>UOM</FormLabel>
-                    <FormControl><Input placeholder="e.g. BOX, PCS" disabled={isSubmitting} {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
                 <FormField control={form.control} name="unitId" render={({ field }) => (
+    <FormItem>
+      <FormLabel>Unit</FormLabel>
+      <Select
+        disabled={isSubmitting || uomsLoading}
+        onValueChange={(val) => {
+          field.onChange(Number(val));
+          const selected = uoms.find(u => String(u.ID) === val);
+          if (selected) form.setValue("unit", selected.NAME);
+        }}
+        value={field.value ? String(field.value) : ""}
+      >
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder={uomsLoading ? "Loading..." : "Select unit"} />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          {uoms.map((u) => (
+            <SelectItem key={u.ID} value={String(u.ID)}>
+              {u.NAME}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )} /> 
+  
+                {/* <FormField control={form.control} name="unitId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unit ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Unit ID" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
               </div>
 
               {/* Booked + Status */}
