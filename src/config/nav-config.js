@@ -114,8 +114,11 @@ export const NAV_ITEMS = [
           { title: "Inventory",    url: PATHS.SETTINGS.INVENTORYS,    roles: ADMIN_HR},
           { title: "Items",         url: PATHS.SETTINGS.ITEMS,              roles: ADMIN_HR },
            { title: "Item Stocks",         url: PATHS.SETTINGS.ITEM_STOCKS,              roles: ADMIN_HR },
-            { title: "Master Details",         url: PATHS.SETTINGS.REQUISITION,              roles: ADMIN_HR },
+          
+          // { title: "Requisition Master",         url: PATHS.SETTINGS.REQUISITIONS,              roles: ADMIN_HR },
+           { title: "Dispatch Form",         url: PATHS.SETTINGS.REQUISITION,              roles: ADMIN_HR },
         ],
+
       },
     ],
   },

@@ -28,6 +28,7 @@ import {
   useStores,
   useItemSearch,
 } from "./queries";
+import { ItemDetailRow } from "./ItemDetailRow";
 
 // ─── ItemSearchCombobox ───────────────────────────────────────────────────────
 function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search item..." }) {
@@ -115,7 +116,12 @@ const masterSchema = z.object({
   remarks:     z.string().max(100).optional(),
   dreiver_no:  z.string().max(30).optional(),
   vehicle_no:  z.string().max(30).optional(),
-  challan_no:  z.string().max(40).optional(),
+ challan_no: z
+  .string()
+  .trim()
+  .min(1, "Challan No is required")
+  .max(40, "Max 40 characters allowed"),
+
 });
 
 const emptyRow = () => ({
@@ -248,7 +254,8 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
-      <SheetContent className="sm:max-w-2xl w-full flex flex-col gap-0 p-0">
+     <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
+
 
         {/* Header */}
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
@@ -265,7 +272,7 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+            <div className="flex-1 overflow-y-auto px-32 py-5 space-y-32">
 
               {/* ── Master Section ──────────────────────────────────────────── */}
               <div>
@@ -365,7 +372,9 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
                   <div className="grid grid-cols-3 gap-4">
                     <FormField control={form.control} name="challan_no" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Challan No</FormLabel>
+                       <FormLabel>
+  Challan No <span className="text-destructive">*</span>
+</FormLabel>
                         <FormControl>
                           <Input placeholder="CH-001" disabled={isSubmitting} {...field} />
                         </FormControl>
@@ -424,140 +433,20 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
                 </div>
 
                 <div className="space-y-3">
-                  {rows.map((row, idx) => (
-                    <div
-                      key={idx}
-                      className="border border-border rounded-lg p-3 space-y-3 bg-muted/30"
-                    >
-                      {/* Row header */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Item #{idx + 1}
-                        </span>
-                        {rows.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive"
-                            onClick={() => removeRow(idx)}
-                            disabled={isSubmitting}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Item search */}
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-foreground">
-                          Item <span className="text-destructive">*</span>
-                        </label>
-                        <ItemSearchCombobox
-                          value={row.item}
-                          onChange={(v) => updateRow(idx, "item", v)}
-                          disabled={isSubmitting}
-                          placeholder="Search item..."
-                        />
-                        {rowErrors[idx]?.item && (
-                          <p className="text-xs text-destructive">{rowErrors[idx].item}</p>
-                        )}
-                      </div>
-
-                      {/* Qty + App Qty + UOM */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">
-                            Total Qty <span className="text-destructive">*</span>
-                          </label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={row.tot_qty}
-                            onChange={(e) => updateRow(idx, "tot_qty", e.target.value)}
-                            disabled={isSubmitting}
-                            className="text-sm"
-                          />
-                          {rowErrors[idx]?.tot_qty && (
-                            <p className="text-xs text-destructive">{rowErrors[idx].tot_qty}</p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">App Qty</label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={row.app_qty}
-                            onChange={(e) => updateRow(idx, "app_qty", e.target.value)}
-                            disabled={isSubmitting}
-                            className="text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">UOM</label>
-                          <Input
-                            placeholder="KG / PCS"
-                            value={row.uom}
-                            onChange={(e) => updateRow(idx, "uom", e.target.value)}
-                            disabled={isSubmitting}
-                            className="text-sm"
-                          />
-                        </div>
-                      </div>
-
-                      {/* From Store + Status */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">From Store</label>
-                          <Select
-                            disabled={isSubmitting || storesLoading}
-                            onValueChange={(v) => updateRow(idx, "frm_store", v)}
-                            value={String(row.frm_store ?? "")}
-                          >
-                            <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="Select store" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {stores.map((s) => (
-                                <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
-                                  {s.STORE_NAME}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">Status</label>
-                          <Select
-                            disabled={isSubmitting}
-                            onValueChange={(v) => updateRow(idx, "status", v)}
-                            value={String(row.status ?? "0")}
-                          >
-                            <SelectTrigger className="text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0">Pending</SelectItem>
-                              <SelectItem value="1">Approved</SelectItem>
-                              <SelectItem value="2">Dispatched</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {/* Remarks */}
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-foreground">Remarks</label>
-                        <Input
-                          placeholder="Item remarks..."
-                          value={row.remarks}
-                          onChange={(e) => updateRow(idx, "remarks", e.target.value)}
-                          disabled={isSubmitting}
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                 {rows.map((row, idx) => (
+  <ItemDetailRow
+    key={idx}
+    row={row}
+    idx={idx}
+    rows={rows}
+    stores={stores}
+    storesLoading={storesLoading}
+    isSubmitting={isSubmitting}
+    rowErrors={rowErrors}
+    updateRow={updateRow}
+    removeRow={removeRow}
+  />
+))}
                 </div>
               </div>
             </div>
