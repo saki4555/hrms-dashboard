@@ -153,9 +153,9 @@ export default function RequisitionList() {
 
     // From Store
     {
-      accessorKey: "STORE_NAME",
+      accessorKey: "STORE_NAME_FROM",
       header: "From Store",
-      cell: ({ row }) => <div>{row.getValue("STORE_NAME") ?? "—"}</div>,
+      cell: ({ row }) => <div>{row.getValue("STORE_NAME_FROM") ?? "—"}</div>,
     },
 
     // To Store

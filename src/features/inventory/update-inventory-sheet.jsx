@@ -20,6 +20,7 @@ import { ArchiveIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
 import { useUpdateInventory } from "./queries";
+import { useUpdateItemStock } from "../item-stock/queries";
 
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -154,6 +155,7 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
   const updateMutation = useUpdateInventory();
   const { data: stores = [], isLoading: storesLoading } = useStores();
   const { data: uoms   = [], isLoading: uomsLoading   } = useUoms();
+  const updateMutationItemStock = useUpdateItemStock();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -197,49 +199,71 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
   }, [uoms, inventory]);
 
   const onSubmit = async (data) => {
-    if (!inventory?.TID) { toast.error("TID is missing."); return; }
+  if (!inventory?.TID) {
+    toast.error("TID is missing.");
+    return;
+  }
 
-    if (inventory.INVSTATUS === 2 && Number(data.invStatus) === 2) {
-      toast.warning("This inventory is already transferred.");
-      return;
+  // Prevent double transfer
+  if (inventory.INVSTATUS === 2 && Number(data.invStatus) === 2) {
+    toast.warning("This inventory is already transferred.");
+    return;
+  }
+
+  try {
+    // 1️⃣ Update Inventory first
+    await updateMutation.mutateAsync({
+      tid: inventory.TID,
+      data: {
+        item: data.item.id,
+        storeId: Number(data.storeId), // ✅ inventory store_id
+        invQty: data.invQty ? Number(data.invQty) : null,
+        grnNo: data.grnNo || null,
+        price: data.price ? Number(data.price) : null,
+        unit: data.unit || null,
+        unitPrice: data.unitPrice || null,
+        unitId: data.unitId ? Number(data.unitId) : null,
+        invtDate: data.invtDate || null,
+        invStatus: Number(data.invStatus ?? 1),
+        invoiceStatus: Number(data.invoiceStatus ?? 0),
+        // unchanged fields
+        sellingUnitPrice: null,
+        poNo: null,
+        itemType: null,
+        accounted: null,
+        inventoryType: null,
+      },
+    });
+
+    // 2️⃣ Update Item Stock automatically
+    await updateMutationItemStock.mutateAsync({
+      storeId: Number(data.storeId),    // inventory's store_id
+      itemId: data.item.id,
+      data: {
+        stockQty: data.invQty ? Number(data.invQty) : 0,
+        minimumLevel: 0,                 // default minimum level
+        status: 1,                        // active stock
+        price: data.price ? Number(data.price) : null,
+        unitId: data.unitId ? Number(data.unitId) : null,
+        uom: data.unit || null,
+        booked: 0,
+      },
+    });
+
+    // 3️⃣ Show success toast
+    if (Number(data.invStatus) === 2 && inventory.INVSTATUS !== 2) {
+      toast.success("Inventory transferred! Stock updated successfully.");
+    } else {
+      toast.success("Inventory updated successfully!");
     }
 
-    try {
-      await updateMutation.mutateAsync({
-        tid: inventory.TID,
-        data: {
-          item:          data.item.id,
-          storeId:       Number(data.storeId),
-          invQty:        data.invQty    ? Number(data.invQty)    : null,
-          grnNo:         data.grnNo    || null,
-          price:         data.price    ? Number(data.price)      : null,
-          unit:          data.unit     || null,
-          unitPrice:     data.unitPrice ? String(data.unitPrice) : null,
-          unitId:        data.unitId   ? Number(data.unitId)     : null,
-          invtDate:      data.invtDate || null,
-          invStatus:     Number(data.invStatus    ?? 1),
-          invoiceStatus: Number(data.invoiceStatus ?? 0),
-          // unchanged fields
-          sellingUnitPrice: null,
-          poNo:             null,
-          itemType:         null,
-          accounted:        null,
-          inventoryType:    null,
-        },
-      });
+    form.reset();
+    onOpenChange(false);
 
-      if (Number(data.invStatus) === 2 && inventory.INVSTATUS !== 2) {
-        toast.success("Inventory transferred! Stock updated successfully.");
-      } else {
-        toast.success("Inventory updated successfully!");
-      }
-
-      form.reset();
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(err?.message || "Failed to update inventory. Please try again.");
-    }
-  };
+  } catch (err) {
+    toast.error(err?.message || "Failed to update inventory and stock. Please try again.");
+  }
+};
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {

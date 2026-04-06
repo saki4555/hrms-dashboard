@@ -25,7 +25,7 @@ export const useItemStocks = ({ page = 1, limit = 50 } = {}) =>
   useQuery({
     queryKey: [...itemStockKeys.lists(), page, limit],
     queryFn:  () => fetchJSON(`${BASE}/api/item-stock?page=${page}&limit=${limit}`),
-    staleTime: 30 * 1000,
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
@@ -33,6 +33,15 @@ export const useItemStocks = ({ page = 1, limit = 50 } = {}) =>
     retryDelay: (i) => Math.min(1000 * 2 ** i, 30000),
     throwOnError: false,
   });
+
+  // export const useItemStockByItemId = (itemId) =>
+  // useQuery({
+  //   queryKey: [...itemStockKeys.all, "byItem", itemId],
+  //   queryFn: () => fetchJSON(`${BASE}/api/item-stock?itemId=${itemId}`),
+  //   enabled: !!itemId,
+  //   staleTime: 30 * 1000,
+  //   refetchOnWindowFocus: false,
+  // });
 
 export const useItemStockById = (storeId, itemId) =>
   useQuery({

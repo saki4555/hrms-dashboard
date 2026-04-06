@@ -101,7 +101,7 @@ function MinLevelCell({ stock, onUpdate }) {
           <button
             type="button"
             className={`
-              relative z-[9999] px-2 py-0.5 rounded-md text-sm font-medium transition-colors cursor-pointer
+              relative  px-2 py-0.5 rounded-md text-sm font-medium transition-colors cursor-pointer
               border border-transparent hover:border-border
               ${isLow
                 ? "text-destructive bg-destructive/10 hover:bg-destructive/20"
@@ -263,14 +263,14 @@ export default function ItemStockList() {
 
     // Store ID
     {
-      accessorKey: "STORE_ID",
+      accessorKey: "STORE_NAME",
       header: ({ column }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Store ID <ArrowUpDown className="ml-2 h-4 w-4" />
+          Store Name <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="font-medium text-muted-foreground">{row.getValue("STORE_ID")}</div>
+        <div className="font-medium text-muted-foreground">{row.getValue("STORE_NAME"   )}</div>
       ),
     },
 

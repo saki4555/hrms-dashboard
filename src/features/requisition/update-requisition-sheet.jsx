@@ -116,7 +116,12 @@ const masterSchema = z.object({
   remarks:     z.string().max(100).optional(),
   dreiver_no:  z.string().max(30).optional(),
   vehicle_no:  z.string().max(30).optional(),
-  challan_no:  z.string().max(40).optional(),
+  challan_no: z
+  .string()
+  .trim()
+  .min(1, "Challan No is required")
+  .max(40, "Max 40 characters allowed"),
+
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -278,7 +283,8 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
-      <SheetContent className="sm:max-w-2xl w-full flex flex-col gap-0 p-0">
+     <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
+
 
         {/* Header */}
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
@@ -391,7 +397,10 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
                   <div className="grid grid-cols-3 gap-4">
                     <FormField control={form.control} name="challan_no" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Challan No</FormLabel>
+                      <FormLabel>
+  Challan No <span className="text-destructive">*</span>
+</FormLabel>
+
                         <FormControl><Input placeholder="CH-001" disabled={isSubmitting} {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
