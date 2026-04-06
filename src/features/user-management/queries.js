@@ -21,7 +21,7 @@ const queryDefaults = {
 
 const fetcher = async (url, options = {}) => {
   const res = await fetch(url, {
-    credentials: "include",           
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...options,
   });
@@ -32,16 +32,31 @@ const fetcher = async (url, options = {}) => {
   return res.json();
 };
 
+/** Build query string — skips empty/null/undefined values */
+const buildQS = (params) => {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && v !== "") qs.set(k, String(v));
+  });
+  return qs.toString();
+};
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 
-export const useUsers = () =>
+/**
+ * Server-side paginated, sorted, filtered user list.
+ * Expects the backend to accept: page, limit, search, sortBy, sortOrder, roleId, moduleId
+ * and return: { data: [], pagination: { total, totalPages } }
+ */
+export const useUsers = (params) =>
   useQuery({
-    queryKey: ["users", "list"],
+    queryKey: ["users", "list", params],
     queryFn: async () => {
-      const json = await fetcher(URLS.users);
-      return json.data;
+      const json = await fetcher(`${URLS.users}?${buildQS(params)}`);
+      return json.data; // unwrap → { data: [], pagination: {} }
     },
     refetchOnMount: true,
+    placeholderData: (prev) => prev,
     ...queryDefaults,
   });
 
