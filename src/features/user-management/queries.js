@@ -85,7 +85,7 @@ export const useUpdateUser = () => {
     mutationFn: ({ id, data }) => fetcher(`${URLS.users}/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["users", "list"] });
-      qc.invalidateQueries({ queryKey: ["users", "detail", id] });
+      qc.invalidateQueries({ queryKey: ["users", "detail", String(id)] });
     },
   });
 };
@@ -103,6 +103,15 @@ export const useDeleteUser = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id) => fetcher(`${URLS.users}/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users", "list"] }),
+  });
+};
+
+export const useActivateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) =>
+      fetcher(`${URLS.users}/${id}/activate`, { method: "PATCH" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users", "list"] }),
   });
 };

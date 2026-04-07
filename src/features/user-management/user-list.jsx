@@ -10,8 +10,8 @@ import {
   useQueryState,
 } from "nuqs";
 import {
-  Trash2, AlertCircle, RefreshCw, Users,
-  KeyRound, Eye, ArrowUp, ArrowDown, ChevronDown,
+  UserX, UserCheck, AlertCircle, RefreshCw, Users,
+  KeyRound, Eye, ArrowUp, ArrowDown
 } from "lucide-react";
 import { IconColumns3Filled, IconEdit, IconPlus, IconSelector, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ import { cn }             from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 
-import { useUsers, useDeleteUser, useRoles, useModules, usePermissions } from "./queries";
+import { useUsers, useDeleteUser, useActivateUser, useRoles, useModules, usePermissions } from "./queries";
 import AddUserDialog        from "./add-user-dialog";
 import UpdateUserDialog     from "./update-user-dialog";
 import ChangePasswordDialog from "./change-password-dialog";
@@ -167,6 +167,52 @@ function FilterCombobox({ placeholder, options, value, onValueChange }) {
   );
 }
 
+
+// ── Small avatar for the list (h-8 w-8) ──────────────────────────────────────
+function UserListAvatar({ user }) {
+  const BASE = import.meta.env.VITE_API_BASE_URL;
+
+  const urlsToTry = [
+    `${BASE}/api/emp-images/person/${user.ID}`,
+    user.EMPLOYEE_ID ? `${BASE}/api/emp-images/person/${user.EMPLOYEE_ID}` : null,
+  ].filter(Boolean);
+
+  const [srcIndex, setSrcIndex] = useState(0);
+  const [failed,   setFailed]   = useState(false);
+
+  const initials = (
+    [user.FIRST_NAME?.[0], user.LAST_NAME?.[0]].filter(Boolean).join("").toUpperCase()
+    || user.USERNAME?.[0]?.toUpperCase()
+  );
+
+  const handleError = () => {
+    const next = srcIndex + 1;
+    if (next < urlsToTry.length) {
+      setSrcIndex(next);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className={cn(
+      "h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center",
+      getAvatarColor(user.USERNAME),
+    )}>
+      {!failed ? (
+        <img
+          key={urlsToTry[srcIndex]}
+          src={urlsToTry[srcIndex]}
+          onError={handleError}
+          alt={user.USERNAME}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-xs font-semibold text-white">{initials}</span>
+      )}
+    </div>
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -225,8 +271,11 @@ export default function UserList() {
     data: response,
     isLoading, isError, error, refetch, isFetching,
   } = useUsers(backendParams);
+ 
 
   const deleteMutation = useDeleteUser();
+
+const activateMutation = useActivateUser();
 
   // ── Derived ─────────────────────────────────────────────────────────────────
   const rows      = response?.data                  ?? [];
@@ -296,56 +345,72 @@ export default function UserList() {
   const handleEdit     = (user) => { setSelectedUser(user); setIsUpdateOpen(true); };
   const handlePassword = (user) => { setSelectedUser(user); setIsPasswordOpen(true); };
 
-  const handleDelete = async (user) => {
-    const confirmed = await showConfirmation({
-      title: "Deactivate user?",
-      description: `Are you sure you want to deactivate "${user.USERNAME}"?`,
-      confirmText: "Deactivate", cancelText: "Cancel", variant: "destructive",
-    });
-    if (!confirmed) return;
-    try {
-      await deleteMutation.mutateAsync(user.ID);
-      toast.success("User deactivated successfully!");
-    } catch (err) {
-      toast.error(err?.message || "Failed to deactivate user.");
-    }
-  };
+  
 
+
+  const handleDelete = async (user) => {
+  const confirmed = await showConfirmation({
+    title: "Deactivate user?",
+    description: `Are you sure you want to deactivate "${user.USERNAME}"?`,
+    confirmText: "Deactivate", cancelText: "Cancel", variant: "destructive",
+  });
+  if (!confirmed) return;
+  try {
+    await deleteMutation.mutateAsync(user.ID);
+    toast.success("User deactivated successfully!");
+  } catch (err) {
+    toast.error(err?.message || "Failed to deactivate user.");
+  }
+};
+
+const handleActivate = async (user) => {
+  const confirmed = await showConfirmation({
+    title: "Activate user?",
+    description: `Are you sure you want to activate "${user.USERNAME}"?`,
+    confirmText: "Activate", cancelText: "Cancel",
+  });
+  if (!confirmed) return;
+  try {
+    await activateMutation.mutateAsync(user.ID);
+    toast.success("User activated successfully!");
+  } catch (err) {
+    toast.error(err?.message || "Failed to activate user.");
+  }
+};
   // ── Columns ─────────────────────────────────────────────────────────────────
   const columns = useMemo(() => [
-    {
-      id: "user",
-      accessorFn: (row) => row.USERNAME,
-      header: ({ column }) => <SortHeader column={column}>User</SortHeader>,
-      cell: ({ row }) => {
-        const u        = row.original;
-        const fullName = [u.FIRST_NAME, u.LAST_NAME].filter(Boolean).join(" ");
-        const initials = (
-          [u.FIRST_NAME?.[0], u.LAST_NAME?.[0]].filter(Boolean).join("").toUpperCase()
-          || u.USERNAME?.[0]?.toUpperCase()
-        );
-        return (
-          <div className="flex items-center gap-3 py-1">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className={cn("text-xs font-semibold text-white", getAvatarColor(u.USERNAME))}>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="font-medium leading-tight">{u.USERNAME}</span>
-              {fullName && (
-                <span className="text-xs text-muted-foreground truncate">
-                  {fullName} · {u.EMP_NO}
-                </span>
-              )}
-              {u.LOCATION_NAME && (
-                <span className="text-xs text-muted-foreground/70">{u.LOCATION_NAME}</span>
-              )}
-            </div>
+   {
+  id: "user",
+  accessorFn: (row) => row.USERNAME,
+  header: ({ column }) => <SortHeader column={column}>User</SortHeader>,
+  cell: ({ row }) => {
+    const u       = row.original;
+    const fullName = [u.FIRST_NAME, u.LAST_NAME].filter(Boolean).join(" ");
+
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <UserListAvatar user={u} />
+
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium leading-tight">{u.USERNAME}</span>
+            {u.EMP_NO  && 
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                {u.EMP_NO}
+              </Badge>
+             }
           </div>
-        );
-      },
-    },
+          {fullName && (
+            <span className="text-xs text-muted-foreground truncate">{fullName}</span>
+          )}
+          {u.LOCATION_NAME && (
+            <span className="text-xs text-muted-foreground/70">{u.LOCATION_NAME}</span>
+          )}
+        </div>
+      </div>
+    );
+  },
+},
     {
       accessorKey: "STATUS",
       header: "Status",
@@ -374,64 +439,95 @@ export default function UserList() {
       ),
     },
     {
-      id: "actions",
-      header: "Actions",
-      enableHiding:  false,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const user = row.original;
-        return (
-          <TooltipProvider>
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8"
-                    onClick={() => navigate(`/user-management/users/${user.ID}`)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Details</TooltipContent>
-              </Tooltip>
+  id: "actions",
+  header: "Actions",
+  enableHiding:  false,
+  enableSorting: false,
+  cell: ({ row }) => {
+    const user      = row.original;
+    const isActive  = user.STATUS === "ACTIVE";
+    const isBusy    = deleteMutation.isPending || activateMutation.isPending;
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8"
-                    onClick={() => handleEdit(user)}>
-                    <IconEdit className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Edit User</TooltipContent>
-              </Tooltip>
+    return (
+      <TooltipProvider>
+        <div className="flex items-center gap-1">
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon"
-                    className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                    onClick={() => handlePassword(user)}>
-                    <KeyRound className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Change Password</TooltipContent>
-              </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost" size="icon" className="h-8 w-8"
+                onClick={() => navigate(`/user-management/users/${user.ID}`)}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>View Details</TooltipContent>
+          </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => handleDelete(user)}
-                    disabled={deleteMutation.isPending}>
-                    {deleteMutation.isPending
-                      ? <Spinner data-icon="inline-start" />
-                      : <Trash2 className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Deactivate</TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
-        );
-      },
-    },
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost" size="icon" className="h-8 w-8"
+                onClick={() => handleEdit(user)}
+              >
+                <IconEdit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit User</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost" size="icon"
+                className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                onClick={() => handlePassword(user)}
+              >
+                <KeyRound className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Change Password</TooltipContent>
+          </Tooltip>
+
+          {isActive ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDelete(user)}
+                  disabled={isBusy}
+                >
+                  {deleteMutation.isPending
+                    ? <Spinner data-icon="inline-start" />
+                    : <UserX className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Deactivate</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                  onClick={() => handleActivate(user)}
+                  disabled={isBusy}
+                >
+                  {activateMutation.isPending
+                    ? <Spinner data-icon="inline-start" />
+                    : <UserCheck className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Activate</TooltipContent>
+            </Tooltip>
+          )}
+
+        </div>
+      </TooltipProvider>
+    );
+  },
+},
   ], [deleteMutation.isPending]);
 
   // ── TanStack table ──────────────────────────────────────────────────────────
