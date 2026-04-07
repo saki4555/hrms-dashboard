@@ -1,3 +1,5 @@
+//src\features\settings\work-structure\locations\queries.js
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const hrLocationQueryKeys = {
