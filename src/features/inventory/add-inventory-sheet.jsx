@@ -542,31 +542,31 @@ export default function AddInventorySheet({
                     <FormMessage />
                   </FormItem>
                 )} /> */}
-                <FormField
-                  control={form.control}
-                  name="invtDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Invt Date</FormLabel>
-                      <FormControl>
-                        <DatePicker
-                          className="w-full"
-                          placeholder="Select date"
-                          disabled={isSubmitting}
-                          value={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                          onChange={(date) =>
-                            field.onChange(
-                              date ? format(date, "yyyy-MM-dd") : "",
-                            )
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+               <FormField
+  control={form.control}
+  name="invtDate"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Invt Date</FormLabel>
+      <FormControl>
+        <DatePicker
+          className="w-full"
+          placeholder="Select date"
+          disabled={isSubmitting}
+          value={
+            field.value ? new Date(field.value) : new Date()
+          }
+          onChange={(date) =>
+            field.onChange(
+              date ? format(date, "yyyy-MM-dd") : ""
+            )
+          }
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
               </div>
 
               {/* Unit ID + Inventory Type */}

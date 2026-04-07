@@ -307,7 +307,7 @@ export const ROUTE_MAP = [
    { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
    
      { path: PATHS.SETTINGS.REQUISITION,  component: RequisitionsPage, roles: ADMIN},
-       { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisition, roles: ADMIN},
+      //  { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisition, roles: ADMIN},
     
 
 

@@ -27,8 +27,11 @@ import {
   useCreateReqDetailBulk,
   useStores,
   useItemSearch,
+  requisitionKeys,
 } from "./queries";
 import { ItemDetailRow } from "./ItemDetailRow";
+import { QueryClient as _QC, useQueryClient } from "@tanstack/react-query";
+
 
 // ─── ItemSearchCombobox ───────────────────────────────────────────────────────
 function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search item..." }) {
@@ -130,7 +133,7 @@ const emptyRow = () => ({
   app_qty: "",
   uom: "",
   frm_store: "",
-  status: "0",
+  status: "1",
   remarks: "",
 });
 
@@ -138,6 +141,7 @@ const emptyRow = () => ({
 export default function AddRequisitionSheet({ open, onOpenChange, showConfirmation }) {
   const createMaster = useCreateRequisition();
   const createDetails = useCreateReqDetailBulk();
+  const queryClient = useQueryClient();
   const { data: stores = [], isLoading: storesLoading } = useStores();
 
   const [rows, setRows] = useState([emptyRow()]);
@@ -148,7 +152,7 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
   const defaultValues = {
     tdate: today, entry_date: today,
     store_id: "", store_id_to: "",
-    status: 0, remarks: "",
+    status: 1, remarks: "",
     dreiver_no: "", vehicle_no: "", challan_no: "",
   };
 
@@ -189,50 +193,117 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
   };
 
   // ── Submit ───────────────────────────────────────────────────────────────────
+  // const onSubmit = async (masterData) => {
+  //   if (!validateRows()) {
+  //     toast.error("Please fill all required item fields.");
+  //     return;
+  //   }
+
+  //   try {
+  //     // Step 1 — Create master
+  //     const result = await createMaster.mutateAsync({
+  //       tdate:       masterData.tdate,
+  //       entry_date:  masterData.entry_date || masterData.tdate,
+  //       store_id:    masterData.store_id,
+  //       store_id_to: masterData.store_id_to,
+  //       status:      masterData.status ?? 0,
+  //       remarks:     masterData.remarks || null,
+  //       dreiver_no:  masterData.dreiver_no || null,
+  //       vehicle_no:  masterData.vehicle_no || null,
+  //       challan_no:  masterData.challan_no || null,
+  //     });
+
+  //     const tid = result.tid;
+
+  //     // Step 2 — Bulk insert details
+  //     const items = rows.map((r) => ({
+  //       itemid:    r.item.id,
+  //       tot_qty:   Number(r.tot_qty) || 0,
+  //       app_qty:   Number(r.app_qty) || 0,
+  //       uom:       r.uom || null,
+  //       frm_store: Number(r.frm_store) || null,
+  //       store_id:  masterData.store_id_to,
+  //       status:    Number(r.status) || 0,
+  //       remarks:   r.remarks || null,
+  //     }));
+
+  //     await createDetails.mutateAsync({ tid, items });
+
+  //     toast.success(`Requisition #${tid} created with ${items.length} item(s)!`);
+  //     form.reset(defaultValues);
+  //     setRows([emptyRow()]);
+  //     onOpenChange(false);
+  //   } catch (err) {
+  //     toast.error(err?.message || "Failed to create requisition.");
+  //   }
+  // };
+
   const onSubmit = async (masterData) => {
-    if (!validateRows()) {
-      toast.error("Please fill all required item fields.");
+  if (!validateRows()) {
+    toast.error("Please fill all required item fields.");
+    return;
+  }
+
+  // ✅ rows কে এখনই snapshot করো — re-render এ stale হবে না
+  const rowsSnapshot = rows.map((r) => ({ ...r }));
+
+  try {
+    // Step 1 — Create master
+    const result = await createMaster.mutateAsync({
+      tdate:       masterData.tdate,
+      entry_date:  masterData.entry_date || masterData.tdate,
+      store_id:    Number(masterData.store_id),
+      store_id_to: Number(masterData.store_id_to),
+      status:      masterData.status ?? 1,
+      remarks:     masterData.remarks || null,
+      dreiver_no:  masterData.dreiver_no || null,
+      vehicle_no:  masterData.vehicle_no || null,
+      challan_no:  masterData.challan_no || null,
+     
+    });
+     console.log("CREATE MASTER RESPONSE:", result);
+
+    // ✅ সব possible key চেক করো
+    const tid = result?.tid ?? result?.TID ?? result?.data?.tid ?? result?.data?.TID;
+
+    if (!tid) {
+      toast.error("TID পাওয়া যায়নি! Server response চেক করুন।");
+      console.error("Full server result:", result);
       return;
     }
 
-    try {
-      // Step 1 — Create master
-      const result = await createMaster.mutateAsync({
-        tdate:       masterData.tdate,
-        entry_date:  masterData.entry_date || masterData.tdate,
-        store_id:    masterData.store_id,
-        store_id_to: masterData.store_id_to,
-        status:      masterData.status ?? 0,
-        remarks:     masterData.remarks || null,
-        dreiver_no:  masterData.dreiver_no || null,
-        vehicle_no:  masterData.vehicle_no || null,
-        challan_no:  masterData.challan_no || null,
-      });
+    console.log("✅ Master created, TID:", tid);
 
-      const tid = result.tid;
+    // Step 2 — snapshot থেকে items বানাও, rows থেকে না
+    const items = rowsSnapshot.map((r) => ({
+      itemid:    r.item.id,
+      tot_qty:   Number(r.tot_qty) || 0,
+      app_qty:   Number(r.app_qty) || 0,
+      uom:       r.uom || null,
+      frm_store: Number(r.frm_store) || null,
+      store_id:  Number(masterData.store_id_to),
+      status:    Number(r.status) || 1,
+      remarks:   r.remarks || null,
+    }));
 
-      // Step 2 — Bulk insert details
-      const items = rows.map((r) => ({
-        itemid:    r.item.id,
-        tot_qty:   Number(r.tot_qty) || 0,
-        app_qty:   Number(r.app_qty) || 0,
-        uom:       r.uom || null,
-        frm_store: Number(r.frm_store) || null,
-        store_id:  masterData.store_id_to,
-        status:    Number(r.status) || 0,
-        remarks:   r.remarks || null,
-      }));
+    console.log("✅ Sending items with TID:", tid, items);
 
-      await createDetails.mutateAsync({ tid, items });
+    await createDetails.mutateAsync({ tid, items });
 
-      toast.success(`Requisition #${tid} created with ${items.length} item(s)!`);
-      form.reset(defaultValues);
-      setRows([emptyRow()]);
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(err?.message || "Failed to create requisition.");
-    }
-  };
+    // ✅ সব শেষে manually invalidate করো
+    // queryClient এখানে দরকার, তাই useQueryClient নাও
+   // ✅ সঠিক — hook থেকে পাওয়া instance use করুন
+queryClient.invalidateQueries({ queryKey: requisitionKeys.lists() });
+
+    toast.success(`Requisition #${tid} created with ${items.length} item(s)!`);
+    form.reset(defaultValues);
+    setRows([emptyRow()]);
+    onOpenChange(false);
+  } catch (err) {
+    console.error("❌ Submit error:", err);
+    toast.error(err?.message || "Failed to create requisition.");
+  }
+};
 
   const handleCancel = async () => {
     if ((isDirty || rows.some((r) => r.item)) && showConfirmation) {
@@ -251,6 +322,8 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
   };
 
   const isSubmitting = createMaster.isPending || createDetails.isPending;
+
+// const watchedStoreId = form.watch("store_id");
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
@@ -416,9 +489,11 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
 
               {/* ── Detail Items Section ────────────────────────────────────── */}
               <div>
+             
+
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Items
+                    Details Items
                     <Badge variant="secondary" className="ml-2">{rows.length}</Badge>
                   </p>
                   <Button
@@ -445,6 +520,7 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
     rowErrors={rowErrors}
     updateRow={updateRow}
     removeRow={removeRow}
+    //  storeId={watchedStoreId} 
   />
 ))}
                 </div>

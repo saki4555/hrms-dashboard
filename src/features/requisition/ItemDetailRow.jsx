@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Trash2 } from "lucide-react";
+// import { useItemStockById } from "@/features/item-stock/queries";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useItemStockByItemId } from "../item-stock/queries";
+// import { useItemStockById } from "../item-stock/queries";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const BASE = import.meta.env.VITE_API_BASE_URL;
@@ -37,14 +40,14 @@ const useItemSearch = (query) =>
   });
 
 // ─── Item Stock by ItemId Hook ─────────────────────────────────────────────────
-const useItemStockByItemId = (itemId) =>
-  useQuery({
-    queryKey: ["itemStocks", "byItem", itemId],
-    queryFn: () => fetchJSON(`${BASE}/api/item-stock?itemId=${itemId}`),
-    enabled: !!itemId,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: false,
-  });
+// const useItemStockByItemId = (itemId) =>
+//   useQuery({
+//     queryKey: ["itemStocks", "byItem", itemId],
+//     queryFn: () => fetchJSON(`${BASE}/api/item-stock?itemId=${itemId}`),
+//     enabled: !!itemId,
+//     staleTime: 30 * 1000,
+//     refetchOnWindowFocus: false,
+//   });
 
 // ─── ItemSearchCombobox ────────────────────────────────────────────────────────
 function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search item..." }) {
@@ -161,37 +164,107 @@ function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search i
 }
 
 // ─── ItemDetailRow ─────────────────────────────────────────────────────────────
+
 export function ItemDetailRow({
-  row,
-  idx,
-  rows,
-  stores,
-  storesLoading,
-  isSubmitting,
-  rowErrors,
-  updateRow,
-  removeRow,
+  row, idx, rows, stores, storesLoading,
+  isSubmitting, rowErrors, updateRow, removeRow, isExisting = false,
 }) {
-  const { data: stockData, isFetching: stockFetching } = useItemStockByItemId(
+  const { data: stockList = [], isFetching: stockFetching } = useItemStockByItemId(
     row.item?.id ?? null
   );
 
-  // Auto-fill tot_qty and uom from stock when item is selected
+  // ✅ Existing row হলে প্রথমে auto-fill বন্ধ রাখো
+  const shouldAutoFill = useRef(!isExisting);
+
+  // ✅ User নিজে item change করলে auto-fill চালু করো
+  const prevItemId = useRef(row.item?.id);
+  if (prevItemId.current !== row.item?.id) {
+    prevItemId.current = row.item?.id;
+    shouldAutoFill.current = true;
+  }
+
   useEffect(() => {
-    if (!stockData) return;
+    if (!shouldAutoFill.current) return; // ← existing data load এ skip
+    if (stockFetching) return;
+    if (!row.item?.id) return;
+    if (!stockList.length) return;
 
-    // API may return array (multiple stores) or a single object
-    const stock = Array.isArray(stockData) ? stockData[0] : stockData;
-    if (!stock) return;
-
-    if (stock.STOCK_QTY != null && row.tot_qty === "") {
-      updateRow(idx, "tot_qty", String(stock.STOCK_QTY));
+    if (!row.frm_store) {
+      updateRow(idx, "tot_qty", "");
+      updateRow(idx, "uom", "");
+      return;
     }
-    if (stock.UOM && row.uom === "") {
-      updateRow(idx, "uom", stock.UOM);
-    }
-  }, [stockData]);
 
+    const stock = stockList.find(
+      (s) =>
+        Number(s.STORE_ID) === Number(row.frm_store) &&
+        Number(s.ITEM_ID) === Number(row.item?.id)
+    );
+
+    updateRow(idx, "tot_qty", stock ? String(stock.STOCK_QTY ?? "") : "");
+    updateRow(idx, "uom", stock ? stock.UOM || "" : "");
+
+  }, [row.frm_store, row.item?.id, stockFetching, stockList]);
+
+  // ... বাকি JSX একই থাকবে
+
+// export function ItemDetailRow({
+//   row, idx, rows, stores, storesLoading,
+//   isSubmitting, rowErrors, updateRow, removeRow, isExisting = false,
+//   //  storeId,  // ← নতুন prop
+// }) {
+ 
+
+// const { data: stockList = [], isFetching: stockFetching } = useItemStockByItemId(
+//   row.item?.id ?? null
+// );
+
+// useEffect(() => {
+//   // ✅ Update mode হলে কিছুই করবো না
+//   if (isExisting) return;
+
+//   // fetch শেষ না হলে skip
+//   if (stockFetching || !stockList.length) return;
+
+//   // store select না থাকলে clear
+//   if (!row.frm_store) {
+//     updateRow(idx, "tot_qty", "");
+//     updateRow(idx, "uom", "");
+//     return;
+//   }
+
+//   const stock = stockList.find(
+//     (s) =>
+//       Number(s.STORE_ID) === Number(row.frm_store) &&
+//       Number(s.ITEM_ID) === Number(row.item?.id)
+//   );
+
+//   updateRow(idx, "tot_qty", stock ? String(stock.STOCK_QTY ?? "") : "");
+//   updateRow(idx, "uom", stock ? stock.UOM || "" : "");
+
+// }, [row.frm_store, row.item?.id, stockFetching, stockList]);
+
+// useEffect(() => {
+//   // fetch শেষ না হলে বা data না থাকলে skip
+//   if (stockFetching || !stockList.length) return;
+//   // store select না করলে clear করো
+//   if (!row.frm_store) {
+//     updateRow(idx, "tot_qty", "");
+//     updateRow(idx, "uom", "");
+//     return;
+//   }
+//    if (isExisting) return;
+//   // current item এর stock এ এই store আছে কিনা খোঁজো
+//   const stock = stockList.find(
+//     (s) => Number(s.STORE_ID) === Number(row.frm_store) && 
+//            Number(s.ITEM_ID)  === Number(row.item?.id)
+//   );
+
+//   updateRow(idx, "tot_qty", stock ? String(stock.STOCK_QTY ?? "") : "");
+//   updateRow(idx, "uom",     stock ? (stock.UOM || "")            : "");
+
+// }, [row.frm_store, row.item?.id, stockFetching]);
+// ↑ stockList বাদ দিলাম — শুধু store/item change এ run করবে
   return (
     <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
 
@@ -221,18 +294,27 @@ export function ItemDetailRow({
       </div>
 
       {/* Item search */}
-      <div className="space-y-1">
+
+       <div className="grid grid-cols-2 gap-2">
+         <div className="space-y-1">
         <label className="text-xs font-medium text-foreground">
           Item <span className="text-destructive">*</span>
         </label>
         <ItemSearchCombobox
           value={row.item}
+          // onChange={(v) => {
+          //   updateRow(idx, "item", v);
+          //   // Reset auto-filled fields so new item's stock can fill them
+          //   updateRow(idx, "tot_qty", "");
+          //   updateRow(idx, "uom", "");
+          // }}
           onChange={(v) => {
-            updateRow(idx, "item", v);
-            // Reset auto-filled fields so new item's stock can fill them
-            updateRow(idx, "tot_qty", "");
-            updateRow(idx, "uom", "");
-          }}
+  updateRow(idx, "item", v);
+  updateRow(idx, "tot_qty", "");
+  updateRow(idx, "uom", "");
+  // item clear হলে store ও clear করুন
+  if (!v) updateRow(idx, "frm_store", "");
+}}
           disabled={isSubmitting}
           placeholder="Search item..."
         />
@@ -241,8 +323,21 @@ export function ItemDetailRow({
         )}
       </div>
 
+       <div className="space-y-1">
+        <label className="text-xs font-medium text-foreground">Remarks</label>
+        <Input
+          placeholder="Item remarks..."
+          value={row.remarks}
+          onChange={(e) => updateRow(idx, "remarks", e.target.value)}
+          disabled={isSubmitting}
+          className="text-sm"
+        />
+      </div>
+
+       </div>
+     
       {/* Total Qty + App Qty + UOM */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">
             Total Qty <span className="text-destructive">*</span>
@@ -296,11 +391,7 @@ export function ItemDetailRow({
             )}
           </div>
         </div>
-      </div>
-
-      {/* From Store + Status */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
+         <div className="space-y-1">
           <label className="text-xs font-medium text-foreground">From Store</label>
           <Select
             disabled={isSubmitting || storesLoading}
@@ -325,31 +416,27 @@ export function ItemDetailRow({
           <Select
             disabled={isSubmitting}
             onValueChange={(v) => updateRow(idx, "status", v)}
-            value={String(row.status ?? "0")}
+            value={String(row.status ?? "1")}
           >
             <SelectTrigger className="text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Pending</SelectItem>
-              <SelectItem value="1">Approved</SelectItem>
-              <SelectItem value="2">Dispatched</SelectItem>
+              <SelectItem value="1">Pending</SelectItem>
+              <SelectItem value="2">Approved</SelectItem>
+             
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Remarks */}
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-foreground">Remarks</label>
-        <Input
-          placeholder="Item remarks..."
-          value={row.remarks}
-          onChange={(e) => updateRow(idx, "remarks", e.target.value)}
-          disabled={isSubmitting}
-          className="text-sm"
-        />
+      {/* From Store + Status */}
+      <div className="grid grid-cols-2 gap-2">
+       
       </div>
+
+      {/* Remarks */}
+     
     </div>
   );
 }

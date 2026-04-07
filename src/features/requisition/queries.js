@@ -48,7 +48,6 @@ export const useRequisitionById = (tid) =>
   });
 
 export const useCreateRequisition = () => {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) =>
       fetchJSON(`${BASE}/api/reqmaster`, {
@@ -56,10 +55,38 @@ export const useCreateRequisition = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: requisitionKeys.lists() }),
     onError: (err) => console.error("Create requisition failed:", err),
+    // ✅ onSuccess সরিয়ে দিলাম — নিচে manually করব
   });
 };
+
+export const useAddReqDetail = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) =>
+      fetchJSON(`${BASE}/api/req-detail`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["reqDetails"] }),
+    onError: (err) => console.error("Create req detail failed:", err),
+  });
+};
+
+// export const useCreateRequisition = () => {
+//   // ✅ onSuccess থেকে invalidateQueries সরিয়ে দাও
+//   // কারণ এটা re-render trigger করে rows stale করে ফেলে
+//   return useMutation({
+//     mutationFn: (data) =>
+//       fetchJSON(`${BASE}/api/reqmaster`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(data),
+//       }),
+//     onError: (err) => console.error("Create requisition failed:", err),
+//   });
+// };
 
 export const useUpdateRequisition = () => {
   const qc = useQueryClient();

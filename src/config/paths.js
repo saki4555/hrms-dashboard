@@ -80,7 +80,7 @@ export const PATHS = {
     ITEMS: "settings/work-structure/item",
     ITEM_STOCKS: "settings/work-structure/item-stock",
     REQUISITION: "settings/work-structure/req-master",
-    REQUISITIONS: "settings/work-structure/requisitoins",
+    // REQUISITIONS: "settings/work-structure/requisitoins",
    
   
   },
