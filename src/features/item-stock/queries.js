@@ -34,21 +34,21 @@ export const useItemStocks = ({ page = 1, limit = 50 } = {}) =>
     throwOnError: false,
   });
 
-  // export const useItemStockByItemId = (itemId) =>
-  // useQuery({
-  //   queryKey: [...itemStockKeys.all, "byItem", itemId],
-  //   queryFn: () => fetchJSON(`${BASE}/api/item-stock?itemId=${itemId}`),
-  //   enabled: !!itemId,
-  //   staleTime: 30 * 1000,
-  //   refetchOnWindowFocus: false,
-  // });
+  export const useItemStockByItemId = (itemId) =>
+  useQuery({
+    queryKey: [...itemStockKeys.all, "byItem", itemId],
+    queryFn: () => fetchJSON(`${BASE}/api/item-stock?itemId=${itemId}`),
+    enabled: !!itemId,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
 
 export const useItemStockById = (storeId, itemId) =>
   useQuery({
     queryKey: itemStockKeys.detail(storeId, itemId),
     queryFn:  () => fetchJSON(`${BASE}/api/item-stock/${storeId}/${itemId}`),
     enabled:  !!storeId && !!itemId,
-    staleTime: 30 * 1000,
+    staleTime: 0,
     refetchOnWindowFocus: false,
     throwOnError: false,
   });

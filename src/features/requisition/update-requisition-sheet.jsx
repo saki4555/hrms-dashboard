@@ -26,9 +26,11 @@ import {
   useUpdateRequisition,
   useUpdateReqDetail,
   useReqDetails,
+  useAddReqDetail,
   useStores,
   useItemSearch,
 } from "./queries";
+import { ItemDetailRow } from "./ItemDetailRow";
 
 // ─── ItemSearchCombobox ───────────────────────────────────────────────────────
 function ItemSearchCombobox({ value, onChange, disabled }) {
@@ -128,6 +130,8 @@ const masterSchema = z.object({
 export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirmation, requisition }) {
   const updateMaster  = useUpdateRequisition();
   const updateDetail  = useUpdateReqDetail();
+  
+const addDetail = useAddReqDetail();
   const { data: stores = [], isLoading: storesLoading } = useStores();
 
   // Load existing details for this TID
@@ -144,7 +148,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
     resolver: zodResolver(masterSchema),
     defaultValues: {
       tdate: "", entry_date: "", store_id: "", store_id_to: "",
-      status: 0, remarks: "", dreiver_no: "", vehicle_no: "", challan_no: "",
+      status: 1, remarks: "", dreiver_no: "", vehicle_no: "", challan_no: "",
     },
   });
 
@@ -160,7 +164,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
         ? format(new Date(requisition.ENTRY_DATE), "yyyy-MM-dd") : "",
       store_id:    requisition.STORE_ID     ?? "",
       store_id_to: requisition.STORE_ID_TO  ?? "",
-      status:      requisition.STATUS       ?? 0,
+      status:      requisition.STATUS       ?? 1,
       remarks:     requisition.REMARKS      || "",
       dreiver_no:  requisition.DREIVER_NO   || "",
       vehicle_no:  requisition.VEHICLE_NO   || "",
@@ -169,33 +173,74 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
   }, [requisition]);
 
   // ── Populate detail rows from API ──────────────────────────────────────────
+  // useEffect(() => {
+  //   if (existingDetails.length > 0) {
+  //     setRows(
+  //       existingDetails.map((d) => ({
+  //         tid:       d.TID,
+  //         item:      d.ITEMID && d.ITEM_NAME ? { id: d.ITEMID, name: d.ITEM_NAME } : null,
+  //         tot_qty:   d.TOT_QTY  ?? "",
+  //         app_qty:   d.APP_QTY  ?? "",
+  //         uom:       d.UOM      || "",
+  //         frm_store: d.FRM_STORE ?? "",
+  //         status:    String(d.STATUS ?? "0"),
+  //         remarks:   d.REMARKS  || "",
+  //       }))
+  //     );
+  //   } else if (!detailsLoading) {
+  //     setRows([{
+  //       tid: null, item: null,
+  //       tot_qty: "", app_qty: "", uom: "", frm_store: "", status: "0", remarks: "",
+  //     }]);
+  //   }
+  // }, [existingDetails, detailsLoading]);
+
   useEffect(() => {
-    if (existingDetails.length > 0) {
-      setRows(
-        existingDetails.map((d) => ({
-          tid:       d.TID,
-          item:      d.ITEMID && d.ITEM_NAME ? { id: d.ITEMID, name: d.ITEM_NAME } : null,
-          tot_qty:   d.TOT_QTY  ?? "",
-          app_qty:   d.APP_QTY  ?? "",
-          uom:       d.UOM      || "",
-          frm_store: d.FRM_STORE ?? "",
-          status:    String(d.STATUS ?? "0"),
-          remarks:   d.REMARKS  || "",
-        }))
-      );
-    } else if (!detailsLoading) {
-      setRows([{
-        tid: null, item: null,
-        tot_qty: "", app_qty: "", uom: "", frm_store: "", status: "0", remarks: "",
-      }]);
-    }
-  }, [existingDetails, detailsLoading]);
+  if (existingDetails.length > 0) {
+    setRows(
+      existingDetails.map((d) => ({
+        tid: d.TID,
+
+        // ✅ item object ঠিক রাখো
+        item: d.ITEMID
+          ? { id: d.ITEMID, name: d.ITEM_NAME }
+          : null,
+
+        // ✅ number → string (VERY IMPORTANT)
+        tot_qty: d.TOT_QTY?.toString() ?? "",
+        app_qty: d.APP_QTY?.toString() ?? "",
+
+        // ✅ safe value
+        uom: d.UOM ?? "",
+
+        // 🔥 SELECT এর জন্য string লাগবে
+        frm_store: d.FRM_STORE ? String(d.FRM_STORE) : "",
+
+        status: String(d.STATUS ?? "1"),
+        remarks: d.REMARKS ?? "",
+      }))
+    );
+  } else if (!detailsLoading) {
+    setRows([
+      {
+        tid: null,
+        item: null,
+        tot_qty: "",
+        app_qty: "",
+        uom: "",
+        frm_store: "",
+        status: "1",
+        remarks: "",
+      },
+    ]);
+  }
+}, [existingDetails, detailsLoading]);
 
   // ── Row helpers ──────────────────────────────────────────────────────────────
   const addRow = () =>
     setRows((prev) => [...prev, {
       tid: null, item: null,
-      tot_qty: "", app_qty: "", uom: "", frm_store: "", status: "0", remarks: "",
+      tot_qty: "", app_qty: "", uom: "", frm_store: "", status: "1", remarks: "",
     }]);
 
   const removeRow = (idx) =>
@@ -230,7 +275,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
           entry_date:  masterData.entry_date || masterData.tdate,
           store_id:    Number(masterData.store_id),
           store_id_to: Number(masterData.store_id_to),
-          status:      masterData.status ?? 0,
+          status:      masterData.status ?? 1,
           remarks:     masterData.remarks || null,
           dreiver_no:  masterData.dreiver_no || null,
           vehicle_no:  masterData.vehicle_no || null,
@@ -239,22 +284,59 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
       });
 
       // Step 2 — Update each existing detail row
-      for (const row of rows) {
-        if (!row.tid || !row.item) continue;
-        await updateDetail.mutateAsync({
-          tid: row.tid,
-          data: {
-            itemid:    row.item.id,
-            tot_qty:   Number(row.tot_qty) || 0,
-            app_qty:   Number(row.app_qty) || 0,
-            uom:       row.uom || null,
-            frm_store: Number(row.frm_store) || null,
-            store_id:  Number(masterData.store_id_to),
-            status:    Number(row.status) || 0,
-            remarks:   row.remarks || null,
-          },
-        });
-      }
+      // for (const row of rows) {
+      //   if (!row.tid || !row.item) continue;
+      //   await updateDetail.mutateAsync({
+      //     tid: row.tid,
+      //     data: {
+      //       itemid:    row.item.id,
+      //       tot_qty:   Number(row.tot_qty) || 0,
+      //       app_qty:   Number(row.app_qty) || 0,
+      //       uom:       row.uom || null,
+      //       frm_store: Number(row.frm_store) || null,
+      //       store_id:  Number(masterData.store_id_to),
+      //       status:    Number(row.status) || 1,
+      //       remarks:   row.remarks || null,
+      //     },
+      //   });
+      // }
+
+      // Step 2 — Update each detail row
+for (const row of rows) {
+  if (!row.item) continue;
+
+  if (row.tid) {
+    // ── Existing row → UPDATE ──────────────────────────────
+    await updateDetail.mutateAsync({
+      tid: row.tid,
+      data: {
+        itemid:    row.item.id,
+        tot_qty:   Number(row.tot_qty) || 0,
+        app_qty:   Number(row.app_qty) || 0,
+        uom:       row.uom || null,
+        frm_store: Number(row.frm_store) || null,
+        store_id:  Number(masterData.store_id_to),
+        status:    Number(row.status) || 1,
+        remarks:   row.remarks || null,
+      },
+    });
+  } else {
+    // ── New row → CREATE (addDetail mutation লাগবে) ────────
+    await addDetail.mutateAsync({
+      data: {
+        tid_master: requisition.TID,   // master TID reference
+        itemid:     row.item.id,
+        tot_qty:    Number(row.tot_qty) || 0,
+        app_qty:    Number(row.app_qty) || 0,
+        uom:        row.uom || null,
+        frm_store:  Number(row.frm_store) || null,
+        store_id:   Number(masterData.store_id_to),
+        status:     Number(row.status) || 1,  // 1=Pending by default
+        remarks:    row.remarks || null,
+      },
+    });
+  }
+}
 
       toast.success(`Requisition #${requisition.TID} updated!`);
       form.reset();
@@ -279,11 +361,12 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
     onOpenChange(false);
   };
 
-  const isSubmitting = updateMaster.isPending || updateDetail.isPending;
+  
+const isSubmitting = updateMaster.isPending || updateDetail.isPending || addDetail.isPending;
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
-     <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
+    <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
 
 
         {/* Header */}
@@ -301,7 +384,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+            <div className="flex-1 overflow-y-auto px-32 py-5 space-y-32">
 
               {/* ── Master Section ──────────────────────────────────────────── */}
               <div>
@@ -342,7 +425,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
                     )} />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <FormField control={form.control} name="store_id" render={({ field }) => (
                       <FormItem>
                         <FormLabel>From Store <span className="text-destructive">*</span></FormLabel>
@@ -392,6 +475,29 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
                         <FormMessage />
                       </FormItem>
                     )} />
+
+                     <FormField control={form.control} name="status" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                          disabled={isSubmitting}
+                          onValueChange={(v) => field.onChange(Number(v))}
+                          value={String(field.value ?? "1")}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="1">Pending</SelectItem>
+                            <SelectItem value="2">Approved</SelectItem>
+                           
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
@@ -421,30 +527,7 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
                     )} />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="status" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select
-                          disabled={isSubmitting}
-                          onValueChange={(v) => field.onChange(Number(v))}
-                          value={String(field.value ?? "0")}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="0">Pending</SelectItem>
-                            <SelectItem value="1">Approved</SelectItem>
-                            <SelectItem value="2">Dispatched</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
+                  
 
                   <FormField control={form.control} name="remarks" render={({ field }) => (
                     <FormItem>
@@ -495,138 +578,21 @@ export default function UpdateRequisitionSheet({ open, onOpenChange, showConfirm
                 ) : (
                   <div className="space-y-3">
                     {rows.map((row, idx) => (
-                      <div
-                        key={idx}
-                        className="border border-border rounded-lg p-3 space-y-3 bg-muted/30"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Item #{idx + 1}
-                            {row.tid && (
-                              <Badge variant="outline" className="ml-2 text-xs">
-                                TID {row.tid}
-                              </Badge>
-                            )}
-                          </span>
-                          {rows.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
-                              onClick={() => removeRow(idx)}
-                              disabled={isSubmitting}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">
-                            Item <span className="text-destructive">*</span>
-                          </label>
-                          <ItemSearchCombobox
-                            value={row.item}
-                            onChange={(v) => updateRow(idx, "item", v)}
-                            disabled={isSubmitting}
-                          />
-                          {rowErrors[idx]?.item && (
-                            <p className="text-xs text-destructive">{rowErrors[idx].item}</p>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-foreground">
-                              Total Qty <span className="text-destructive">*</span>
-                            </label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={row.tot_qty}
-                              onChange={(e) => updateRow(idx, "tot_qty", e.target.value)}
-                              disabled={isSubmitting}
-                              className="text-sm"
-                            />
-                            {rowErrors[idx]?.tot_qty && (
-                              <p className="text-xs text-destructive">{rowErrors[idx].tot_qty}</p>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-foreground">App Qty</label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              value={row.app_qty}
-                              onChange={(e) => updateRow(idx, "app_qty", e.target.value)}
-                              disabled={isSubmitting}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-foreground">UOM</label>
-                            <Input
-                              placeholder="KG / PCS"
-                              value={row.uom}
-                              onChange={(e) => updateRow(idx, "uom", e.target.value)}
-                              disabled={isSubmitting}
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-foreground">From Store</label>
-                            <Select
-                              disabled={isSubmitting || storesLoading}
-                              onValueChange={(v) => updateRow(idx, "frm_store", v)}
-                              value={String(row.frm_store ?? "")}
-                            >
-                              <SelectTrigger className="text-sm">
-                                <SelectValue placeholder="Select store" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {stores.map((s) => (
-                                  <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
-                                    {s.STORE_NAME}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-foreground">Status</label>
-                            <Select
-                              disabled={isSubmitting}
-                              onValueChange={(v) => updateRow(idx, "status", v)}
-                              value={String(row.status ?? "0")}
-                            >
-                              <SelectTrigger className="text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0">Pending</SelectItem>
-                                <SelectItem value="1">Approved</SelectItem>
-                                <SelectItem value="2">Dispatched</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-medium text-foreground">Remarks</label>
-                          <Input
-                            placeholder="Item remarks..."
-                            value={row.remarks}
-                            onChange={(e) => updateRow(idx, "remarks", e.target.value)}
-                            disabled={isSubmitting}
-                            className="text-sm"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                     <ItemDetailRow
+                       key={idx}
+                       row={row}
+                       idx={idx}
+                       rows={rows}
+                       stores={stores}
+                       storesLoading={storesLoading}
+                       isSubmitting={isSubmitting}
+                       rowErrors={rowErrors}
+                       updateRow={updateRow}
+                       removeRow={removeRow}
+                        isExisting={!!row.tid}
+                        // storeId={watchedStoreId} 
+                     />
+                   ))}
                   </div>
                 )}
               </div>

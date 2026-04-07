@@ -42,9 +42,9 @@ import UpdateRequisitionSheet from "./update-requisition-sheet";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_MAP = {
-  0: { label: "Pending",    variant: "outline",     className: "text-yellow-600 border-yellow-400" },
-  1: { label: "Approved",   variant: "secondary",   className: "text-blue-600 border-blue-400" },
-  2: { label: "Dispatched", variant: "default",     className: "text-green-600 border-green-400" },
+  1: { label: "Pending",    variant: "outline",     className: "text-yellow-600 border-yellow-400" },
+  2: { label: "Approved",   variant: "secondary",   className: "text-blue-600 border-blue-400" },
+ 
 };
 
 function StatusBadge({ status }) {
