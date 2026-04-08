@@ -79,8 +79,8 @@ export const PATHS = {
     INVENTORYS: "settings/work-structure/inventory",
     ITEMS: "settings/work-structure/item",
     ITEM_STOCKS: "settings/work-structure/item-stock",
-    REQUISITION: "settings/work-structure/req-master",
-    // REQUISITIONS: "settings/work-structure/requisitoins",
+    // REQUISITION: "settings/work-structure/req-master",
+    REQUISITIONS: "settings/work-structure/requisitions",
    
   
   },
