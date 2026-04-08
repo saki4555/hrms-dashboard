@@ -8,6 +8,7 @@ import ItemStockPage from "@/features/item-stock";
 import RequisitionsPage from "@/features/requisition";
 import RequisitionList from "@/features/requisition-managemant/requisition-list";
 import Requisition from "@/features/requisition-managemant";
+import Requisitions from "@/features/requisition-master";
 
 const { ADMIN, HR, EMPLOYEE } = ROLES;
 
@@ -306,8 +307,8 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.ITEMS, component: ItemsPage, roles: ADMIN},
    { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
    
-     { path: PATHS.SETTINGS.REQUISITION,  component: RequisitionsPage, roles: ADMIN},
-      //  { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisition, roles: ADMIN},
+    //  { path: PATHS.SETTINGS.REQUISITION,  component: RequisitionsPage, roles: ADMIN},
+     { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisitions, roles: ADMIN},
     
 
 
