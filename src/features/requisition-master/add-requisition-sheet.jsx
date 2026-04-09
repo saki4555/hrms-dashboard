@@ -78,7 +78,7 @@ const formSchema = z.object({
   STORE_ID_TO: z.number({ required_error: "To store required" }),
   VEHICLE_NO: z.string().optional(),
   DREIVER_NO: z.string().optional(),
-  CHALLAN_NO: z.string().optional(),
+ CHALLAN_NO: z.string({ required_error: "Challan no required" }).min(1, "Challan no required"),
   REMARKS: z.string().optional(),
   details: z.array(detailSchema).min(1, "At least one item required"),
 });
@@ -88,11 +88,14 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
   const [itemOpen, setItemOpen] = useState(false);
   const [itemSearch, setItemSearch] = useState("");
 
-  const filteredItems = (storeItems || []).filter(
-    (it) =>
-      it.ITEM_NAME?.toLowerCase().includes(itemSearch.toLowerCase()) ||
-      String(it.ITEM_ID).includes(itemSearch)
-  );
+  // const filteredItems = (storeItems || []).filter(
+  //   (it) =>
+  //     it.ITEM_NAME?.toLowerCase().includes(itemSearch.toLowerCase()) ||
+  //     String(it.ITEM_ID).includes(itemSearch)
+  // );
+  const filteredItems = (storeItems || []).filter((it) =>
+  it.ITEM_NAME?.toLowerCase().includes(itemSearch.toLowerCase())
+);
 
   return (
     <div className="grid grid-cols-12 gap-2 items-start py-2 border-b border-border last:border-0">
@@ -143,9 +146,15 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
                         <Spinner className="h-4 w-4" />
                       </div>
                     )}
-                    {!storeItemsLoading && filteredItems.length === 0 && (
+                    {/* {!storeItemsLoading && filteredItems.length === 0 && (
                       <CommandEmpty>No items found.</CommandEmpty>
-                    )}
+                    )} */}
+
+                    {!storeItemsLoading && filteredItems.length === 0 && (
+  <CommandEmpty>
+    {itemSearch ? `"${itemSearch}" this item not found।` : "item not found from this store।"}
+  </CommandEmpty>
+)}
                     <CommandGroup>
                       {filteredItems.map((it) => (
                         <CommandItem
@@ -576,8 +585,10 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
                     name="CHALLAN_NO"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Challan no.</FormLabel>
+                      
+                        <FormLabel>Challan no *</FormLabel>
                         <FormControl>
+                         
                           <Input placeholder="CH-XXXX" disabled={isSubmitting} {...field} value={field.value || ""} />
                         </FormControl>
                       </FormItem>
