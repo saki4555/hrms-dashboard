@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -105,11 +105,12 @@ function ItemRow({
   const [itemOpen, setItemOpen] = useState(false);
   const [itemSearch, setItemSearch] = useState("");
   const approveDetailMutation = useApproveDetail();
+  const form = useFormContext();
 
   const filteredItems = (storeItems || []).filter(
     (it) =>
       it.ITEM_NAME?.toLowerCase().includes(itemSearch.toLowerCase()) ||
-      String(it.ITEM_ID).includes(itemSearch)
+      String(it.ITEM_ID).includes(itemSearch),
   );
 
   const handleApproveRow = async () => {
@@ -127,7 +128,7 @@ function ItemRow({
     <div
       className={cn(
         "grid grid-cols-12 gap-2 items-start py-2 border-b border-border last:border-0",
-        isApproved && "opacity-70"
+        isApproved && "opacity-70",
       )}
     >
       <div className="col-span-1 pt-8 text-center text-xs text-muted-foreground font-medium">
@@ -149,12 +150,15 @@ function ItemRow({
                     disabled={!storeId || isApproved}
                     className={cn(
                       "w-full justify-between font-normal text-xs h-9",
-                      !field.value && "text-muted-foreground"
+                      !field.value && "text-muted-foreground",
                     )}
                   >
                     {field.value
-                      ? (storeItems?.find((it) => it.ITEM_ID === field.value)?.ITEM_NAME ||
-                        (storeItemsLoading ? "Loading..." : `Item #${field.value}`))
+                      ? storeItems?.find((it) => it.ITEM_ID === field.value)
+                          ?.ITEM_NAME ||
+                        (storeItemsLoading
+                          ? "Loading..."
+                          : `Item #${field.value}`)
                       : "Select item..."}
                     <ChevronsUpDown className="ml-1 h-3 w-3 opacity-50 shrink-0" />
                   </Button>
@@ -181,22 +185,50 @@ function ItemRow({
                         <CommandItem
                           key={it.ITEM_ID}
                           value={String(it.ITEM_ID)}
+                          // onSelect={() => {
+                          //   field.onChange(it.ITEM_ID);
+                          //   setItemOpen(false);
+                          //   setItemSearch("");
+                          // }}
                           onSelect={() => {
                             field.onChange(it.ITEM_ID);
                             setItemOpen(false);
                             setItemSearch("");
+
+                            // ✅ auto-fill TOT_QTY এবং UOM
+                            const found = storeItems?.find(
+                              (s) => s.ITEM_ID === it.ITEM_ID,
+                            );
+                            if (found) {
+                              form.setValue(
+                                `details.${index}.TOT_QTY`,
+                                found.STOCK_QTY ?? found.TOT_QTY ?? "",
+                                { shouldDirty: true },
+                              );
+                              form.setValue(
+                                `details.${index}.UOM`,
+                                found.UOM || found.UNIT_NAME || "",
+                                { shouldDirty: true },
+                              );
+                              form.setValue(`details.${index}.APP_QTY`, 0, {
+                                shouldDirty: true,
+                              }); // ✅ reset
+                            }
                           }}
                         >
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              field.value === it.ITEM_ID ? "opacity-100" : "opacity-0"
+                              field.value === it.ITEM_ID
+                                ? "opacity-100"
+                                : "opacity-0",
                             )}
                           />
                           <div className="flex flex-col">
                             <span className="text-sm">{it.ITEM_NAME}</span>
                             <span className="text-xs text-muted-foreground">
-                              Stock: {it.STOCK_QTY ?? "—"} · {it.UOM ?? it.UNIT_NAME ?? "—"}
+                              Stock: {it.STOCK_QTY ?? "—"} ·{" "}
+                              {it.UOM ?? it.UNIT_NAME ?? "—"}
                             </span>
                           </div>
                         </CommandItem>
@@ -218,25 +250,69 @@ function ItemRow({
           <FormItem className="col-span-1">
             <FormLabel className="text-xs">Total qty</FormLabel>
             <FormControl>
-              <Input placeholder="0" disabled={isApproved} className="h-9 text-xs" {...field} value={field.value || ""} />
+              <Input
+                placeholder="0"
+                disabled={isApproved}
+                className="h-9 text-xs"
+                {...field}
+                value={field.value || ""}
+              />
             </FormControl>
           </FormItem>
         )}
       />
 
-      <FormField
+      {/* <FormField
         control={control}
         name={`details.${index}.APP_QTY`}
         render={({ field }) => (
           <FormItem className="col-span-1">
             <FormLabel className="text-xs">App qty</FormLabel>
             <FormControl>
-              <Input type="number" min={0} step="1" placeholder="0" disabled={isApproved} className="h-9 text-xs" {...field} />
+              <Input
+                type="number"
+                min={0}
+                step="1"
+                placeholder="0"
+                disabled={isApproved}
+                className="h-9 text-xs"
+                {...field}
+              />
             </FormControl>
             <FormMessage className="text-xs" />
           </FormItem>
         )}
-      />
+      /> */}
+
+      <FormField
+  control={control}
+  name={`details.${index}.APP_QTY`}
+  render={({ field }) => {
+    const totQty = Number(form.getValues(`details.${index}.TOT_QTY`)) || 0; // ✅
+    return (
+      <FormItem className="col-span-1">
+        <FormLabel className="text-xs">App qty</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            min={0}
+            max={totQty}                    // ✅
+            step="1"
+            placeholder="0"
+            disabled={isApproved}
+            className="h-9 text-xs"
+            {...field}
+            onChange={(e) => {              // ✅ clamp
+              const val = Number(e.target.value) || 0;
+              field.onChange(val > totQty ? totQty : val);
+            }}
+          />
+        </FormControl>
+        <FormMessage className="text-xs" />
+      </FormItem>
+    );
+  }}
+/>
 
       <FormField
         control={control}
@@ -245,7 +321,13 @@ function ItemRow({
           <FormItem className="col-span-1">
             <FormLabel className="text-xs">UOM</FormLabel>
             <FormControl>
-              <Input placeholder="PCS" disabled={isApproved} className="h-9 text-xs" {...field} value={field.value || ""} />
+              <Input
+                placeholder="PCS"
+                disabled={isApproved}
+                className="h-9 text-xs"
+                {...field}
+                value={field.value || ""}
+              />
             </FormControl>
           </FormItem>
         )}
@@ -258,7 +340,13 @@ function ItemRow({
           <FormItem className="col-span-2">
             <FormLabel className="text-xs">Remarks</FormLabel>
             <FormControl>
-              <Input placeholder="Optional" disabled={isApproved} className="h-9 text-xs" {...field} value={field.value || ""} />
+              <Input
+                placeholder="Optional"
+                disabled={isApproved}
+                className="h-9 text-xs"
+                {...field}
+                value={field.value || ""}
+              />
             </FormControl>
           </FormItem>
         )}
@@ -278,7 +366,9 @@ function ItemRow({
 
       <div className="col-span-1 pt-6 flex justify-center">
         {isApproved ? (
-          <span className="text-xs text-muted-foreground">Already approved</span>
+          <span className="text-xs text-muted-foreground">
+            Already approved
+          </span>
         ) : (
           <Button
             type="button"
@@ -288,7 +378,11 @@ function ItemRow({
             onClick={handleApproveRow}
             disabled={approveDetailMutation.isPending}
           >
-            {approveDetailMutation.isPending ? <Spinner className="h-3 w-3" /> : "Approve"}
+            {approveDetailMutation.isPending ? (
+              <Spinner className="h-3 w-3" />
+            ) : (
+              "Approve"
+            )}
           </Button>
         )}
       </div>
@@ -342,51 +436,62 @@ export default function UpdateRequisitionSheet({
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "details" });
-  const { formState: { isDirty } } = form;
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "details",
+  });
+  const {
+    formState: { isDirty },
+  } = form;
 
   const fromStoreId = form.watch("STORE_ID");
-  const { data: storeItems = [], isFetching: storeItemsLoading } = useItemsByStore(fromStoreId);
+  const { data: storeItems = [], isFetching: storeItemsLoading } =
+    useItemsByStore(fromStoreId);
 
- useEffect(() => {
-  if (!reqData?.master || stores.length === 0) return;
+  useEffect(() => {
+    if (!reqData?.master || stores.length === 0) return;
 
-  const m = reqData.master;
+    const m = reqData.master;
 
-  // Step 1 — সব কিছু reset করো (STORE_ID গুলো Number দিয়ে)
-  form.reset({
-    TDATE: m.TDATE ? format(new Date(m.TDATE), "yyyy-MM-dd") : "",
-    STORE_ID: m.STORE_ID ? Number(m.STORE_ID) : undefined,
-    STORE_ID_TO: m.STORE_ID_TO ? Number(m.STORE_ID_TO) : undefined,
-    VEHICLE_NO: m.VEHICLE_NO || "",
-    DREIVER_NO: m.DREIVER_NO || "",
-    CHALLAN_NO: m.CHALLAN_NO || "",
-    REMARKS: m.REMARKS || "",
-    details: (reqData.details || []).map((d) => ({
-      TID: d.TID,
-      ITEMID: d.ITEMID,
-      TOT_QTY: d.TOT_QTY,
-      APP_QTY: d.APP_QTY || 0,
-      UOM: d.UOM || "",
-      REMARKS: d.REMARKS || "",
-      _status: d.STATUS,
-    })),
-  });
+    // Step 1 — সব কিছু reset করো (STORE_ID গুলো Number দিয়ে)
+    form.reset({
+      TDATE: m.TDATE ? format(new Date(m.TDATE), "yyyy-MM-dd") : "",
+      STORE_ID: m.STORE_ID ? Number(m.STORE_ID) : undefined,
+      STORE_ID_TO: m.STORE_ID_TO ? Number(m.STORE_ID_TO) : undefined,
+      VEHICLE_NO: m.VEHICLE_NO || "",
+      DREIVER_NO: m.DREIVER_NO || "",
+      CHALLAN_NO: m.CHALLAN_NO || "",
+      REMARKS: m.REMARKS || "",
+      details: (reqData.details || []).map((d) => ({
+        TID: d.TID,
+        ITEMID: d.ITEMID,
+        TOT_QTY: d.TOT_QTY,
+        APP_QTY: d.APP_QTY || 0,
+        UOM: d.UOM || "",
+        REMARKS: d.REMARKS || "",
+        _status: d.STATUS,
+      })),
+    });
 
-  // Step 2 — Select DOM mount হওয়ার পর next tick-এ force setValue
-  // Shadcn Select, reset()-এর পর controlled value নেয় না, তাই setTimeout দরকার
-  const timer = setTimeout(() => {
-    if (m.STORE_ID) {
-      form.setValue("STORE_ID", Number(m.STORE_ID), { shouldValidate: true, shouldDirty: false });
-    }
-    if (m.STORE_ID_TO) {
-      form.setValue("STORE_ID_TO", Number(m.STORE_ID_TO), { shouldValidate: true, shouldDirty: false });
-    }
-  }, 0);
+    // Step 2 — Select DOM mount হওয়ার পর next tick-এ force setValue
+    // Shadcn Select, reset()-এর পর controlled value নেয় না, তাই setTimeout দরকার
+    const timer = setTimeout(() => {
+      if (m.STORE_ID) {
+        form.setValue("STORE_ID", Number(m.STORE_ID), {
+          shouldValidate: true,
+          shouldDirty: false,
+        });
+      }
+      if (m.STORE_ID_TO) {
+        form.setValue("STORE_ID_TO", Number(m.STORE_ID_TO), {
+          shouldValidate: true,
+          shouldDirty: false,
+        });
+      }
+    }, 0);
 
-  return () => clearTimeout(timer);
-
-}, [reqData?.master?.TID, stores.length]);
+    return () => clearTimeout(timer);
+  }, [reqData?.master?.TID, stores.length]);
   useEffect(() => {
     if (!open) {
       form.reset({
@@ -402,11 +507,13 @@ export default function UpdateRequisitionSheet({
     }
   }, [open]);
 
-  const pendingCount = (reqData?.details || []).filter((d) => d.STATUS === 1).length;
+  const pendingCount = (reqData?.details || []).filter(
+    (d) => d.STATUS === 1,
+  ).length;
   const hasAnyPending = pendingCount > 0;
 
   // loading হবে যদি req data আসেনি অথবা stores এখনও আসেনি
- const isFormLoading = reqLoading || stores.length === 0 || !reqData?.master;
+  const isFormLoading = reqLoading || stores.length === 0 || !reqData?.master;
 
   const handleApproveAll = async () => {
     if (!requisitionTid) return;
@@ -448,7 +555,7 @@ export default function UpdateRequisitionSheet({
           REMARKS: d.REMARKS || null,
         })),
       };
-      console.log(payload)
+      console.log(payload);
       await updateMutation.mutateAsync({ tid: requisitionTid, data: payload });
       toast.success("Requisition updated successfully!");
       onOpenChange(false);
@@ -461,7 +568,8 @@ export default function UpdateRequisitionSheet({
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description: "You have unsaved changes. Are you sure you want to close?",
+        description:
+          "You have unsaved changes. Are you sure you want to close?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -474,7 +582,12 @@ export default function UpdateRequisitionSheet({
   const isSubmitting = updateMutation.isPending;
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
+    <Sheet
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleCancel();
+      }}
+    >
       <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
@@ -484,49 +597,55 @@ export default function UpdateRequisitionSheet({
             <div>
               <SheetTitle>Update Dispatch</SheetTitle>
               <SheetDescription>
-                Edit  Dispatch #{requisitionTid}
-                {reqData?.master?.CHALLAN_NO && ` · Challan: ${reqData.master.CHALLAN_NO}`}
+                Edit Dispatch #{requisitionTid}
+                {reqData?.master?.CHALLAN_NO &&
+                  ` · Challan: ${reqData.master.CHALLAN_NO}`}
               </SheetDescription>
             </div>
           </div>
         </SheetHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 overflow-hidden"
+          >
             {isFormLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <Spinner className="h-8 w-8" />
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                     Transfer details
                   </p>
 
-                   <div className="grid grid-cols-3 gap-4 mt-4">
-                      <FormField
-                    control={form.control}
-                    name="TDATE"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Transaction date *</FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            className="w-1/2"
-                            placeholder="Select date"
-                            disabled={isSubmitting}
-                            value={field.value ? new Date(field.value) : undefined}
-                            onChange={(d) => field.onChange(d ? format(d, "yyyy-MM-dd") : "")}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   <FormField
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    <FormField
+                      control={form.control}
+                      name="TDATE"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Transaction date *</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              className="w-1/2"
+                              placeholder="Select date"
+                              disabled={isSubmitting}
+                              value={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onChange={(d) =>
+                                field.onChange(d ? format(d, "yyyy-MM-dd") : "")
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
                       control={form.control}
                       name="STORE_ID"
                       render={({ field }) => (
@@ -544,7 +663,10 @@ export default function UpdateRequisitionSheet({
                             </FormControl>
                             <SelectContent>
                               {stores.map((s) => (
-                                <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
+                                <SelectItem
+                                  key={s.STORE_ID}
+                                  value={String(s.STORE_ID)}
+                                >
                                   {s.STORE_NAME}
                                 </SelectItem>
                               ))}
@@ -574,7 +696,10 @@ export default function UpdateRequisitionSheet({
                               {stores
                                 .filter((s) => s.STORE_ID !== fromStoreId)
                                 .map((s) => (
-                                  <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
+                                  <SelectItem
+                                    key={s.STORE_ID}
+                                    value={String(s.STORE_ID)}
+                                  >
                                     {s.STORE_NAME}
                                   </SelectItem>
                                 ))}
@@ -584,14 +709,9 @@ export default function UpdateRequisitionSheet({
                         </FormItem>
                       )}
                     />
-                  
-                   </div>
-
-                
-
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                   
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-4"></div>
 
                   <div className="grid grid-cols-3 gap-4 mt-4">
                     <FormField
@@ -601,7 +721,12 @@ export default function UpdateRequisitionSheet({
                         <FormItem>
                           <FormLabel>Vehicle no.</FormLabel>
                           <FormControl>
-                            <Input placeholder="DHA-1234" disabled={isSubmitting} {...field} value={field.value || ""} />
+                            <Input
+                              placeholder="DHA-1234"
+                              disabled={isSubmitting}
+                              {...field}
+                              value={field.value || ""}
+                            />
                           </FormControl>
                         </FormItem>
                       )}
@@ -613,7 +738,12 @@ export default function UpdateRequisitionSheet({
                         <FormItem>
                           <FormLabel>Driver no.</FormLabel>
                           <FormControl>
-                            <Input placeholder="Phone / ID" disabled={isSubmitting} {...field} value={field.value || ""} />
+                            <Input
+                              placeholder="Phone / ID"
+                              disabled={isSubmitting}
+                              {...field}
+                              value={field.value || ""}
+                            />
                           </FormControl>
                         </FormItem>
                       )}
@@ -625,7 +755,12 @@ export default function UpdateRequisitionSheet({
                         <FormItem>
                           <FormLabel>Challan no.</FormLabel>
                           <FormControl>
-                            <Input placeholder="CH-XXXX" disabled={isSubmitting} {...field} value={field.value || ""} />
+                            <Input
+                              placeholder="CH-XXXX"
+                              disabled={isSubmitting}
+                              {...field}
+                              value={field.value || ""}
+                            />
                           </FormControl>
                         </FormItem>
                       )}
@@ -639,9 +774,8 @@ export default function UpdateRequisitionSheet({
                       <FormItem className="mt-4">
                         <FormLabel>Remarks</FormLabel>
                         <FormControl>
-                        
                           <Textarea
-                          className="w-1/2"
+                            className="w-1/2"
                             rows={2}
                             placeholder="Optional notes..."
                             disabled={isSubmitting}
@@ -662,7 +796,9 @@ export default function UpdateRequisitionSheet({
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         Line items — Approve item by item (REQDETAIL)
                       </p>
-                      <Badge variant="secondary" className="text-xs">{fields.length}</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {fields.length}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       {hasAnyPending && (
@@ -674,9 +810,11 @@ export default function UpdateRequisitionSheet({
                           onClick={handleApproveAll}
                           disabled={approveAllMutation.isPending}
                         >
-                          {approveAllMutation.isPending
-                            ? <Spinner className="mr-2 h-4 w-4" />
-                            : <CheckCheck className="h-4 w-4 mr-1" />}
+                          {approveAllMutation.isPending ? (
+                            <Spinner className="mr-2 h-4 w-4" />
+                          ) : (
+                            <CheckCheck className="h-4 w-4 mr-1" />
+                          )}
                           Approve all pending
                         </Button>
                       )}
@@ -684,7 +822,16 @@ export default function UpdateRequisitionSheet({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => append({ TID: undefined, ITEMID: undefined, TOT_QTY: "", APP_QTY: 0, UOM: "", REMARKS: "" })}
+                        onClick={() =>
+                          append({
+                            TID: undefined,
+                            ITEMID: undefined,
+                            TOT_QTY: "",
+                            APP_QTY: 0,
+                            UOM: "",
+                            REMARKS: "",
+                          })
+                        }
                         disabled={!fromStoreId}
                       >
                         <Plus className="h-4 w-4 mr-1" />
@@ -704,20 +851,38 @@ export default function UpdateRequisitionSheet({
                     <>
                       <div className="grid grid-cols-12 gap-2 pb-1">
                         <div className="col-span-1" />
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium">Item</div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">Total qty</div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">App qty</div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">UOM</div>
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium">Remarks</div>
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium flex justify-center">Status</div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">Action</div>
+                        <div className="col-span-2 text-xs text-muted-foreground font-medium">
+                          Item
+                        </div>
+                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
+                          Total qty
+                        </div>
+                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
+                          App qty
+                        </div>
+                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
+                          UOM
+                        </div>
+                        <div className="col-span-2 text-xs text-muted-foreground font-medium">
+                          Remarks
+                        </div>
+                        <div className="col-span-2 text-xs text-muted-foreground font-medium flex justify-center">
+                          Status
+                        </div>
+                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
+                          Action
+                        </div>
                         <div className="col-span-1" />
                       </div>
 
                       {fields.map((field, index) => {
-                        const rawStatus = form.getValues(`details.${index}._status`);
+                        const rawStatus = form.getValues(
+                          `details.${index}._status`,
+                        );
                         const isApproved = rawStatus === 2;
-                        const detailTid = form.getValues(`details.${index}.TID`);
+                        const detailTid = form.getValues(
+                          `details.${index}.TID`,
+                        );
                         return (
                           <ItemRow
                             key={field.id}
@@ -730,7 +895,9 @@ export default function UpdateRequisitionSheet({
                             detailTid={detailTid}
                             masterTid={requisitionTid}
                             onApproved={refetchReq}
-                            onRemove={() => !isApproved && fields.length > 1 && remove(index)}
+                            onRemove={() =>
+                              !isApproved && fields.length > 1 && remove(index)
+                            }
                           />
                         );
                       })}
@@ -741,12 +908,20 @@ export default function UpdateRequisitionSheet({
             )}
 
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
-              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting || isFormLoading}>
                 {isSubmitting ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Updating...</>
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Updating...
+                  </>
                 ) : (
                   "Update Dispatch"
                 )}
