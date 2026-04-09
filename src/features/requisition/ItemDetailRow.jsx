@@ -167,7 +167,7 @@ function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search i
 
 export function ItemDetailRow({
   row, idx, rows, stores, storesLoading,
-  isSubmitting, rowErrors, updateRow, removeRow, isExisting = false,
+  isSubmitting, rowErrors, updateRow, removeRow, isExisting = false, storeItems = [],
 }) {
   const { data: stockList = [], isFetching: stockFetching } = useItemStockByItemId(
     row.item?.id ?? null

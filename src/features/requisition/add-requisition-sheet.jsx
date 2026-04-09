@@ -31,6 +31,7 @@ import {
 } from "./queries";
 import { ItemDetailRow } from "./ItemDetailRow";
 import { QueryClient as _QC, useQueryClient } from "@tanstack/react-query";
+import { useItemsByStore } from "../requisition-master/queries";
 
 
 // ─── ItemSearchCombobox ───────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ function ItemSearchCombobox({ value, onChange, disabled, placeholder = "Search i
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
   const { data: items = [], isFetching } = useItemSearch(query);
+  
 
   useEffect(() => {
     const handler = (e) => {
@@ -143,6 +145,8 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
   const createDetails = useCreateReqDetailBulk();
   const queryClient = useQueryClient();
   const { data: stores = [], isLoading: storesLoading } = useStores();
+  const watchedStoreId = form.watch("store_id");
+const { data: storeItems = [] } = useItemsByStore(watchedStoreId);
 
   const [rows, setRows] = useState([emptyRow()]);
   const [rowErrors, setRowErrors] = useState([]);
@@ -177,8 +181,44 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
   const removeRow = (idx) =>
     setRows((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
 
-  const updateRow = (idx, field, value) =>
-    setRows((prev) => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+  // const updateRow = (idx, field, value) =>
+  //   setRows((prev) => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+
+  const updateRow = (idx, field, value) => {
+  setRows((prev) =>
+    prev.map((r, i) => {
+      if (i !== idx) return r;
+
+      const updated = { ...r, [field]: value };
+
+      // ✅ item change হলে UOM এবং TOT_QTY auto-fill
+      if (field === "item" && value) {
+        const found = storeItems.find((it) => it.ITEM_ID === value.id);
+        if (found) {
+          updated.uom     = found.UOM || found.UNIT_NAME || r.uom || "";
+          updated.tot_qty = found.STOCK_QTY ?? r.tot_qty ?? "";
+          updated.app_qty = ""; // ✅ নতুন item select হলে app_qty reset
+        }
+      }
+
+      // ✅ tot_qty change হলে app_qty clamp করো
+      if (field === "tot_qty") {
+        const tot = Number(value) || 0;
+        const app = Number(r.app_qty) || 0;
+        if (app > tot) updated.app_qty = String(tot);
+      }
+
+      // ✅ app_qty change হলে tot_qty এর চেয়ে বড় হতে দেবে না
+      if (field === "app_qty") {
+        const tot = Number(r.tot_qty) || 0;
+        const app = Number(value) || 0;
+        if (app > tot) updated.app_qty = String(tot);
+      }
+
+      return updated;
+    })
+  );
+};
 
   // ── Validate rows ────────────────────────────────────────────────────────────
   const validateRows = () => {
@@ -324,6 +364,7 @@ queryClient.invalidateQueries({ queryKey: requisitionKeys.lists() });
   const isSubmitting = createMaster.isPending || createDetails.isPending;
 
 // const watchedStoreId = form.watch("store_id");
+
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
@@ -521,6 +562,7 @@ queryClient.invalidateQueries({ queryKey: requisitionKeys.lists() });
     updateRow={updateRow}
     removeRow={removeRow}
     //  storeId={watchedStoreId} 
+     storeItems={storeItems} 
   />
 ))}
                 </div>

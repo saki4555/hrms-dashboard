@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  
 } from "@/components/ui/form";
 import {
   Select,
@@ -87,6 +88,7 @@ const formSchema = z.object({
 function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoading }) {
   const [itemOpen, setItemOpen] = useState(false);
   const [itemSearch, setItemSearch] = useState("");
+  const form = useFormContext();
 
   // const filteredItems = (storeItems || []).filter(
   //   (it) =>
@@ -211,7 +213,7 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
       />
 
       {/* App qty */}
-      <FormField
+      {/* <FormField
         control={control}
         name={`details.${index}.APP_QTY`}
         render={({ field }) => (
@@ -230,7 +232,39 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
             <FormMessage className="text-xs" />
           </FormItem>
         )}
-      />
+      /> */}
+
+     
+<FormField
+  control={control}
+  name={`details.${index}.APP_QTY`}
+  render={({ field }) => {
+    // ✅ এই row এর TOT_QTY নাও
+    const totQty = Number(form.getValues(`details.${index}.TOT_QTY`)) || 0;
+    return (
+      <FormItem className="col-span-1">
+        <FormLabel className="text-xs">App Qty</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            min={0}
+            max={totQty}  // ✅ max set
+            step="1"
+            placeholder="0"
+            className="h-9 text-xs"
+            {...field}
+            onChange={(e) => {
+              const val = Number(e.target.value) || 0;
+              // ✅ TOT_QTY এর বেশি হলে TOT_QTY তে clamp
+              field.onChange(val > totQty ? totQty : val);
+            }}
+          />
+        </FormControl>
+        <FormMessage className="text-xs" />
+      </FormItem>
+    );
+  }}
+/>
 
       {/* UOM */}
       <FormField
@@ -334,26 +368,41 @@ export default function AddRequisitionSheet({ open, onOpenChange, showConfirmati
 
   // Auto-fill UOM and TOT_QTY when item selected
   const watchedDetails = form.watch("details");
-  useEffect(() => {
-    watchedDetails.forEach((detail, idx) => {
-      if (detail.ITEMID && storeItems.length > 0) {
-        const found = storeItems.find((it) => it.ITEM_ID === detail.ITEMID);
-        if (found) {
-          const currentUom = form.getValues(`details.${idx}.UOM`);
-          const itemUom = found.UOM || found.UNIT_NAME || "";
-          if (!currentUom && itemUom) {
-            form.setValue(`details.${idx}.UOM`, itemUom, { shouldDirty: false });
-          }
-          const currentQty = form.getValues(`details.${idx}.TOT_QTY`);
-          const stockQty = found.STOCK_QTY ?? found.TOT_QTY ?? 0;
-          if (!currentQty && stockQty) {
-            form.setValue(`details.${idx}.TOT_QTY`, stockQty, { shouldDirty: false });
-          }
-        }
-      }
-    });
-  }, [watchedDetails.map((d) => d.ITEMID).join(","), storeItems]);
+  // useEffect(() => {
+  //   watchedDetails.forEach((detail, idx) => {
+  //     if (detail.ITEMID && storeItems.length > 0) {
+  //       const found = storeItems.find((it) => it.ITEM_ID === detail.ITEMID);
+  //       if (found) {
+  //         const currentUom = form.getValues(`details.${idx}.UOM`);
+  //         const itemUom = found.UOM || found.UNIT_NAME || "";
+  //         if (!currentUom && itemUom) {
+  //           form.setValue(`details.${idx}.UOM`, itemUom, { shouldDirty: false });
+  //         }
+  //         const currentQty = form.getValues(`details.${idx}.TOT_QTY`);
+  //         const stockQty = found.STOCK_QTY ?? found.TOT_QTY ?? 0;
+  //         if (!currentQty && stockQty) {
+  //           form.setValue(`details.${idx}.TOT_QTY`, stockQty, { shouldDirty: false });
+  //         }
+  //       }
+  //     }
+  //   });
+  // }, [watchedDetails.map((d) => d.ITEMID).join(","), storeItems]);
 
+  // ✅ নতুন কোড — item change হলে সবসময় update হবে
+useEffect(() => {
+  watchedDetails.forEach((detail, idx) => {
+    if (detail.ITEMID && storeItems.length > 0) {
+      const found = storeItems.find((it) => it.ITEM_ID === detail.ITEMID);
+      if (found) {
+        // ✅ condition নেই — সবসময় ওই item এর value দিয়ে fill করো
+        form.setValue(`details.${idx}.UOM`, found.UOM || found.UNIT_NAME || "", { shouldDirty: false });
+        form.setValue(`details.${idx}.TOT_QTY`, found.STOCK_QTY ?? found.TOT_QTY ?? 0, { shouldDirty: false });
+        // ✅ item change হলে APP_QTY reset করো
+        form.setValue(`details.${idx}.APP_QTY`, 0, { shouldDirty: false });
+      }
+    }
+  });
+}, [watchedDetails.map((d) => d.ITEMID).join(","), storeItems]);
   useEffect(() => {
     if (open) {
       form.reset({
