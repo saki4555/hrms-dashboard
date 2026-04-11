@@ -48,13 +48,14 @@ import { DatePicker } from "@/components/DatePicker";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
-  ClipboardEdit,
+  Truck,
   Plus,
   Trash2,
   ChevronsUpDown,
   Check,
   PackageSearch,
   CheckCheck,
+  CheckCircle2,
 } from "lucide-react";
 import {
   useUpdateRequisition,
@@ -125,22 +126,23 @@ function ItemRow({
   };
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-12 gap-2 items-start py-2 border-b border-border last:border-0",
-        isApproved && "opacity-70",
-      )}
-    >
-      <div className="col-span-1 pt-8 text-center text-xs text-muted-foreground font-medium">
-        {index + 1}
+    <div className={cn(
+      "grid grid-cols-12 gap-x-3 items-center py-2.5 border-b border-border last:border-0 transition-colors px-2",
+      isApproved ? "opacity-60 bg-muted/10" : "hover:bg-muted/30"
+    )}>
+      {/* Row index */}
+      <div className="col-span-1 text-center">
+        <span className="text-[11px] text-muted-foreground/60 font-mono font-semibold">
+          {String(index + 1).padStart(2, "0")}
+        </span>
       </div>
 
+      {/* Item selector */}
       <FormField
         control={control}
         name={`details.${index}.ITEMID`}
         render={({ field }) => (
-          <FormItem className="col-span-2">
-            <FormLabel className="text-xs">Item *</FormLabel>
+          <FormItem className="col-span-3 space-y-0">
             <Popover open={itemOpen} onOpenChange={setItemOpen}>
               <PopoverTrigger asChild>
                 <FormControl>
@@ -149,27 +151,27 @@ function ItemRow({
                     role="combobox"
                     disabled={!storeId || isApproved}
                     className={cn(
-                      "w-full justify-between font-normal text-xs h-9",
-                      !field.value && "text-muted-foreground",
+                      "w-full justify-between font-normal text-xs h-8",
+                      !field.value && "text-muted-foreground"
                     )}
                   >
-                    {field.value
-                      ? storeItems?.find((it) => it.ITEM_ID === field.value)
-                          ?.ITEM_NAME ||
-                        (storeItemsLoading
-                          ? "Loading..."
-                          : `Item #${field.value}`)
-                      : "Select item..."}
-                    <ChevronsUpDown className="ml-1 h-3 w-3 opacity-50 shrink-0" />
+                    <span className="truncate">
+                      {field.value
+                        ? storeItems?.find((it) => it.ITEM_ID === field.value)?.ITEM_NAME ||
+                          (storeItemsLoading ? "Loading…" : `Item #${field.value}`)
+                        : "Select item…"}
+                    </span>
+                    {!isApproved && <ChevronsUpDown className="ml-1 h-3 w-3 opacity-50 shrink-0" />}
                   </Button>
                 </FormControl>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0" align="start">
                 <Command shouldFilter={false}>
                   <CommandInput
-                    placeholder="Search item..."
+                    placeholder="Search item…"
                     value={itemSearch}
                     onValueChange={setItemSearch}
+                    className="text-xs h-9"
                   />
                   <CommandList>
                     {storeItemsLoading && (
@@ -178,57 +180,30 @@ function ItemRow({
                       </div>
                     )}
                     {!storeItemsLoading && filteredItems.length === 0 && (
-                      <CommandEmpty>No items found.</CommandEmpty>
+                      <CommandEmpty className="text-xs">No items found.</CommandEmpty>
                     )}
                     <CommandGroup>
                       {filteredItems.map((it) => (
                         <CommandItem
                           key={it.ITEM_ID}
                           value={String(it.ITEM_ID)}
-                          // onSelect={() => {
-                          //   field.onChange(it.ITEM_ID);
-                          //   setItemOpen(false);
-                          //   setItemSearch("");
-                          // }}
                           onSelect={() => {
                             field.onChange(it.ITEM_ID);
                             setItemOpen(false);
                             setItemSearch("");
-
-                            // ✅ auto-fill TOT_QTY এবং UOM
-                            const found = storeItems?.find(
-                              (s) => s.ITEM_ID === it.ITEM_ID,
-                            );
+                            const found = storeItems?.find((s) => s.ITEM_ID === it.ITEM_ID);
                             if (found) {
-                              form.setValue(
-                                `details.${index}.TOT_QTY`,
-                                found.STOCK_QTY ?? found.TOT_QTY ?? "",
-                                { shouldDirty: true },
-                              );
-                              form.setValue(
-                                `details.${index}.UOM`,
-                                found.UOM || found.UNIT_NAME || "",
-                                { shouldDirty: true },
-                              );
-                              form.setValue(`details.${index}.APP_QTY`, 0, {
-                                shouldDirty: true,
-                              }); // ✅ reset
+                              form.setValue(`details.${index}.TOT_QTY`, found.STOCK_QTY ?? found.TOT_QTY ?? "", { shouldDirty: true });
+                              form.setValue(`details.${index}.UOM`, found.UOM || found.UNIT_NAME || "", { shouldDirty: true });
+                              form.setValue(`details.${index}.APP_QTY`, 0, { shouldDirty: true });
                             }
                           }}
                         >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              field.value === it.ITEM_ID
-                                ? "opacity-100"
-                                : "opacity-0",
-                            )}
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-sm">{it.ITEM_NAME}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Stock: {it.STOCK_QTY ?? "—"} ·{" "}
-                              {it.UOM ?? it.UNIT_NAME ?? "—"}
+                          <Check className={cn("mr-2 h-3.5 w-3.5", field.value === it.ITEM_ID ? "opacity-100" : "opacity-0")} />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-medium truncate">{it.ITEM_NAME}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              Stock: {it.STOCK_QTY ?? "—"} · {it.UOM ?? it.UNIT_NAME ?? "—"}
                             </span>
                           </div>
                         </CommandItem>
@@ -238,22 +213,22 @@ function ItemRow({
                 </Command>
               </PopoverContent>
             </Popover>
-            <FormMessage className="text-xs" />
+            <FormMessage className="text-[10px] mt-0.5" />
           </FormItem>
         )}
       />
 
+      {/* Total Qty */}
       <FormField
         control={control}
         name={`details.${index}.TOT_QTY`}
         render={({ field }) => (
-          <FormItem className="col-span-1">
-            <FormLabel className="text-xs">Total qty</FormLabel>
+          <FormItem className="col-span-1 space-y-0">
             <FormControl>
               <Input
                 placeholder="0"
                 disabled={isApproved}
-                className="h-9 text-xs"
+                className="h-8 text-xs text-center"
                 {...field}
                 value={field.value || ""}
               />
@@ -262,69 +237,47 @@ function ItemRow({
         )}
       />
 
-      {/* <FormField
+      {/* App Qty */}
+      <FormField
         control={control}
         name={`details.${index}.APP_QTY`}
-        render={({ field }) => (
-          <FormItem className="col-span-1">
-            <FormLabel className="text-xs">App qty</FormLabel>
-            <FormControl>
-              <Input
-                type="number"
-                min={0}
-                step="1"
-                placeholder="0"
-                disabled={isApproved}
-                className="h-9 text-xs"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )}
-      /> */}
+        render={({ field }) => {
+          const totQty = Number(form.getValues(`details.${index}.TOT_QTY`)) || 0;
+          return (
+            <FormItem className="col-span-1 space-y-0">
+              <FormControl>
+                <Input
+                  type="number"
+                  min={0}
+                  max={totQty}
+                  step="1"
+                  placeholder="0"
+                  disabled={isApproved}
+                  className="h-8 text-xs text-center"
+                  {...field}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 0;
+                    field.onChange(val > totQty ? totQty : val);
+                  }}
+                />
+              </FormControl>
+              <FormMessage className="text-[10px]" />
+            </FormItem>
+          );
+        }}
+      />
 
-      <FormField
-  control={control}
-  name={`details.${index}.APP_QTY`}
-  render={({ field }) => {
-    const totQty = Number(form.getValues(`details.${index}.TOT_QTY`)) || 0; // ✅
-    return (
-      <FormItem className="col-span-1">
-        <FormLabel className="text-xs">App qty</FormLabel>
-        <FormControl>
-          <Input
-            type="number"
-            min={0}
-            max={totQty}                    // ✅
-            step="1"
-            placeholder="0"
-            disabled={isApproved}
-            className="h-9 text-xs"
-            {...field}
-            onChange={(e) => {              // ✅ clamp
-              const val = Number(e.target.value) || 0;
-              field.onChange(val > totQty ? totQty : val);
-            }}
-          />
-        </FormControl>
-        <FormMessage className="text-xs" />
-      </FormItem>
-    );
-  }}
-/>
-
+      {/* UOM */}
       <FormField
         control={control}
         name={`details.${index}.UOM`}
         render={({ field }) => (
-          <FormItem className="col-span-1">
-            <FormLabel className="text-xs">UOM</FormLabel>
+          <FormItem className="col-span-1 space-y-0">
             <FormControl>
               <Input
                 placeholder="PCS"
                 disabled={isApproved}
-                className="h-9 text-xs"
+                className="h-8 text-xs text-center"
                 {...field}
                 value={field.value || ""}
               />
@@ -333,17 +286,17 @@ function ItemRow({
         )}
       />
 
+      {/* Remarks */}
       <FormField
         control={control}
         name={`details.${index}.REMARKS`}
         render={({ field }) => (
-          <FormItem className="col-span-2">
-            <FormLabel className="text-xs">Remarks</FormLabel>
+          <FormItem className="col-span-2 space-y-0">
             <FormControl>
               <Input
-                placeholder="Optional"
+                placeholder="Optional note…"
                 disabled={isApproved}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
                 {...field}
                 value={field.value || ""}
               />
@@ -352,51 +305,53 @@ function ItemRow({
         )}
       />
 
-      <div className="col-span-2 pt-6 flex justify-center">
+      {/* Status badge */}
+      <div className="col-span-1 flex justify-center">
         {isApproved ? (
-          <Badge className="w-fit bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0 text-xs">
+          <Badge className="text-[10px] font-semibold uppercase tracking-wide bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-300 dark:border-green-800 hover:bg-green-100">
             Approved
           </Badge>
         ) : (
-          <Badge className="w-fit bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-0 text-xs">
+          <Badge className="text-[10px] font-semibold uppercase tracking-wide bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-800 hover:bg-yellow-100">
             Pending
           </Badge>
         )}
       </div>
 
-      <div className="col-span-1 pt-6 flex justify-center">
+      {/* Approve action */}
+      <div className="col-span-1 flex justify-center">
         {isApproved ? (
-          <span className="text-xs text-muted-foreground">
-            Already approved
-          </span>
+          <CheckCircle2 className="h-4 w-4 text-green-500/50" />
         ) : (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 text-xs px-2 text-green-700 border-green-300 hover:bg-green-50 dark:hover:bg-green-950"
+            className="h-7 w-7 p-0 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30"
             onClick={handleApproveRow}
             disabled={approveDetailMutation.isPending}
+            title="Approve this item"
           >
             {approveDetailMutation.isPending ? (
               <Spinner className="h-3 w-3" />
             ) : (
-              "Approve"
+              <Check className="h-3.5 w-3.5" />
             )}
           </Button>
         )}
       </div>
 
-      <div className="col-span-1 pt-6 flex justify-center">
+      {/* Remove */}
+      <div className="col-span-1 flex justify-center">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={onRemove}
           disabled={isApproved}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
@@ -412,15 +367,9 @@ export default function UpdateRequisitionSheet({
 }) {
   const updateMutation = useUpdateRequisition();
   const approveAllMutation = useApproveAll();
-
-  // ── stores and req data both needed before reset ──────────────────────────
   const { data: stores = [] } = useStores();
-
-  const {
-    data: reqData,
-    isLoading: reqLoading,
-    refetch: refetchReq,
-  } = useRequisitionById(requisitionTid);
+  const { data: reqData, isLoading: reqLoading, refetch: refetchReq } =
+    useRequisitionById(requisitionTid);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -436,24 +385,15 @@ export default function UpdateRequisitionSheet({
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "details",
-  });
-  const {
-    formState: { isDirty },
-  } = form;
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "details" });
+  const { formState: { isDirty } } = form;
 
   const fromStoreId = form.watch("STORE_ID");
-  const { data: storeItems = [], isFetching: storeItemsLoading } =
-    useItemsByStore(fromStoreId);
+  const { data: storeItems = [], isFetching: storeItemsLoading } = useItemsByStore(fromStoreId);
 
   useEffect(() => {
     if (!reqData?.master || stores.length === 0) return;
-
     const m = reqData.master;
-
-    // Step 1 — সব কিছু reset করো (STORE_ID গুলো Number দিয়ে)
     form.reset({
       TDATE: m.TDATE ? format(new Date(m.TDATE), "yyyy-MM-dd") : "",
       STORE_ID: m.STORE_ID ? Number(m.STORE_ID) : undefined,
@@ -472,54 +412,28 @@ export default function UpdateRequisitionSheet({
         _status: d.STATUS,
       })),
     });
-
-    // Step 2 — Select DOM mount হওয়ার পর next tick-এ force setValue
-    // Shadcn Select, reset()-এর পর controlled value নেয় না, তাই setTimeout দরকার
     const timer = setTimeout(() => {
-      if (m.STORE_ID) {
-        form.setValue("STORE_ID", Number(m.STORE_ID), {
-          shouldValidate: true,
-          shouldDirty: false,
-        });
-      }
-      if (m.STORE_ID_TO) {
-        form.setValue("STORE_ID_TO", Number(m.STORE_ID_TO), {
-          shouldValidate: true,
-          shouldDirty: false,
-        });
-      }
+      if (m.STORE_ID) form.setValue("STORE_ID", Number(m.STORE_ID), { shouldValidate: true, shouldDirty: false });
+      if (m.STORE_ID_TO) form.setValue("STORE_ID_TO", Number(m.STORE_ID_TO), { shouldValidate: true, shouldDirty: false });
     }, 0);
-
     return () => clearTimeout(timer);
   }, [reqData?.master?.TID, stores.length]);
+
   useEffect(() => {
     if (!open) {
-      form.reset({
-        TDATE: "",
-        STORE_ID: undefined,
-        STORE_ID_TO: undefined,
-        VEHICLE_NO: "",
-        DREIVER_NO: "",
-        CHALLAN_NO: "",
-        REMARKS: "",
-        details: [],
-      });
+      form.reset({ TDATE: "", STORE_ID: undefined, STORE_ID_TO: undefined, VEHICLE_NO: "", DREIVER_NO: "", CHALLAN_NO: "", REMARKS: "", details: [] });
     }
   }, [open]);
 
-  const pendingCount = (reqData?.details || []).filter(
-    (d) => d.STATUS === 1,
-  ).length;
+  const pendingCount = (reqData?.details || []).filter((d) => d.STATUS === 1).length;
   const hasAnyPending = pendingCount > 0;
-
-  // loading হবে যদি req data আসেনি অথবা stores এখনও আসেনি
   const isFormLoading = reqLoading || stores.length === 0 || !reqData?.master;
 
   const handleApproveAll = async () => {
     if (!requisitionTid) return;
     const confirmed = await showConfirmation?.({
       title: "Approve all pending items?",
-      description: `This will approve all ${pendingCount} pending item(s) in requisition #${requisitionTid}. This cannot be undone.`,
+      description: `This will approve all ${pendingCount} pending item(s) in dispatch #${requisitionTid}. This cannot be undone.`,
       confirmText: "Approve all",
       cancelText: "Cancel",
       variant: "default",
@@ -557,10 +471,10 @@ export default function UpdateRequisitionSheet({
       };
       console.log(payload);
       await updateMutation.mutateAsync({ tid: requisitionTid, data: payload });
-      toast.success("Requisition updated successfully!");
+      toast.success("Dispatch updated successfully!");
       onOpenChange(false);
     } catch (err) {
-      toast.error(err?.message || "Failed to Update Dispatch.");
+      toast.error(err?.message || "Failed to update dispatch.");
     }
   };
 
@@ -568,8 +482,7 @@ export default function UpdateRequisitionSheet({
     if (isDirty && showConfirmation) {
       const confirmed = await showConfirmation({
         title: "Discard changes?",
-        description:
-          "You have unsaved changes. Are you sure you want to close?",
+        description: "You have unsaved changes. Are you sure you want to close?",
         confirmText: "Discard",
         cancelText: "Keep Editing",
         variant: "destructive",
@@ -582,66 +495,79 @@ export default function UpdateRequisitionSheet({
   const isSubmitting = updateMutation.isPending;
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) handleCancel();
-      }}
-    >
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
       <SheetContent className="!w-screen !h-screen !max-w-none flex flex-col gap-0 p-0 rounded-none">
-        <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <ClipboardEdit className="h-5 w-5 text-amber-600" />
+
+        {/* ── Header ── */}
+        <SheetHeader className="px-6 py-5 border-b border-border shrink-0 bg-muted/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                <Truck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <SheetTitle className="text-base font-semibold">Dispatch</SheetTitle>
+                <SheetDescription className="text-xs mt-0.5">
+                  Edit Dispatch #{requisitionTid}
+                  {reqData?.master?.CHALLAN_NO && (
+                    <span className="ml-1.5">· {reqData.master.CHALLAN_NO}</span>
+                  )}
+                </SheetDescription>
+              </div>
             </div>
-            <div>
-              <SheetTitle>Update Dispatch</SheetTitle>
-              <SheetDescription>
-                Edit Dispatch #{requisitionTid}
-                {reqData?.master?.CHALLAN_NO &&
-                  ` · Challan: ${reqData.master.CHALLAN_NO}`}
-              </SheetDescription>
-            </div>
+            {/* {hasAnyPending && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30"
+                onClick={handleApproveAll}
+                disabled={approveAllMutation.isPending}
+              >
+                {approveAllMutation.isPending ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <CheckCheck className="h-3.5 w-3.5" />
+                )}
+                Approve all pending ({pendingCount})
+              </Button>
+            )} */}
           </div>
         </SheetHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
             {isFormLoading ? (
               <div className="flex-1 flex items-center justify-center">
-                <Spinner className="h-8 w-8" />
+                <div className="flex flex-col items-center gap-3">
+                  <Spinner className="h-7 w-7" />
+                  <span className="text-xs text-muted-foreground">Loading dispatch data…</span>
+                </div>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                    Transfer details
-                  </p>
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
 
-                  <div className="grid grid-cols-3 gap-4 mt-4">
+                {/* ── Master Fields ── */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="TDATE"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Transaction date *</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Transaction Date <span className="text-destructive normal-case">*</span>
+                          </FormLabel>
                           <FormControl>
                             <DatePicker
-                              className="w-1/2"
+                              className="w-full"
                               placeholder="Select date"
                               disabled={isSubmitting}
-                              value={
-                                field.value ? new Date(field.value) : undefined
-                              }
-                              onChange={(d) =>
-                                field.onChange(d ? format(d, "yyyy-MM-dd") : "")
-                              }
+                              value={field.value ? new Date(field.value) : undefined}
+                              onChange={(d) => field.onChange(d ? format(d, "yyyy-MM-dd") : "")}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -649,8 +575,10 @@ export default function UpdateRequisitionSheet({
                       control={form.control}
                       name="STORE_ID"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>From store *</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            From Store <span className="text-destructive normal-case">*</span>
+                          </FormLabel>
                           <Select
                             disabled={isSubmitting}
                             onValueChange={(v) => field.onChange(Number(v))}
@@ -663,16 +591,13 @@ export default function UpdateRequisitionSheet({
                             </FormControl>
                             <SelectContent>
                               {stores.map((s) => (
-                                <SelectItem
-                                  key={s.STORE_ID}
-                                  value={String(s.STORE_ID)}
-                                >
+                                <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
                                   {s.STORE_NAME}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
@@ -680,8 +605,10 @@ export default function UpdateRequisitionSheet({
                       control={form.control}
                       name="STORE_ID_TO"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>To store *</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            To Store <span className="text-destructive normal-case">*</span>
+                          </FormLabel>
                           <Select
                             disabled={isSubmitting}
                             onValueChange={(v) => field.onChange(Number(v))}
@@ -696,37 +623,29 @@ export default function UpdateRequisitionSheet({
                               {stores
                                 .filter((s) => s.STORE_ID !== fromStoreId)
                                 .map((s) => (
-                                  <SelectItem
-                                    key={s.STORE_ID}
-                                    value={String(s.STORE_ID)}
-                                  >
+                                  <SelectItem key={s.STORE_ID} value={String(s.STORE_ID)}>
                                     {s.STORE_NAME}
                                   </SelectItem>
                                 ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mt-4"></div>
-
-                  <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="VEHICLE_NO"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Vehicle no.</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Vehicle No.
+                          </FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="DHA-1234"
-                              disabled={isSubmitting}
-                              {...field}
-                              value={field.value || ""}
-                            />
+                            <Input placeholder="DHA-1234" disabled={isSubmitting} {...field} value={field.value || ""} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -735,15 +654,12 @@ export default function UpdateRequisitionSheet({
                       control={form.control}
                       name="DREIVER_NO"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Driver no.</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Driver No.
+                          </FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="Phone / ID"
-                              disabled={isSubmitting}
-                              {...field}
-                              value={field.value || ""}
-                            />
+                            <Input placeholder="Phone / ID" disabled={isSubmitting} {...field} value={field.value || ""} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -752,15 +668,12 @@ export default function UpdateRequisitionSheet({
                       control={form.control}
                       name="CHALLAN_NO"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Challan no.</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Challan No.
+                          </FormLabel>
                           <FormControl>
-                            <Input
-                              placeholder="CH-XXXX"
-                              disabled={isSubmitting}
-                              {...field}
-                              value={field.value || ""}
-                            />
+                            <Input placeholder="CH-XXXX" disabled={isSubmitting} {...field} value={field.value || ""} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -771,14 +684,16 @@ export default function UpdateRequisitionSheet({
                     control={form.control}
                     name="REMARKS"
                     render={({ field }) => (
-                      <FormItem className="mt-4">
-                        <FormLabel>Remarks</FormLabel>
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                          Remarks
+                        </FormLabel>
                         <FormControl>
                           <Textarea
-                            className="w-1/2"
                             rows={2}
-                            placeholder="Optional notes..."
+                            placeholder="Additional logistics notes, handling instructions…"
                             disabled={isSubmitting}
+                            className="resize-none"
                             {...field}
                             value={field.value || ""}
                           />
@@ -790,137 +705,95 @@ export default function UpdateRequisitionSheet({
 
                 <Separator />
 
+                {/* ── Line Items ── */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Line items — Approve item by item (REQDETAIL)
+                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                        Line Items
                       </p>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs h-5 px-1.5 rounded-sm">
                         {fields.length}
                       </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasAnyPending && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={handleApproveAll}
-                          disabled={approveAllMutation.isPending}
-                        >
-                          {approveAllMutation.isPending ? (
-                            <Spinner className="mr-2 h-4 w-4" />
-                          ) : (
-                            <CheckCheck className="h-4 w-4 mr-1" />
-                          )}
-                          Approve all pending
-                        </Button>
+                      {pendingCount > 0 && (
+                        <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-sm text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800">
+                          {pendingCount} pending
+                        </Badge>
                       )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          append({
-                            TID: undefined,
-                            ITEMID: undefined,
-                            TOT_QTY: "",
-                            APP_QTY: 0,
-                            UOM: "",
-                            REMARKS: "",
-                          })
-                        }
-                        disabled={!fromStoreId}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add item
-                      </Button>
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        append({ TID: undefined, ITEMID: undefined, TOT_QTY: "", APP_QTY: 0, UOM: "", REMARKS: "" })
+                      }
+                      disabled={!fromStoreId}
+                      className="h-7 text-xs gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add New Item
+                    </Button>
                   </div>
 
-                  {!fromStoreId && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-md px-4 py-3">
-                      <PackageSearch className="h-4 w-4" />
-                      Select a from-store to load available items
+                  {!fromStoreId ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 border border-dashed border-border rounded-md px-4 py-3">
+                      <PackageSearch className="h-4 w-4 shrink-0" />
+                      Select a source store to load available items
                     </div>
-                  )}
-
-                  {fromStoreId && (
-                    <>
-                      <div className="grid grid-cols-12 gap-2 pb-1">
+                  ) : (
+                    <div className="rounded-md border border-border overflow-hidden">
+                      {/* Column headers */}
+                      <div className="grid grid-cols-12 gap-x-3 px-2 py-2 bg-muted/50 border-b border-border">
                         <div className="col-span-1" />
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium">
-                          Item
-                        </div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
-                          Total qty
-                        </div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
-                          App qty
-                        </div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
-                          UOM
-                        </div>
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium">
-                          Remarks
-                        </div>
-                        <div className="col-span-2 text-xs text-muted-foreground font-medium flex justify-center">
-                          Status
-                        </div>
-                        <div className="col-span-1 text-xs text-muted-foreground font-medium">
-                          Action
-                        </div>
+                        <div className="col-span-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Item Name</div>
+                        <div className="col-span-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Total Qty</div>
+                        <div className="col-span-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">App Qty</div>
+                        <div className="col-span-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">UOM</div>
+                        <div className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Remarks</div>
+                        <div className="col-span-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Status</div>
+                        <div className="col-span-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Action</div>
                         <div className="col-span-1" />
                       </div>
 
-                      {fields.map((field, index) => {
-                        const rawStatus = form.getValues(
-                          `details.${index}._status`,
-                        );
-                        const isApproved = rawStatus === 2;
-                        const detailTid = form.getValues(
-                          `details.${index}.TID`,
-                        );
-                        return (
-                          <ItemRow
-                            key={field.id}
-                            index={index}
-                            control={form.control}
-                            storeId={fromStoreId}
-                            storeItems={storeItems}
-                            storeItemsLoading={storeItemsLoading}
-                            isApproved={isApproved}
-                            detailTid={detailTid}
-                            masterTid={requisitionTid}
-                            onApproved={refetchReq}
-                            onRemove={() =>
-                              !isApproved && fields.length > 1 && remove(index)
-                            }
-                          />
-                        );
-                      })}
-                    </>
+                      <div className="divide-y divide-border">
+                        {fields.map((field, index) => {
+                          const rawStatus = form.getValues(`details.${index}._status`);
+                          const isApproved = rawStatus === 2;
+                          const detailTid = form.getValues(`details.${index}.TID`);
+                          return (
+                            <ItemRow
+                              key={field.id}
+                              index={index}
+                              control={form.control}
+                              storeId={fromStoreId}
+                              storeItems={storeItems}
+                              storeItemsLoading={storeItemsLoading}
+                              isApproved={isApproved}
+                              detailTid={detailTid}
+                              masterTid={requisitionTid}
+                              onApproved={refetchReq}
+                              onRemove={() => !isApproved && fields.length > 1 && remove(index)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
+            {/* ── Footer ── */}
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-border bg-muted/40 shrink-0">
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting || isFormLoading}>
                 {isSubmitting ? (
                   <>
                     <Spinner className="mr-2 h-4 w-4" />
-                    Updating...
+                    Updating…
                   </>
                 ) : (
                   "Update Dispatch"

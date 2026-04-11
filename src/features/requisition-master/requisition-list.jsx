@@ -81,10 +81,10 @@ function ItemsSummary({ pending, approved, total }) {
         {total} {total === 1 ? "item" : "items"}
       </span>
       {allApproved ? (
-        <span className="text-xs text-green-600 dark:text-green-400">• all approved</span>
+        <span className="text-xs text-green-600 dark:text-green-400"> All Approved</span>
       ) : (
         <span className="text-xs text-yellow-600 dark:text-yellow-400">
-          • {pending} pending
+          {pending} Pending
         </span>
       )}
     </div>
