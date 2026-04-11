@@ -63,7 +63,7 @@ import {
   useItemsByStore,
   useRequisitionById,
   useApproveDetail,
-  useApproveAll,
+  // useApproveAll,
 } from "./queries";
 
 /* ─── Zod Schema ─────────────────────────────────────────────────────────── */
@@ -366,7 +366,7 @@ export default function UpdateRequisitionSheet({
   requisitionTid,
 }) {
   const updateMutation = useUpdateRequisition();
-  const approveAllMutation = useApproveAll();
+  // const approveAllMutation = useApproveAll();
   const { data: stores = [] } = useStores();
   const { data: reqData, isLoading: reqLoading, refetch: refetchReq } =
     useRequisitionById(requisitionTid);
@@ -426,27 +426,27 @@ export default function UpdateRequisitionSheet({
   }, [open]);
 
   const pendingCount = (reqData?.details || []).filter((d) => d.STATUS === 1).length;
-  const hasAnyPending = pendingCount > 0;
+  // const hasAnyPending = pendingCount > 0;
   const isFormLoading = reqLoading || stores.length === 0 || !reqData?.master;
 
-  const handleApproveAll = async () => {
-    if (!requisitionTid) return;
-    const confirmed = await showConfirmation?.({
-      title: "Approve all pending items?",
-      description: `This will approve all ${pendingCount} pending item(s) in dispatch #${requisitionTid}. This cannot be undone.`,
-      confirmText: "Approve all",
-      cancelText: "Cancel",
-      variant: "default",
-    });
-    if (!confirmed) return;
-    try {
-      await approveAllMutation.mutateAsync(requisitionTid);
-      toast.success("All pending items approved!");
-      refetchReq();
-    } catch (err) {
-      toast.error(err?.message || "Failed to approve.");
-    }
-  };
+  // const handleApproveAll = async () => {
+  //   if (!requisitionTid) return;
+  //   const confirmed = await showConfirmation?.({
+  //     title: "Approve all pending items?",
+  //     description: `This will approve all ${pendingCount} pending item(s) in dispatch #${requisitionTid}. This cannot be undone.`,
+  //     confirmText: "Approve all",
+  //     cancelText: "Cancel",
+  //     variant: "default",
+  //   });
+  //   if (!confirmed) return;
+  //   try {
+  //     await approveAllMutation.mutateAsync(requisitionTid);
+  //     toast.success("All pending items approved!");
+  //     refetchReq();
+  //   } catch (err) {
+  //     toast.error(err?.message || "Failed to approve.");
+  //   }
+  // };
 
   const onSubmit = async (data) => {
     try {
@@ -721,7 +721,7 @@ export default function UpdateRequisitionSheet({
                         </Badge>
                       )}
                     </div>
-                    <Button
+                    {/* <Button
                       type="button"
                       variant="outline"
                       size="sm"
@@ -733,7 +733,7 @@ export default function UpdateRequisitionSheet({
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Add New Item
-                    </Button>
+                    </Button> */}
                   </div>
 
                   {!fromStoreId ? (
