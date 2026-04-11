@@ -1,3 +1,5 @@
+// src\features\user-management\user-details.jsx
+
 import { useRef, useState } from "react";
 import { useParams, Link } from "react-router";
 import { format } from "date-fns";

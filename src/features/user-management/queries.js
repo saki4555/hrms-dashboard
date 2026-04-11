@@ -257,3 +257,43 @@ export const useRevokePermission = () => {
       qc.invalidateQueries({ queryKey: ["users", "detail", String(userId)] }),
   });
 };
+
+
+
+// ── Role Permissions ──────────────────────────────────────────────────────────
+
+export const useRolePermissions = (roleId) =>
+  useQuery({
+    queryKey: ["roles", "permissions", roleId],
+    queryFn: async () => {
+      const json = await fetcher(`${URLS.users}/roles/${roleId}/permissions`);
+      return json.data;
+    },
+    enabled: !!roleId,
+    ...queryDefaults,
+  });
+
+export const useAssignPermissionToRole = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, permissionId }) =>
+      fetcher(`${URLS.users}/roles/${roleId}/permissions`, {
+        method: "POST",
+        body: JSON.stringify({ permissionId }),
+      }),
+    onSuccess: (_, { roleId }) =>
+      qc.invalidateQueries({ queryKey: ["roles", "permissions", roleId] }),
+  });
+};
+
+export const useRevokePermissionFromRole = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roleId, permissionId }) =>
+      fetcher(`${URLS.users}/roles/${roleId}/permissions/${permissionId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_, { roleId }) =>
+      qc.invalidateQueries({ queryKey: ["roles", "permissions", roleId] }),
+  });
+};
