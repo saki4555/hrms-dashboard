@@ -1,3 +1,4 @@
+// src\features\users\role\role-list.jsx
 import { useState } from "react";
 import {
   flexRender,
@@ -24,7 +25,8 @@ import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { Spinner } from "@/components/ui/spinner";
-import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { IconEdit, IconEye, IconPlus } from "@tabler/icons-react";
+import { LayoutGrid } from "lucide-react";
 import {
   Empty,
   EmptyHeader,
@@ -39,7 +41,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { useRoles, useDeleteRole } from "./queries";
 import AddRoleDialog from "./add-role-dialog";
@@ -48,6 +50,8 @@ import CustomDataTableColumnHeader from "@/components/shared/custom-data-table-c
 import CustomDataTableToolbar from "@/components/shared/custom-data-table-toolbar";
 
 export default function RoleList() {
+  const navigate = useNavigate();
+
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -89,7 +93,9 @@ export default function RoleList() {
         await deleteRoleMutation.mutateAsync(role.ID);
         toast.success("Role deleted successfully!");
       } catch (error) {
-        toast.error(error?.message || "Failed to delete role. Please try again.");
+        toast.error(
+          error?.message || "Failed to delete role. Please try again.",
+        );
       }
     }
   };
@@ -170,6 +176,16 @@ export default function RoleList() {
               )}
               <span className="sr-only">Delete</span>
             </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigate(`/user-management/roles/${role.ID}`)}
+            >
+              <IconEye className="h-4 w-4" />
+              <span className="sr-only">View</span>
+            </Button>
           </div>
         );
       },
@@ -203,7 +219,9 @@ export default function RoleList() {
         <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Roles</h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Roles
+              </h1>
             </div>
             <Button disabled>
               <IconPlus />
@@ -227,7 +245,9 @@ export default function RoleList() {
         <div className="bg-card rounded-md shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Roles</h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Roles
+              </h1>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
@@ -240,7 +260,9 @@ export default function RoleList() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Roles</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
-              <p>{error?.message || "Failed to load roles. Please try again."}</p>
+              <p>
+                {error?.message || "Failed to load roles. Please try again."}
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -273,7 +295,9 @@ export default function RoleList() {
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
-            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Roles</h1>
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+              Roles
+            </h1>
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -292,14 +316,27 @@ export default function RoleList() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
               <span className="sr-only">Refresh data</span>
             </Button>
 
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Role
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/user-management/roles/matrix")}
+            >
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Permission Matrix
             </Button>
           </div>
         </div>
@@ -308,7 +345,10 @@ export default function RoleList() {
       {/* Table */}
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-          <CustomDataTableToolbar table={table} searchPlaceholder="Search roles..." />
+          <CustomDataTableToolbar
+            table={table}
+            searchPlaceholder="Search roles..."
+          />
 
           <div className="overflow-hidden rounded-md border">
             <Table>
@@ -319,7 +359,10 @@ export default function RoleList() {
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -329,17 +372,26 @@ export default function RoleList() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">

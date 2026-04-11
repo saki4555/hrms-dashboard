@@ -106,6 +106,13 @@ const Attendance = lazy(
   () => import("@/features/attendance"),
 );
 
+const RoleDetails =  lazy(
+  () => import("@/features/users/role/role-details"));
+const RolePermissionMatrix = lazy(
+  () =>
+    import("@/features/users/role/role-permission-matrix"),
+)
+
 // ─── Route Map ────────────────────────────────────────────────────────────────
 export const ROUTE_MAP = [
   // ── Core HR ────────────────────────────────────────────────────────────────
@@ -350,6 +357,16 @@ export const ROUTE_MAP = [
   {
     path: PATHS.USERS.ROLE,
     component: RoleManagement,
+    roles: ADMIN_HR,
+  },
+  {
+    path: PATHS.USERS.ROLE_DETAIL,
+    component: RoleDetails,
+    roles: ADMIN_HR,
+  },
+  {
+    path: PATHS.USERS.ROLE_PERMISSION_MATRIX,
+    component: RolePermissionMatrix,
     roles: ADMIN_HR,
   },
   {
