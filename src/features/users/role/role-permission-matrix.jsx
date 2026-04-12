@@ -1,17 +1,16 @@
+
+
+
+
+
 // src/features/users/role/role-permission-matrix.jsx
-import { useState, useCallback } from "react";
+import React from "react";
 import { Link } from "react-router";
 import { useQueries } from "@tanstack/react-query";
-import { ShieldCheck, AlertCircle, RefreshCw, Puzzle } from "lucide-react";
-import { toast } from "sonner";
+import { ShieldCheck, Layers, Check, Minus, XIcon, Info } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink,
   BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
@@ -21,76 +20,33 @@ import {
 } from "@/components/ui/tooltip";
 import PageContainer from "@/components/page-container";
 
-import {
-  useRoles,
-  usePermissions,
-  useAssignPermissionToRole,
-  useRevokePermissionFromRole,
-} from "../../user-management/queries";
+import { useRoles, usePermissions } from "../../user-management/queries";
 
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
-// ── Module color map for visual grouping ──────────────────────────────────────
-const MODULE_COLORS = {
-  "Dashboard":         "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  "Core HR":           "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  "Attendance":        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  "Payroll":           "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-  "Self-Service":      "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
-  "PF & Gratuity":     "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-  "Loan & Advance":    "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20",
-  "Document":          "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
-  "Communication":     "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
-};
-
-const getModuleColor = (moduleName = "") => {
-  const key = Object.keys(MODULE_COLORS).find((k) =>
-    moduleName.toLowerCase().includes(k.toLowerCase())
-  );
-  return key
-    ? MODULE_COLORS[key]
-    : "bg-muted text-muted-foreground border-border";
-};
-
-// ── Single checkbox cell ──────────────────────────────────────────────────────
-function MatrixCell({ roleId, permissionId, checked, pending, onToggle }) {
+function MatrixCell({ granted }) {
   return (
-    <td className="px-4 py-3 text-center border-b border-border/50">
+    <td className="px-2 py-3 text-center border-b border-border/30 group-hover:bg-muted/40 transition">
       <div className="flex items-center justify-center">
-        {pending ? (
-          <Spinner className="h-4 w-4" />
+        {granted ? (
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <Check className="h-4 w-4" strokeWidth={3} />
+          </div>
         ) : (
-          <Checkbox
-            checked={checked}
-            onCheckedChange={(val) => onToggle(roleId, permissionId, !!val)}
-            className="h-4 w-4"
-          />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border/40 text-muted-foreground/40">
+            <Minus className="h-4 w-4" />
+            
+          </div>
         )}
       </div>
     </td>
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function RolePermissionMatrix() {
-  // Track pending state per cell as "roleId-permId"
-  const [pendingCells, setPendingCells] = useState(new Set());
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
+  const { data: allPermissions = [], isLoading: permsLoading } = usePermissions();
 
-  const {
-    data: roles = [],
-    isLoading: rolesLoading,
-    isError: rolesError,
-    refetch: refetchRoles,
-  } = useRoles();
-
-  const {
-    data: allPermissions = [],
-    isLoading: permsLoading,
-    isError: permsError,
-    refetch: refetchPerms,
-  } = usePermissions();
-
-  // Fetch permissions for every role in parallel
   const rolePermissionQueries = useQueries({
     queries: roles.map((role) => ({
       queryKey: ["roles", "permissions", String(role.ID)],
@@ -99,258 +55,188 @@ export default function RolePermissionMatrix() {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
-        if (!res.ok) throw new Error(`Failed to load permissions for role ${role.ROLE_NAME}`);
         const json = await res.json();
         return json.data ?? [];
       },
       enabled: roles.length > 0,
-      staleTime: 30 * 1000,
-      gcTime: 5 * 60 * 1000,
-      refetchOnWindowFocus: false,
     })),
   });
 
-  const isRolePermsLoading = rolePermissionQueries.some((q) => q.isLoading);
-  const isRolePermsError   = rolePermissionQueries.some((q) => q.isError);
+  const isLoading =
+    rolesLoading ||
+    permsLoading ||
+    rolePermissionQueries.some((q) => q.isLoading);
 
-  // Build lookup: roleId → Set<permissionId>
-  const rolePermMap = {};
-  roles.forEach((role, i) => {
-    const perms = rolePermissionQueries[i]?.data ?? [];
-    rolePermMap[role.ID] = new Set(perms.map((p) => p.ID));
-  });
+  const { rolePermMap, grouped } = React.useMemo(() => {
+    const map = {};
+    roles.forEach((role, i) => {
+      const perms = rolePermissionQueries[i]?.data ?? [];
+      map[role.ID] = new Set(perms.map((p) => p.ID));
+    });
 
-  // Group permissions by module
-  const grouped = allPermissions.reduce((acc, p) => {
-    const mod = p.MODULE_NAME || "Other";
-    if (!acc[mod]) acc[mod] = [];
-    acc[mod].push(p);
-    return acc;
-  }, {});
+    const groups = allPermissions.reduce((acc, p) => {
+      const mod = p.MODULE_NAME || "Other";
+      if (!acc[mod]) acc[mod] = [];
+      acc[mod].push(p);
+      return acc;
+    }, {});
 
-  const assignMutation = useAssignPermissionToRole();
-  const revokeMutation = useRevokePermissionFromRole();
+    return { rolePermMap: map, grouped: groups };
+  }, [roles, rolePermissionQueries, allPermissions]);
 
-  const handleToggle = useCallback(
-    async (roleId, permissionId, isChecked) => {
-      const cellKey = `${roleId}-${permissionId}`;
-      setPendingCells((prev) => new Set(prev).add(cellKey));
-      try {
-        if (isChecked) {
-          await assignMutation.mutateAsync({ roleId, permissionId });
-        } else {
-          await revokeMutation.mutateAsync({ roleId, permissionId });
-        }
-      } catch (err) {
-        toast.error(err?.message || "Failed to update permission.");
-      } finally {
-        setPendingCells((prev) => {
-          const next = new Set(prev);
-          next.delete(cellKey);
-          return next;
-        });
-      }
-    },
-    [assignMutation, revokeMutation]
-  );
-
-  const refetchAll = () => {
-    refetchRoles();
-    refetchPerms();
-    rolePermissionQueries.forEach((q) => q.refetch());
-  };
-
-  // ── Permission count per role ──
-  const permCountPerRole = (roleId) => rolePermMap[roleId]?.size ?? 0;
-
-  // ── Loading ──
-  const isLoading = rolesLoading || permsLoading || isRolePermsLoading;
-  if (isLoading) return (
-    <PageContainer>
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    </PageContainer>
-  );
-
-  // ── Error ──
-  if (rolesError || permsError || isRolePermsError) return (
-    <PageContainer>
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Matrix</AlertTitle>
-        <AlertDescription className="flex flex-col gap-2">
-          <p>Failed to load roles or permissions. Please try again.</p>
-          <Button variant="outline" size="sm" onClick={refetchAll} className="w-fit">
-            <RefreshCw className="mr-2 h-4 w-4" /> Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
-    </PageContainer>
-  );
+  if (isLoading)
+    return (
+      <PageContainer>
+        <Skeleton className="h-[80vh] w-full rounded-xl" />
+      </PageContainer>
+    );
 
   return (
     <PageContainer>
-      {/* Breadcrumb */}
-      <Breadcrumb className="mb-4">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>User Management</BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild><Link to="/user-management/roles">Roles</Link></BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Permission Matrix</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="max-w-full mx-auto space-y-2 ">
 
-      <div className="space-y-4">
-
-        {/* Header card */}
-        <div className="bg-card rounded-md shadow-sm p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-0.5">
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                Role–Permission Matrix
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Check or uncheck to grant or revoke permissions per role. Changes are saved immediately.
-              </p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-xl">
+              <ShieldCheck className="h-6 w-6 text-primary" />
             </div>
-            <Button variant="outline" onClick={refetchAll}>
-              <RefreshCw className="h-4 w-4" />
-              <span className="sr-only">Refresh</span>
-            </Button>
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight">
+                Role Permission Matrix
+              </h1>
+              <Breadcrumb>
+                <BreadcrumbList className="text-xs text-muted-foreground">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/">Admin</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Permissions</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+              Granted
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+              Denied
+            </div>
           </div>
         </div>
 
-        {/* Matrix */}
-        <Card className="shadow-sm">
+        {/* Table */}
+        <Card className="border py-0 shadow-sm rounded-xl overflow-hidden">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-auto max-h-[calc(100vh-150px)]">
+              <table className="w-full text-sm border-separate border-spacing-0">
 
-                {/* ── Sticky header: role columns ── */}
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    {/* Permission column header */}
-                    <th className="sticky left-0 z-20 bg-muted/50 px-4 py-3 text-left font-semibold min-w-[240px] border-r border-border">
-                      Permission
+                {/* Head */}
+                <thead className="sticky top-0 z-30 bg-background border-b">
+                  <tr>
+                    <th className="sticky left-0 z-40 bg-background px-5 py-4 text-left border-r min-w-[260px]">
+                      <span className="font-medium text-muted-foreground">
+                        Module / Permission
+                      </span>
                     </th>
 
                     {roles.map((role) => (
                       <th
                         key={role.ID}
-                        className="px-4 py-3 text-center font-semibold min-w-[140px]"
+                        className="px-4 py-4 text-center min-w-[130px]"
                       >
-                        <div className="flex flex-col items-center gap-1.5">
-                          <span>{role.ROLE_NAME}</span>
-                          <Badge variant="secondary" className="text-xs font-normal">
-                            {permCountPerRole(role.ID)} perms
-                          </Badge>
+                        <div className="font-semibold">
+                          {role.ROLE_NAME}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {rolePermMap[role.ID]?.size || 0} permissions
                         </div>
                       </th>
                     ))}
                   </tr>
                 </thead>
 
+                {/* Body */}
                 <tbody>
                   {Object.entries(grouped).map(([moduleName, perms]) => (
-                    <>
-                      {/* ── Module group header row ── */}
-                      <tr key={`mod-${moduleName}`} className="bg-muted/30">
+                    <React.Fragment key={moduleName}>
+
+                      {/* Module Header */}
+                      <tr>
                         <td
                           colSpan={roles.length + 1}
-                          className="sticky left-0 px-4 py-2 border-b border-border"
+                          className="bg-muted/60 px-5 py-3 border-b"
                         >
                           <div className="flex items-center gap-2">
-                            <Puzzle className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span
-                              className={`text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getModuleColor(moduleName)}`}
-                            >
+                            <Layers className="h-4 w-4 text-primary" />
+                            <span className="font-semibold tracking-tight">
                               {moduleName}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {perms.length} permission{perms.length !== 1 ? "s" : ""}
+                              ({perms.length})
                             </span>
                           </div>
                         </td>
                       </tr>
 
-                      {/* ── Permission rows ── */}
-                      {perms.map((perm, idx) => (
+                      {/* Permissions */}
+                      {perms.map((perm) => (
                         <tr
                           key={perm.ID}
-                          className={`hover:bg-muted/20 transition-colors ${
-                            idx % 2 === 0 ? "" : "bg-muted/10"
-                          }`}
+                          className="group hover:bg-muted/40 transition"
                         >
-                          {/* Permission name — sticky left */}
-                          <td className="sticky left-0 z-10 bg-card px-4 py-3 border-b border-border/50 border-r border-border">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="space-y-0.5 cursor-default">
-                                    <p className="font-medium text-sm leading-tight">
-                                      {perm.PERMISSION_NAME}
-                                    </p>
-                                    <code className="text-[10px] text-muted-foreground font-mono bg-muted px-1 py-0.5 rounded">
-                                      {perm.PERMISSION_CODE}
-                                    </code>
-                                  </div>
-                                </TooltipTrigger>
-                                {perm.DESCRIPTION && (
-                                  <TooltipContent side="right" className="max-w-xs">
-                                    <p className="text-xs">{perm.DESCRIPTION}</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
+                          <td className="sticky left-0 z-10 bg-background px-5 py-3 border-b border-r">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">
+                                {perm.PERMISSION_NAME}
+                              </span>
+
+                              {perm.DESCRIPTION && (
+                                <TooltipProvider delayDuration={0}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button>
+                                        <Info className="h-4 w-4 text-muted-foreground hover:text-primary transition" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-xs">
+                                      {perm.DESCRIPTION}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </td>
 
-                          {/* Checkbox per role */}
-                          {roles.map((role) => {
-                            const cellKey = `${role.ID}-${perm.ID}`;
-                            const isChecked = rolePermMap[role.ID]?.has(perm.ID) ?? false;
-                            const isPending = pendingCells.has(cellKey);
-
-                            return (
-                              <MatrixCell
-                                key={cellKey}
-                                roleId={role.ID}
-                                permissionId={perm.ID}
-                                checked={isChecked}
-                                pending={isPending}
-                                onToggle={handleToggle}
-                              />
-                            );
-                          })}
+                          {roles.map((role) => (
+                            <MatrixCell
+                              key={`${role.ID}-${perm.ID}`}
+                              granted={
+                                rolePermMap[role.ID]?.has(perm.ID) ?? false
+                              }
+                            />
+                          ))}
                         </tr>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
-
               </table>
             </div>
           </CardContent>
         </Card>
 
-        {/* Summary footer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>{allPermissions.length} permissions across {Object.keys(grouped).length} modules</span>
-          <span>{roles.length} roles</span>
-        </div>
-
+        
+        
       </div>
     </PageContainer>
   );
