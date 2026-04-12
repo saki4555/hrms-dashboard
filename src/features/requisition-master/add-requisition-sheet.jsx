@@ -88,6 +88,10 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
   const [itemOpen, setItemOpen] = useState(false);
   const [itemSearch, setItemSearch] = useState("");
   const form = useFormContext();
+  // ItemRow ফাংশনের শুরুতে এই লাইন যোগ করো
+const selectedItemId = form.watch(`details.${index}.ITEMID`);
+const isAutoFilled = !!selectedItemId;
+  
 
   const filteredItems = (storeItems || []).filter((it) =>
     it.ITEM_NAME?.toLowerCase().includes(itemSearch.toLowerCase())
@@ -185,7 +189,7 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
         render={({ field }) => (
           <FormItem className="col-span-1 space-y-0">
             <FormControl>
-              <Input placeholder="0" className="h-8 text-xs text-center" {...field} value={field.value || ""} />
+              <Input placeholder="0"  disabled={isAutoFilled} className="h-8 text-xs text-center" {...field} value={field.value || ""} />
             </FormControl>
             <FormMessage className="text-[10px]" />
           </FormItem>
@@ -206,6 +210,7 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
                   min={0}
                   max={totQty}
                   step="1"
+                  
                   placeholder="0"
                   className="h-8 text-xs text-center"
                   {...field}
@@ -228,7 +233,7 @@ function ItemRow({ index, control, storeId, onRemove, storeItems, storeItemsLoad
         render={({ field }) => (
           <FormItem className="col-span-1 space-y-0">
             <FormControl>
-              <Input placeholder="PCS" className="h-8 text-xs text-center" {...field} value={field.value || ""} />
+              <Input placeholder="PCS"  disabled={isAutoFilled}  className="h-8 text-xs text-center" {...field} value={field.value || ""} />
             </FormControl>
           </FormItem>
         )}

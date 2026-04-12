@@ -107,6 +107,8 @@ function ItemRow({
   const [itemSearch, setItemSearch] = useState("");
   const approveDetailMutation = useApproveDetail();
   const form = useFormContext();
+  const selectedItemId = form.watch(`details.${index}.ITEMID`);
+     const isAutoFilled = !!selectedItemId;
 
   const filteredItems = (storeItems || []).filter(
     (it) =>
@@ -227,7 +229,7 @@ function ItemRow({
             <FormControl>
               <Input
                 placeholder="0"
-                disabled={isApproved}
+                disabled={isApproved || isAutoFilled}
                 className="h-8 text-xs text-center"
                 {...field}
                 value={field.value || ""}
@@ -276,7 +278,7 @@ function ItemRow({
             <FormControl>
               <Input
                 placeholder="PCS"
-                disabled={isApproved}
+                disabled={isApproved || isAutoFilled}
                 className="h-8 text-xs text-center"
                 {...field}
                 value={field.value || ""}
