@@ -97,28 +97,28 @@ export default function PermissionList() {
   };
 
   const columns = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: "select",
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && "indeterminate")
+    //       }
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => row.toggleSelected(!!value)}
+    //       aria-label="Select row"
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: "MODULE_NAME",
       header: ({ column }) => (
@@ -159,43 +159,43 @@ export default function PermissionList() {
         <div className="text-muted-foreground">{row.getValue("DESCRIPTION") || "—"}</div>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const permission = row.original;
+    // {
+    //   id: "actions",
+    //   header: "Actions",
+    //   enableHiding: false,
+    //   cell: ({ row }) => {
+    //     const permission = row.original;
 
-        return (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handleEdit(permission)}
-            >
-              <IconEdit className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
+    //     return (
+    //       <div className="flex items-center gap-1">
+    //         <Button
+    //           variant="ghost"
+    //           size="icon"
+    //           className="h-8 w-8"
+    //           onClick={() => handleEdit(permission)}
+    //         >
+    //           <IconEdit className="h-4 w-4" />
+    //           <span className="sr-only">Edit</span>
+    //         </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(permission)}
-              disabled={deletePermissionMutation.isPending}
-            >
-              {deletePermissionMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              <span className="sr-only">Delete</span>
-            </Button>
-          </div>
-        );
-      },
-    },
+    //         <Button
+    //           variant="ghost"
+    //           size="icon"
+    //           className="h-8 w-8 text-destructive hover:text-destructive"
+    //           onClick={() => handleDelete(permission)}
+    //           disabled={deletePermissionMutation.isPending}
+    //         >
+    //           {deletePermissionMutation.isPending ? (
+    //             <Spinner data-icon="inline-start" />
+    //           ) : (
+    //             <Trash2 className="h-4 w-4" />
+    //           )}
+    //           <span className="sr-only">Delete</span>
+    //         </Button>
+    //       </div>
+    //     );
+    //   },
+    // },
   ];
 
   const table = useReactTable({
@@ -314,15 +314,15 @@ export default function PermissionList() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            {/* <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               <span className="sr-only">Refresh data</span>
-            </Button>
+            </Button> */}
 
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            {/* <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Permission
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>

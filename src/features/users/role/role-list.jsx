@@ -101,28 +101,28 @@ export default function RoleList() {
   };
 
   const columns = [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: "select",
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && "indeterminate")
+    //       }
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => row.toggleSelected(!!value)}
+    //       aria-label="Select row"
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: "ROLE_NAME",
       header: ({ column }) => (
@@ -152,7 +152,7 @@ export default function RoleList() {
 
         return (
           <div className="flex items-center gap-1">
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -160,9 +160,9 @@ export default function RoleList() {
             >
               <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
-            </Button>
+            </Button> */}
 
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
@@ -175,7 +175,7 @@ export default function RoleList() {
                 <Trash2 className="h-4 w-4" />
               )}
               <span className="sr-only">Delete</span>
-            </Button>
+            </Button> */}
 
             <Button
               variant="ghost"
@@ -316,21 +316,12 @@ export default function RoleList() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-              <span className="sr-only">Refresh data</span>
-            </Button>
+            
 
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            {/* <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Role
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={() => navigate("/user-management/roles/matrix")}

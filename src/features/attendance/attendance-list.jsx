@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -107,7 +107,7 @@ const fmtDate = (dt) => {
 
 const fmtTime = (dt) => {
   if (!dt) return "—";
-  try { return format(new Date(dt), "HH:mm"); } catch { return "—"; }
+  try { return format(new Date(dt), "hh:mm a"); } catch { return "—"; }
 };
 
 const toISO = (dateObj) => {
@@ -115,6 +115,8 @@ const toISO = (dateObj) => {
   try { return format(new Date(dateObj), "yyyy-MM-dd"); } catch { return ""; }
 };
 
+
+const today = format(new Date(), "yyyy-MM-dd");
 // ─────────────────────────────────────────────────────────────────────────────
 //  STATUS BADGE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -237,8 +239,6 @@ function SortHeader({ column, children, className }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
-  const [open, setOpen] = useState(false);
-
   const dateRange = useMemo(() => {
     const from = fromDate ? new Date(fromDate) : undefined;
     const to   = toDate   ? new Date(toDate)   : undefined;
@@ -255,7 +255,7 @@ function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
       from: range.from ? toISO(range.from) : null,
       to:   range.to   ? toISO(range.to)   : null,
     });
-    if (range.from && range.to) setOpen(false);
+    
   };
 
   const hasValue = !!fromDate;
@@ -269,7 +269,7 @@ function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
   }, [fromDate, toDate]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover> {/* ✅ No open/onOpenChange — uncontrolled */}
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -372,6 +372,15 @@ export default function AttendanceList() {
   const [detailDate,         setDetailDate]         = useState(null);
   const [detailEmployeeName, setDetailEmployeeName] = useState("");
 
+
+  useEffect(() => {
+  if (!fromDate && !toDate) {
+    setFromDate(today);
+    setToDate(today);
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
   // ── Backend params ──────────────────────────────────────────────────────────
   const backendParams = useMemo(() => {
     const isSingleDay = fromDate && (!toDate || toDate === fromDate);
@@ -454,7 +463,7 @@ export default function AttendanceList() {
     const d    = row.ATTENDANCE_DATE
       ? format(new Date(row.ATTENDANCE_DATE), "yyyy-MM-dd")
       : null;
-    setDetailEmployeeId(row.EMPLOYEE_ID);
+    setDetailEmployeeId(row.EMP_NO);  
     setDetailDate(d);
     setDetailEmployeeName(name);
     setDetailOpen(true);
@@ -634,7 +643,7 @@ export default function AttendanceList() {
     <div>
       <PageHeader onRefetch={refetch} isFetching={isFetching} />
 
-      <SummaryCards summary={summary} isLoading={summaryLoading} />
+      {/* <SummaryCards summary={summary} isLoading={summaryLoading} /> */}
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
