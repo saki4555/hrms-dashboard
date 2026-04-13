@@ -103,7 +103,9 @@ export default function CompanyList() {
         await deleteCompanyMutation.mutateAsync(company.COMPANY_ID);
         toast.success("Company deleted successfully!");
       } catch (error) {
-        toast.error(error?.message || "Failed to delete company. Please try again.");
+        toast.error(
+          error?.message || "Failed to delete company. Please try again.",
+        );
       }
     }
   };
@@ -164,7 +166,9 @@ export default function CompanyList() {
       accessorKey: "ADDRESS",
       header: "Address",
       cell: ({ row }) => (
-        <div className="max-w-xs truncate">{row.getValue("ADDRESS") || "N/A"}</div>
+        <div className="max-w-xs truncate">
+          {row.getValue("ADDRESS") || "N/A"}
+        </div>
       ),
     },
     {
@@ -186,6 +190,7 @@ export default function CompanyList() {
     {
       id: "actions",
       header: "Actions",
+
       enableHiding: false,
       cell: ({ row }) => {
         const company = row.original;
@@ -240,6 +245,11 @@ export default function CompanyList() {
       rowSelection,
       globalFilter,
     },
+    initialState: {
+      columnPinning: {
+        right: ["actions"],
+      },
+    },
   });
 
   if (isLoading) {
@@ -248,7 +258,9 @@ export default function CompanyList() {
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Companies
+              </h1>
             </div>
             <Button disabled>
               <IconPlus size={20} className="mr-2" />
@@ -272,7 +284,9 @@ export default function CompanyList() {
         <div className="bg-card rounded-sm shadow-sm p-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+                Companies
+              </h1>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus size={20} className="mr-2" />
@@ -285,7 +299,10 @@ export default function CompanyList() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Loading Companies</AlertTitle>
             <AlertDescription className="mt-2 flex flex-col gap-2">
-              <p>{error?.message || "Failed to load companies. Please try again."}</p>
+              <p>
+                {error?.message ||
+                  "Failed to load companies. Please try again."}
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -294,9 +311,15 @@ export default function CompanyList() {
                 className="w-fit"
               >
                 {isFetching ? (
-                  <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
                 ) : (
-                  <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
                 )}
               </Button>
             </AlertDescription>
@@ -312,7 +335,9 @@ export default function CompanyList() {
       <div className="bg-card rounded-md shadow-sm p-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
-            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Companies</h1>
+            <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+              Companies
+            </h1>
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -324,15 +349,23 @@ export default function CompanyList() {
                 <BreadcrumbItem>Work Structure</BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="text-muted-foreground/80">Companies</BreadcrumbPage>
+                  <BreadcrumbPage className="text-muted-foreground/80">
+                    Companies
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
               <span className="sr-only">Refresh data</span>
             </Button>
             <Button onClick={() => setIsAddDialogOpen(true)}>
@@ -383,10 +416,16 @@ export default function CompanyList() {
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        
+                      >
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -396,17 +435,29 @@ export default function CompanyList() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        <TableCell
+                          key={cell.id}
+                          
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       <Empty>
                         <EmptyHeader>
                           <EmptyMedia variant="icon">

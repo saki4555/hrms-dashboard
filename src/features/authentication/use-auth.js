@@ -1,3 +1,5 @@
+// src\features\authentication\use-auth.js
+
 import { useCurrentUser, useLogin, useLogout } from "./queries";
 
 export function useAuth() {

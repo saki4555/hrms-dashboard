@@ -152,7 +152,7 @@ export default function RoleList() {
 
         return (
           <div className="flex items-center gap-1">
-            {/* <Button
+            <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
@@ -160,9 +160,9 @@ export default function RoleList() {
             >
               <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
-            </Button> */}
+            </Button>
 
-            {/* <Button
+            <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
@@ -175,7 +175,7 @@ export default function RoleList() {
                 <Trash2 className="h-4 w-4" />
               )}
               <span className="sr-only">Delete</span>
-            </Button> */}
+            </Button>
 
             <Button
               variant="ghost"
@@ -318,10 +318,10 @@ export default function RoleList() {
           <div className="flex items-center gap-2">
             
 
-            {/* <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Role
-            </Button> */}
+            </Button>
             <Button
               variant="outline"
               onClick={() => navigate("/user-management/roles/matrix")}
