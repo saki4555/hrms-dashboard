@@ -30,6 +30,9 @@ import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { useUpdateEmployee, useCreateEmployee, useEmployeeById } from "./queries";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
+import { useShifts } from "@/features/settings/work-structure/shift/queries";
+
+
 
 // Shared
 import { employeeSchema } from "./employee-schema";
@@ -73,6 +76,7 @@ export default function UpdateEmployeePageModern() {
   const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
   const { data: orgPositions = [], isLoading: orgPositionsLoading } = useOrgPositions();
   const { data: grades = [] } = useGrades();
+  const { data: shifts = [], isLoading: shiftsLoading } = useShifts();
 
   const filteredPositions = useMemo(() => {
     if (!selectedOrgId) return [];
@@ -91,6 +95,7 @@ export default function UpdateEmployeePageModern() {
       personTypeId: "", regDisability: "",
       companyId: "", ouId: "", orgId: "", positionId: "", orgPositionId: "",
       payrollId: "", gradeId: "",
+      shiftId: "",
       presentAddress: { address1: "", address1B: "", country: "", region: "", district: "", upazilla: "", unions: "", area: "" },
       permanentAddress: { address1: "", address1B: "", country: "", region: "", district: "", upazilla: "", unions: "", area: "" },
     },
@@ -145,6 +150,7 @@ export default function UpdateEmployeePageModern() {
       orgPositionId: "",
       payrollId: employee.assignment?.PAYROLL_ID?.toString() || "",
       gradeId: employee.assignment?.GRADE_ID?.toString() || "",
+      shiftId: employee.shift?.SHIFT_ID?.toString() || "",
       assignmentEffectiveStartDate: parseDate(employee.assignment?.EFFECTIVE_START_DATE),
       assignmentEffectiveEndDate: parseDate(employee.assignment?.EFFECTIVE_END_DATE),
       presentAddress: addr(employee.presentAddress),
@@ -290,6 +296,11 @@ export default function UpdateEmployeePageModern() {
       EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
       EFFECTIVE_END_DATE: fd(data.assignmentEffectiveEndDate),
     },
+    shift: data.shiftId ? {
+  SHIFT_ID: parseInt(data.shiftId),
+  EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
+  EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
+} : null,
   });
 
   const handleFormSubmit = async (data, operationType) => {
@@ -529,6 +540,24 @@ export default function UpdateEmployeePageModern() {
                       );
                     }} />
                     <FieldWithCounter form={form} name="payrollId" label="Payroll ID" placeholder="Enter payroll ID" maxLength={30} disabled={isSubmitting} />
+                    <ComboboxField
+  form={form}
+  name="shiftId"
+  label="Shift"
+  items={shifts}
+  idKey="SHIFT_ID"
+  nameKey="NAME"
+  placeholder={shiftsLoading ? "Loading..." : "Select shift"}
+  disabled={shiftsLoading}
+  renderItem={(shift) => (
+    <div className="flex flex-col">
+      <span className="font-medium">{shift.NAME}</span>
+      <span className="text-xs text-muted-foreground">
+        {shift.CODE} · {shift.START_TIME} – {shift.END_TIME}
+      </span>
+    </div>
+  )}
+/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="assignmentEffectiveStartDate" render={({ field }) => (
                         <FormItem>
