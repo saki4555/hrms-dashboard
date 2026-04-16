@@ -17,7 +17,7 @@ const DashboardNavbar = () => {
 
   return (
     <>
-      <nav className="...">
+      <nav className="flex h-14  sticky top-0 z-50 bg-gray-50/70 dark:bg-gray-950/70 backdrop-blur-lg shrink-0   items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="outline" className="size-8" onClick={toggleSidebar}>

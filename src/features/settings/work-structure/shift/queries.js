@@ -1,3 +1,5 @@
+// src\features\settings\work-structure\shift\queries.js
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const shiftQueryKeys = {

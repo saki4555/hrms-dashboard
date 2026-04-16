@@ -201,6 +201,8 @@ export default function EmployeeList() {
     isFetching,
   } = useEmployees(backendParams);
 
+  console.log("response", response);
+
   // Lookup data for filter dropdowns
   const { data: personTypes = [] } = usePersonTypes();
   const { data: companies   = [] } = useCompanies();
@@ -407,7 +409,7 @@ const sorting = useMemo(() => {
         const emp = row.original;
         return (
           <div className="flex items-center gap-1">
-            <Button
+            {/* <Button
               variant="outline" size="icon" className="h-8 w-8"
               onClick={() => navigate(`/core-hr/employee-management/update/${emp.PERSON_ID}`)}
             >
@@ -420,7 +422,7 @@ const sorting = useMemo(() => {
             >
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit Modern</span>
-            </Button>
+            </Button> */}
             <Button
               variant="outline" size="icon"
               className="h-8 w-8 text-destructive hover:bg-destructive hover:text-white"

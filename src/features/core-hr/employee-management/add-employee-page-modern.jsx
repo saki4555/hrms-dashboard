@@ -26,6 +26,7 @@ import { useOrgPositions } from "@/features/settings/work-structure/position/que
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { usePersonTypes } from "../employee-types/queries";
 import { useCreateEmployee } from "./queries";
+import { useShifts } from "@/features/settings/work-structure/shift/queries";
 
 // Shared
 import { STEPS, fd } from "./components/steps";
@@ -57,6 +58,7 @@ export default function AddEmployeePageModern() {
   const { data: organizations = [], isLoading: organizationsLoading } = useOrganizations();
   const { data: orgPositions = [], isLoading: orgPositionsLoading } = useOrgPositions();
   const { data: grades = [], isLoading: gradesLoading } = useGrades();
+  const { data: shifts = [], isLoading: shiftsLoading } = useShifts();
 
   const filteredPositions = useMemo(() => {
     if (!selectedOrgId) return [];
@@ -83,6 +85,7 @@ export default function AddEmployeePageModern() {
       payrollId: "", gradeId: "",
       effectiveStartDate: today, effectiveEndDate: fiveYearsLater,
       assignmentEffectiveStartDate: today, assignmentEffectiveEndDate: fiveYearsLater,
+      shiftId: "",
       presentAddress: {
         address1: "", address1B: "", country: "", region: "",
         district: "", upazilla: "", unions: "", area: "",
@@ -225,6 +228,11 @@ export default function AddEmployeePageModern() {
           EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
           EFFECTIVE_END_DATE: fd(data.assignmentEffectiveEndDate),
         },
+        shift: data.shiftId ? {
+  SHIFT_ID: parseInt(data.shiftId),
+  EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
+  EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
+} : null,
       };
       const result = await createEmployeeMutation.mutateAsync(payload);
       setNewPersonId(result?.PERSON_ID);
@@ -400,6 +408,24 @@ export default function AddEmployeePageModern() {
                       );
                     }} />
                     <FieldWithCounter form={form} name="payrollId" label="Payroll ID" placeholder="Enter payroll ID" maxLength={30} />
+                    <ComboboxField
+  form={form}
+  name="shiftId"
+  label="Shift"
+  items={shifts}
+  idKey="SHIFT_ID"
+  nameKey="NAME"
+  placeholder={shiftsLoading ? "Loading..." : "Select shift"}
+  disabled={shiftsLoading}
+  renderItem={(shift) => (
+    <div className="flex flex-col">
+      <span className="font-medium">{shift.NAME}</span>
+      <span className="text-xs text-muted-foreground">
+        {shift.CODE} · {shift.START_TIME} – {shift.END_TIME}
+      </span>
+    </div>
+  )}
+/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="assignmentEffectiveStartDate" render={({ field }) => (
                         <FormItem>

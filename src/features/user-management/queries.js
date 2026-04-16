@@ -1,4 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// src\features\user-management\queries.js
+
+
+import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -297,3 +300,18 @@ export const useRevokePermissionFromRole = () => {
       qc.invalidateQueries({ queryKey: ["roles", "permissions", roleId] }),
   });
 };
+
+
+
+export const useRolePermissionsBatch = (roleIds = []) =>
+  useQueries({
+    queries: roleIds.map((roleId) => ({
+      queryKey: ["roles", "permissions", String(roleId)],
+      queryFn: async () => {
+        const json = await fetcher(`${URLS.users}/roles/${roleId}/permissions`);
+        return json.data;
+      },
+      enabled: !!roleId,
+      ...queryDefaults,
+    })),
+  });

@@ -204,7 +204,7 @@ export default function RoleDetailsPage() {
                     <Button
                       variant="outline"
                       role="combobox"
-                      className="w-72 justify-between h-9"
+                      className="w-[420px] justify-between h-9"
                     >
                       {selectedPermission
                         ? selectedPermission.PERMISSION_NAME
@@ -213,32 +213,51 @@ export default function RoleDetailsPage() {
                     </Button>
                   </PopoverTrigger>
 
-                  <PopoverContent className="w-72 p-0">
+                  <PopoverContent className="w-[420px] p-0">
                     <Command>
                       <CommandInput placeholder="Search permission..." />
                       <CommandEmpty>No permission found.</CommandEmpty>
 
-                      <CommandGroup className="max-h-60 overflow-auto">
-                        {availablePermissions.map((p) => (
-                          <CommandItem
-                            key={p.ID}
-                            value={p.PERMISSION_NAME}
-                            onSelect={() => {
-                              setSelectedPermissionId(String(p.ID));
-                              setOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                selectedPermissionId === String(p.ID)
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              }`}
-                            />
-                            {p.PERMISSION_NAME}
-                          </CommandItem>
+                      <div className="max-h-[320px] overflow-y-auto">
+                        {Object.entries(
+                          availablePermissions.reduce((acc, p) => {
+                            const mod = p.MODULE_NAME || "Other";
+                            if (!acc[mod]) acc[mod] = [];
+                            acc[mod].push(p);
+                            return acc;
+                          }, {}),
+                        ).map(([module, perms]) => (
+                          <CommandGroup key={module} heading={module}>
+                            {perms.map((p) => (
+                              <CommandItem
+                                key={p.ID}
+                                value={`${p.PERMISSION_NAME} ${p.PERMISSION_CODE} ${module}`}
+                                onSelect={() => {
+                                  setSelectedPermissionId(String(p.ID));
+                                  setOpen(false);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {p.PERMISSION_CODE}
+                                </span>
+
+                                <span className="truncate flex-1">
+                                  {p.PERMISSION_NAME}
+                                </span>
+
+                                <Check
+                                  className={`h-4 w-4 ${
+                                    selectedPermissionId === String(p.ID)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  }`}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
                         ))}
-                      </CommandGroup>
+                      </div>
                     </Command>
                   </PopoverContent>
                 </Popover>
@@ -303,8 +322,6 @@ export default function RoleDetailsPage() {
                           >
                             {perm.PERMISSION_CODE}
                           </Badge>
-
-                          
                         </div>
                         {perm.DESCRIPTION && (
                           <div className="text-xs text-muted-foreground">
