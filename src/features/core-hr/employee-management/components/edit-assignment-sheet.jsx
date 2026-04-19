@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { addYears } from "date-fns";
 import { Building2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ import { useCompanies } from "@/features/settings/work-structure/company/queries
 import { useOrganizations } from "@/features/settings/work-structure/organization/queries";
 import { useOrgPositions } from "@/features/settings/work-structure/position/queries";
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
+import { useShifts } from "@/features/settings/work-structure/shift/queries";
 
 export function EditAssignmentSheet({ employee, open, onClose, showConfirmation }) {
   const { mutateAsync, isPending } = useUpdateEmployee();
@@ -28,6 +30,7 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
   const { data: organizations = [], isLoading: orgL }     = useOrganizations();
   const { data: orgPositions = [],  isLoading: posL }     = useOrgPositions();
   const { data: grades = [] }                             = useGrades();
+  const { data: shifts = [],        isLoading: shiftsL }  = useShifts();
   const [selectedOrgId, setSelectedOrgId] = useState(null);
   const [formSeeded, setFormSeeded] = useState(false);
 
@@ -40,7 +43,9 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
     resolver: zodResolver(assignmentSchema),
     defaultValues: {
       companyId: "", ouId: "", orgId: "", positionId: "",
-      orgPositionId: "", gradeId: "", payrollId: "",
+      orgPositionId: "", gradeId: "", payrollId: "", shiftId: "",
+      assignmentEffectiveStartDate: new Date(),
+      assignmentEffectiveEndDate:   addYears(new Date(), 5),
     },
   });
 
@@ -50,6 +55,10 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
     if (!open || !employee) return;
     const a = employee.assignment;
     if (a?.ORG_ID) setSelectedOrgId(a.ORG_ID);
+
+    const today         = new Date();
+    const fiveYearsLater = addYears(today, 5);
+
     form.reset({
       companyId:                    a?.COMPANY_ID?.toString() || "",
       ouId:                         a?.OU_ID?.toString() || "",
@@ -58,11 +67,12 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
       orgPositionId:                "",
       gradeId:                      a?.GRADE_ID?.toString() || "",
       payrollId:                    a?.PAYROLL_ID?.toString() || "",
-      assignmentEffectiveStartDate: parseDate(a?.EFFECTIVE_START_DATE),
-      assignmentEffectiveEndDate:   parseDate(a?.EFFECTIVE_END_DATE),
+      shiftId:                      a?.SHIFT_ID?.toString() || "",
+      assignmentEffectiveStartDate: parseDate(a?.EFFECTIVE_START_DATE) ?? today,
+      assignmentEffectiveEndDate:   parseDate(a?.EFFECTIVE_END_DATE)   ?? fiveYearsLater,
     });
     setFormSeeded(true);
-  }, [open, employee]);
+  }, [open, employee]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resolve position once orgPositions have loaded
   useEffect(() => {
@@ -72,14 +82,22 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
       (p) => String(p.ID) === String(a?.POSITION_ID) && String(p.ORG_ID) === String(a?.ORG_ID),
     );
     if (match) {
-      form.setValue("positionId", String(match.POSITION_ID), { shouldValidate: false });
-      form.setValue("orgPositionId", String(match.ID), { shouldValidate: false });
+      form.setValue("positionId",   String(match.POSITION_ID), { shouldValidate: false });
+      form.setValue("orgPositionId", String(match.ID),         { shouldValidate: false });
       if (match.GRADE) {
         const g = grades.find((g) => g.GRADE === match.GRADE);
         if (g) form.setValue("gradeId", String(g.ID), { shouldValidate: false });
       }
     }
-  }, [formSeeded, employee, orgPositions, grades]);
+  }, [formSeeded, employee, orgPositions, grades]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-update end date when start date changes (5 years later)
+  const assignmentStart = form.watch("assignmentEffectiveStartDate");
+  useEffect(() => {
+    if (assignmentStart) {
+      form.setValue("assignmentEffectiveEndDate", addYears(assignmentStart, 5), { shouldDirty: true });
+    }
+  }, [assignmentStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAttemptClose = async () => {
     if (isDirty) {
@@ -111,6 +129,11 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
             EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
             EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
           },
+          shift: data.shiftId ? {
+            SHIFT_ID:             parseInt(data.shiftId),
+            EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
+            EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
+          } : null,
           STATUS: employee.STATUS,
         },
       });
@@ -128,7 +151,7 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleAttemptClose(); }}>
-      <SheetContent className="sm:max-w-xl  flex flex-col gap-0 p-0">
+      <SheetContent className="sm:max-w-xl flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
@@ -136,7 +159,7 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
             </div>
             <div>
               <SheetTitle>Assignment</SheetTitle>
-              <SheetDescription>Update organisation, position, grade, and assignment period.</SheetDescription>
+              <SheetDescription>Update organisation, position, grade, shift, and assignment period.</SheetDescription>
             </div>
           </div>
         </SheetHeader>
@@ -166,9 +189,9 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
                 disabled={isPending || orgL}
                 onSelect={(org) => {
                   setSelectedOrgId(org.ID);
-                  form.setValue("positionId", "",    { shouldValidate: false });
+                  form.setValue("positionId",    "", { shouldValidate: false });
                   form.setValue("orgPositionId", "", { shouldValidate: false });
-                  form.setValue("gradeId", "",       { shouldValidate: false });
+                  form.setValue("gradeId",       "", { shouldValidate: false });
                 }}
               />
 
@@ -211,12 +234,31 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
                 name="payrollId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Payroll ID *</FormLabel>
+                    <FormLabel className="text-sm font-medium">Payroll ID</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter payroll ID" disabled={isPending} {...field} />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
+                )}
+              />
+
+              <ComboboxField
+                form={form}
+                name="shiftId"
+                label="Shift"
+                items={shifts}
+                idKey="SHIFT_ID"
+                nameKey="NAME"
+                placeholder={shiftsL ? "Loading..." : "Select shift"}
+                disabled={isPending || shiftsL}
+                renderItem={(shift) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium">{shift.NAME}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {shift.CODE} · {shift.START_TIME} – {shift.END_TIME}
+                    </span>
+                  </div>
                 )}
               />
 
@@ -229,9 +271,14 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
                   name="assignmentEffectiveStartDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Start Date *</FormLabel>
+                      <FormLabel className="text-sm font-medium">Start Date</FormLabel>
                       <FormControl>
-                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" disabled={isPending} />
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select start date"
+                          disabled={isPending}
+                        />
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
@@ -242,9 +289,14 @@ export function EditAssignmentSheet({ employee, open, onClose, showConfirmation 
                   name="assignmentEffectiveEndDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">End Date *</FormLabel>
+                      <FormLabel className="text-sm font-medium">End Date</FormLabel>
                       <FormControl>
-                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" disabled={isPending} />
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select end date"
+                          disabled={isPending}
+                        />
                       </FormControl>
                       <FormMessage className="text-xs" />
                     </FormItem>
