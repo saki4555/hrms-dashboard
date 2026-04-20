@@ -79,6 +79,7 @@ function StatusBadge({ status }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function LeaveRequestList() {
+
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});

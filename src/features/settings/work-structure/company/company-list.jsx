@@ -61,7 +61,11 @@ import { useCompanies, useDeleteCompany } from "./queries";
 import AddCompanyDialog from "./add-company-dialog";
 import UpdateCompanyDialog from "./update-company-dialog";
 
+
+
 export default function CompanyList() {
+
+
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});

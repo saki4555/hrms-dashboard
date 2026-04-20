@@ -1,3 +1,5 @@
+
+
 import * as React from "react";
 import {
   Sidebar,
@@ -21,28 +23,23 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 
-import { ChevronRight, LayoutDashboardIcon } from "lucide-react";
-import { Link, matchPath, NavLink, useLocation } from "react-router";
+import { LayoutDashboardIcon } from "lucide-react";
+import { Link, matchPath, useLocation } from "react-router";
 import { NavUser } from "./nav-user";
 
-import { cn } from "@/lib/utils";
-
-import { IconCaretRight, IconCaretRightFilled } from "@tabler/icons-react";
+import { IconCaretRightFilled } from "@tabler/icons-react";
 import { NAV_ITEMS } from "@/config/nav-config";
 import { useAuth } from "@/features/authentication/use-auth";
 
-/* -------------------------------------------------------------------------- */
-/*                           UPDATED NAV CONFIG (WITH LABELS)                 */
-/* -------------------------------------------------------------------------- */
+// Returns true if user has at least ONE of the required permissions
+const hasAnyPermission = (userPermissions = [], requiredPermissions = []) =>
+  requiredPermissions.some((p) => userPermissions.includes(p));
 
-/* -------------------------------------------------------------------------- */
-/*                               APP SIDEBAR                                  */
-/* -------------------------------------------------------------------------- */
-
-export function AppSidebar({ userRoles, ...props }) {
-  console.log("userRoles", userRoles);
+export function AppSidebar({ ...props }) {
   const location = useLocation();
   const { user } = useAuth();
+  const userPermissions = user?.permissions ?? [];
+
   return (
     <Sidebar {...props}>
       {/* HEADER */}
@@ -59,15 +56,23 @@ export function AppSidebar({ userRoles, ...props }) {
 
       {/* CONTENT */}
       <SidebarContent>
-        {NAV_ITEMS.map((section) => (
-          <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+        {NAV_ITEMS.map((section) => {
+          // Filter section items by permission
+          const visibleItems = section.items.filter((item) =>
+            hasAnyPermission(userPermissions, item.permissions)
+          );
 
-            {section.items
-              .filter((item) => item.roles.some((r) => userRoles?.includes(r)))
-              .map((item) => {
+          // Don't render the section group at all if no items are visible
+          if (visibleItems.length === 0) return null;
+
+          return (
+            <SidebarGroup key={section.label}>
+              <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+
+              {visibleItems.map((item) => {
+                // Filter sub-items by permission
                 const filteredSubItems = item.subItems?.filter((sub) =>
-                  sub.roles.some((r) => userRoles?.includes(r)),
+                  hasAnyPermission(userPermissions, sub.permissions)
                 );
 
                 return (
@@ -90,7 +95,7 @@ export function AppSidebar({ userRoles, ...props }) {
                               <item.icon className="text-foreground/90" />
                             )}
                             <span>{item.title}</span>
-                            <IconCaretRightFilled className="ml-auto  text-foreground/80 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            <IconCaretRightFilled className="ml-auto text-foreground/80 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
 
@@ -109,9 +114,6 @@ export function AppSidebar({ userRoles, ...props }) {
                                     isActive={!!isSubActive}
                                   >
                                     <Link to={sub.url}>
-                                      {/* {sub.subItemIcon && (
-                                        <sub.subItemIcon className="text-foreground/90" />
-                                      )} */}
                                       <span>{sub.title}</span>
                                     </Link>
                                   </SidebarMenuSubButton>
@@ -125,8 +127,9 @@ export function AppSidebar({ userRoles, ...props }) {
                   </SidebarMenu>
                 );
               })}
-          </SidebarGroup>
-        ))}
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       {/* FOOTER */}

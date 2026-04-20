@@ -16,6 +16,8 @@ import { PrivateRoute } from "./PrivateRoute";
 import { PageLoader } from "@/components/loading-spinner";
 import { NotFoundError } from "@/components/shared/not-found-error";
 import Login from "@/features/authentication";
+import { Forbidden } from "@/features/authentication-old/pages/forbidden";
+import { PERMISSIONS } from "@/config/permissions";
 
 export default function AppRoutes() {
   return (
@@ -23,13 +25,14 @@ export default function AppRoutes() {
       {/* ── Public ─────────────────────────────────────────────────────────── */}
       <Route path="/login"        element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/forbidden" element={<Forbidden />} />
       
 
       {/* ── Protected (layout wrapper) ─────────────────────────────────────── */}
       <Route
         path="/"
         element={
-          <PrivateRoute allowedRoles={ALL_ROLES}>
+          <PrivateRoute >
             <DashboardLayout />
           </PrivateRoute>
         }
@@ -37,12 +40,12 @@ export default function AppRoutes() {
         <Route index element={<Welcome />} />
 
       
-          {ROUTE_MAP.map(({ path, component: Component, roles }) => (
+          {ROUTE_MAP.map(({ path, component: Component, permissions }) => (
             <Route
               key={path}
               path={path}
               element={
-                <PrivateRoute allowedRoles={roles}>
+                <PrivateRoute permissions={permissions}>
                   <Component />
                  </PrivateRoute>
               }
@@ -50,6 +53,8 @@ export default function AppRoutes() {
           ))}
         
       </Route>
+
+ 
       <Route path="*" element={<NotFoundError />} />
     </Routes>
   );

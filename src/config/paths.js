@@ -2,6 +2,10 @@ export const PATHS = {
   // ─── Dashboard ────────────────────────────────────────────────────────────
   DASHBOARD: "/",
 
+  // ─── Authentication ────────────────────────────────────────────────────────
+  LOGIN: "/login",
+  UNAUTHORIZED: "/unauthorized",
+  FORBIDDEN: "/forbidden",
   // ─── Core HR ─────────────────────────────────────────────────────────────
   CORE_HR: {
     REQUISITION: "core-hr/requisition",
