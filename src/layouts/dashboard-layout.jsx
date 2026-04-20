@@ -24,7 +24,7 @@ const DashboardLayout = () => {
   return (
     
       <SidebarProvider defaultOpen={false} >
-      <AppSidebar userRoles={user?.roles}  collapsible="icon"  />
+      <AppSidebar   collapsible="icon"  />
       <SidebarInset className="min-w-0 peer">
         <main className="@container/main peer-data-[state=collapsed]:bg-red-400">
           <DashboardNavbar />

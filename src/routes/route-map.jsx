@@ -1,19 +1,19 @@
+
+
 import { lazy } from "react";
 
-import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "@/config/roles";
+import { PERMISSIONS } from "@/config/permissions";
 import { PATHS } from "@/config/paths";
 import InventoriesPage from "@/features/inventory";
 import ItemsPage from "@/features/item";
 import ItemStockPage from "@/features/item-stock";
-import RequisitionsPage from "@/features/requisition";
 import RequisitionList from "@/features/requisition-managemant/requisition-list";
 import Requisition from "@/features/requisition-managemant";
 import Requisitions from "@/features/requisition-master";
 
-const { ADMIN, HR, EMPLOYEE } = ROLES;
+const P = PERMISSIONS; // shorthand
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
-// Swap these out as real pages are built
 const Placeholder = ({ title }) => <div>{title}</div>;
 const p = (title) => () => <Placeholder title={title} />;
 
@@ -25,14 +25,11 @@ const AddEmployee = lazy(
 const UpdateEmployee = lazy(
   () => import("@/features/core-hr/employee-management/update-employee-page"),
 );
-
 const UpdateEmployeeModern = lazy(
-  () =>
-    import("@/features/core-hr/employee-management/update-employee-page-modern"),
+  () => import("@/features/core-hr/employee-management/update-employee-page-modern"),
 );
 const AddEmployeeModern = lazy(
-  () =>
-    import("@/features/core-hr/employee-management/add-employee-page-modern"),
+  () => import("@/features/core-hr/employee-management/add-employee-page-modern"),
 );
 const EmployeeDetails = lazy(
   () => import("@/features/core-hr/employee-management/EmployeeDetailsPage"),
@@ -40,343 +37,78 @@ const EmployeeDetails = lazy(
 const EmployeeTypes = lazy(() => import("@/features/core-hr/employee-types"));
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
-const Organizations = lazy(
-  () => import("@/features/settings/work-structure/organization"),
-);
-const Positions = lazy(
-  () => import("@/features/settings/work-structure/position/pages"),
-);
-const HRPositions = lazy(
-  () => import("@/features/settings/work-structure/hr-position"),
-);
-const Grades = lazy(
-  () => import("@/features/settings/work-structure/hr-grade"),
-);
-const Companies = lazy(
-  () => import("@/features/settings/work-structure/company"),
-);
-const OrgTypes = lazy(
-  () => import("@/features/settings/work-structure/organization-types"),
-);
-const Locations = lazy(
-  () => import("@/features/settings/work-structure/locations"),
-);
-const GeoSetup = lazy(
-  () => import("@/features/settings/work-structure/geo-setup"),
-);
-const Holidays = lazy(
-  () => import("@/features/settings/work-structure/holiday"),
-);
-const HolidayTypes = lazy(
-  () => import("@/features/settings/work-structure/holiday-type"),
-);
-const Shifts = lazy(() => import("@/features/settings/work-structure/shift"));
-const Contracts = lazy(
-  () => import("@/features/settings/work-structure/contract"),
-);
-const LeaveRequests = lazy(
-  () => import("@/features/settings/work-structure/leave-request"),
-);
+const Organizations  = lazy(() => import("@/features/settings/work-structure/organization"));
+const Positions      = lazy(() => import("@/features/settings/work-structure/position/pages"));
+const HRPositions    = lazy(() => import("@/features/settings/work-structure/hr-position"));
+const Grades         = lazy(() => import("@/features/settings/work-structure/hr-grade"));
+const Companies      = lazy(() => import("@/features/settings/work-structure/company"));
+const OrgTypes       = lazy(() => import("@/features/settings/work-structure/organization-types"));
+const Locations      = lazy(() => import("@/features/settings/work-structure/locations"));
+const GeoSetup       = lazy(() => import("@/features/settings/work-structure/geo-setup"));
+const Holidays       = lazy(() => import("@/features/settings/work-structure/holiday"));
+const HolidayTypes   = lazy(() => import("@/features/settings/work-structure/holiday-type"));
+const Shifts         = lazy(() => import("@/features/settings/work-structure/shift"));
+const Contracts      = lazy(() => import("@/features/settings/work-structure/contract"));
+const LeaveRequests  = lazy(() => import("@/features/settings/work-structure/leave-request"));
+const LeaveTypes     = lazy(() => import("@/features/attendance-management/leave-type"));
+const Supervisors    = lazy(() => import("@/features/employee-supervisor"));
 
+// ─── User Management ──────────────────────────────────────────────────────────
+const UserManagement      = lazy(() => import("@/features/user-management"));
+const User                = lazy(() => import("@/features/user-management/user-details"));
+const RoleManagement      = lazy(() => import("@/features/users/role"));
+const RoleDetails         = lazy(() => import("@/features/users/role/role-details"));
+const RolePermissionMatrix = lazy(() => import("@/features/users/role/role-permission-matrix"));
+const PermissionManagement = lazy(() => import("@/features/users/permission"));
+const ModuleManagement     = lazy(() => import("@/features/users/module"));
 
-const LeaveTypes = lazy(
-  () => import("@/features/attendance-management/leave-type"),
-);
-
-const Supervisors = lazy(
-  () => import("@/features/employee-supervisor"),
-);
-
-const UserManagement = lazy(
-  () => import("@/features/user-management"),
-);
-const RoleManagement = lazy(
-  () => import("@/features/users/role"),
-);
-const PermissionManagement = lazy(
-  () => import("@/features/users/permission"),
-);
-const ModuleManagement = lazy(
-  () => import("@/features/users/module"),
-);
-
-const User = lazy(() => import("@/features/user-management/user-details"))
-
-const Attendance = lazy(
-  () => import("@/features/attendance"),
-);
-
-const RoleDetails =  lazy(
-  () => import("@/features/users/role/role-details"));
-const RolePermissionMatrix = lazy(
-  () =>
-    import("@/features/users/role/role-permission-matrix"),
-)
+// ─── Attendance ───────────────────────────────────────────────────────────────
+const Attendance = lazy(() => import("@/features/attendance"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
+// permissions: [] — user must have AT LEAST ONE of these to access the route
 export const ROUTE_MAP = [
-  // ── Core HR ────────────────────────────────────────────────────────────────
-  {
-    path: PATHS.CORE_HR.REQUISITION,
-    component: p("Employee Requisition"),
-    roles: ADMIN_HR,
-  },
-  { path: PATHS.CORE_HR.EMPLOYEES, component: Employees, roles: ADMIN_HR },
-  { path: PATHS.CORE_HR.EMPLOYEE_ADD, component: AddEmployee, roles: ADMIN_HR },
-  // ! modern one
-  {
-    path: PATHS.CORE_HR.EMPLOYEE_ADD_MODERN,
-    component: AddEmployeeModern,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.CORE_HR.EMPLOYEE_UPDATE,
-    component: UpdateEmployee,
-    roles: ADMIN_HR,
-  },
-  // ! modern one
-  {
-    path: PATHS.CORE_HR.EMPLOYEE_UPDATE_MODERN,
-    component: UpdateEmployeeModern,
-    roles: ADMIN_HR,
-  },
 
-  {
-    path: PATHS.CORE_HR.EMPLOYEE_DETAIL,
-    component: EmployeeDetails,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.CORE_HR.LIFECYCLE,
-    component: p("Employment Lifecycle"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.CORE_HR.DOCUMENTS,
-    component: p("Digital Document Management"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.CORE_HR.EMPLOYEE_TYPES,
-    component: EmployeeTypes,
-    roles: ADMIN_HR,
-  },
-  {
-      path: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,
-      component: Supervisors,
-      roles: ADMIN_HR
-  },
+  // ── Core HR ──────────────────────────────────────────────────────────────────
+  { path: PATHS.CORE_HR.EMPLOYEES,              component: Employees,           permissions: [P.EMP_MANAGE] },
+  { path: PATHS.CORE_HR.EMPLOYEE_ADD,           component: AddEmployee,         permissions: [P.EMP_MANAGE] },
+  { path: PATHS.CORE_HR.EMPLOYEE_ADD_MODERN,    component: AddEmployeeModern,   permissions: [P.EMP_MANAGE] },
+  { path: PATHS.CORE_HR.EMPLOYEE_UPDATE,        component: UpdateEmployee,      permissions: [P.EMP_MANAGE] },
+  { path: PATHS.CORE_HR.EMPLOYEE_UPDATE_MODERN, component: UpdateEmployeeModern, permissions: [P.EMP_MANAGE] },
+  { path: PATHS.CORE_HR.EMPLOYEE_DETAIL,        component: EmployeeDetails,     permissions: [P.EMP_MANAGE, P.ORG_CHART_VIEW] },
+  { path: PATHS.CORE_HR.EMPLOYEE_TYPES,         component: EmployeeTypes,       permissions: [P.HR_SETUP] },
+  { path: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,  component: Supervisors,         permissions: [P.HR_SETUP] },
 
-  // ── Attendance ─────────────────────────────────────────────────────────────
-  {
-    path: PATHS.ATTENDANCE.SETUP,
-    component: p("Attendance Setup"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.ATTENDANCE.ASSIGNMENT,
-    component: p("Employee Assignment"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.ATTENDANCE.SCHEDULE,
-    component: p("Work Schedule"),
-    roles: ADMIN_HR_SUP,
-  },
-  {
-    path: PATHS.ATTENDANCE.DATA,
-    component: Attendance,
-    
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.ATTENDANCE.REPORTS,
-    component: p("Attendance Reports"),
-    roles: ADMIN_HR_SUP,
-  },
-  {
-    path: PATHS.ATTENDANCE.LEAVE_REQUEST,
-    component: LeaveRequests,
-    
-    roles: ADMIN_HR,
-  },
-  {
-   
-    path: PATHS.ATTENDANCE.LEAVE_TYPES,
-    component: LeaveTypes,
-    roles: ADMIN_HR,
-  },
+  // ── Attendance ────────────────────────────────────────────────────────────────
+  { path: PATHS.ATTENDANCE.DATA,          component: Attendance,    permissions: [P.ATT_VIEW_TEAM, P.ATT_REPORT_ALL] },
+  { path: PATHS.ATTENDANCE.LEAVE_REQUEST, component: LeaveRequests, permissions: [P.ATT_LEAVE_APPROVE, P.MSS_APPROVE_TEAM, P.ATT_LEAVE_APPLY] },
+  { path: PATHS.ATTENDANCE.LEAVE_TYPES,   component: LeaveTypes,    permissions: [P.SHIFT_SETUP, P.HR_SETUP] },
 
-  // ── Payroll ────────────────────────────────────────────────────────────────
-  {
-    path: PATHS.PAYROLL.CONFIGURATION,
-    component: p("Payroll Configuration"),
-    roles: [ADMIN],
-  },
-  {
-    path: PATHS.PAYROLL.PROCESSING,
-    component: p("Payroll Processing"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.PAYROLL.APPROVALS,
-    component: p("Payroll Approvals"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.PAYROLL.OUTPUT,
-    component: p("Payroll Output"),
-    roles: ADMIN_HR,
-  },
+  // ── Settings ──────────────────────────────────────────────────────────────────
+  { path: PATHS.SETTINGS.ORGANIZATION,  component: Organizations, permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.POSITIONS,     component: Positions,     permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.HR_POSITIONS,  component: HRPositions,   permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.GRADES,        component: Grades,        permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.COMPANY,       component: Companies,     permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.ORG_TYPES,     component: OrgTypes,      permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.LOCATIONS,     component: Locations,     permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.GEO_SETUP,     component: GeoSetup,      permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.HOLIDAYS,      component: Holidays,      permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.HOLIDAY_TYPES, component: HolidayTypes,  permissions: [P.HR_SETUP] },
+  { path: PATHS.SETTINGS.SHIFTS,        component: Shifts,        permissions: [P.SHIFT_SETUP] },
+  { path: PATHS.SETTINGS.CONTRACTS,     component: Contracts,     permissions: [P.HR_SETUP] },
+  // Admin-only settings — PAY_CONFIG is Admin-only per seed
+  { path: PATHS.SETTINGS.INVENTORYS,    component: InventoriesPage, permissions: [P.PAY_CONFIG] },
+  { path: PATHS.SETTINGS.ITEMS,         component: ItemsPage,       permissions: [P.PAY_CONFIG] },
+  { path: PATHS.SETTINGS.ITEM_STOCKS,   component: ItemStockPage,   permissions: [P.PAY_CONFIG] },
+  { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisitions,    permissions: [P.PAY_CONFIG] },
 
-  // ── Performance ────────────────────────────────────────────────────────────
-  {
-    path: PATHS.PERFORMANCE.SETUP,
-    component: p("Performance Setup"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.PERFORMANCE.APPRAISAL,
-    component: p("Appraisal Process"),
-    roles: ALL_ROLES,
-  },
-  {
-    path: PATHS.PERFORMANCE.REPORTS,
-    component: p("Performance Reports"),
-    roles: ADMIN_HR,
-  },
-
-  // ── Self Service ───────────────────────────────────────────────────────────
-  {
-    path: PATHS.SELF_SERVICE.ESS,
-    component: p("Employee Self-Service"),
-    roles: ALL_ROLES,
-  },
-  {
-    path: PATHS.SELF_SERVICE.MSS,
-    component: p("Manager Self-Service"),
-    roles: ADMIN_HR_SUP,
-  },
-
-  // ── PF / Gratuity / Loan ───────────────────────────────────────────────────
-  { path: PATHS.PF.OVERVIEW, component: p("PF Management"), roles: ALL_ROLES },
-  {
-    path: PATHS.GRATUITY.OVERVIEW,
-    component: p("Gratuity Management"),
-    roles: [ADMIN, HR, EMPLOYEE],
-  },
-  {
-    path: PATHS.LOAN.MANAGEMENT,
-    component: p("Loan & Advance Management"),
-    roles: ALL_ROLES,
-  },
-
-  // ── Communication ──────────────────────────────────────────────────────────
-  {
-    path: PATHS.COMMUNICATION.NOTIFICATIONS,
-    component: p("Notifications"),
-    roles: ALL_ROLES,
-  },
-  {
-    path: PATHS.COMMUNICATION.ANNOUNCEMENTS,
-    component: p("Announcements"),
-    roles: ADMIN_HR,
-  },
-
-  // ── Settings ───────────────────────────────────────────────────────────────
-  {
-    path: PATHS.SETTINGS.ORGANIZATION,
-    component: Organizations,
-    roles: ADMIN_HR,
-  },
-
-  { path: PATHS.SETTINGS.POSITIONS, component: Positions, roles: ADMIN_HR },
-  {
-    path: PATHS.SETTINGS.HR_POSITIONS,
-    component: HRPositions,
-    roles: ADMIN_HR,
-  },
-  { path: PATHS.SETTINGS.GRADES, component: Grades, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.COMPANY, component: Companies, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.ORG_TYPES, component: OrgTypes, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.LOCATIONS, component: Locations, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.GEO_SETUP, component: GeoSetup, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.HOLIDAYS, component: Holidays, roles: ADMIN_HR },
-  {
-    path: PATHS.SETTINGS.HOLIDAY_TYPES,
-    component: HolidayTypes,
-    roles: ADMIN_HR,
-  },
-  { path: PATHS.SETTINGS.SHIFTS, component: Shifts, roles: ADMIN_HR },
-  { path: PATHS.SETTINGS.CONTRACTS, component: Contracts, roles: ADMIN_HR },
-
-  { path: PATHS.SETTINGS.INVENTORYS, component:InventoriesPage, roles: ADMIN },
-  { path: PATHS.SETTINGS.ITEMS, component: ItemsPage, roles: ADMIN},
-   { path: PATHS.SETTINGS.ITEM_STOCKS, component: ItemStockPage, roles: ADMIN},
-   
-    //  { path: PATHS.SETTINGS.REQUISITION,  component: RequisitionsPage, roles: ADMIN},
-     { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisitions, roles: ADMIN},
-    
-
-
-  // ── Reports ────────────────────────────────────────────────────────────────
-  {
-    path: PATHS.REPORTS.GENERAL,
-    component: p("General Reports"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.REPORTS.ATTENDANCE,
-    component: p("Attendance Reports"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.REPORTS.PAYROLL,
-    component: p("Payroll Reports"),
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.REPORTS.ANALYTICS,
-    component: p("HR Analytics Dashboard"),
-    roles: ADMIN_HR,
-  },
-
-
-  // ── USER MANAGEMENT ────────────────────────────────────────────────────────────────
-  {
-    path: PATHS.USERS.USER_MANAGEMENT,
-    component: UserManagement,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.USERS.USER,
-    component: User,
-    roles: ADMIN_HR,
-  },
- 
-  {
-    path: PATHS.USERS.ROLE,
-    component: RoleManagement,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.USERS.ROLE_DETAIL,
-    component: RoleDetails,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.USERS.ROLE_PERMISSION_MATRIX,
-    component: RolePermissionMatrix,
-    roles: ADMIN_HR,
-  },
-  {
-    path: PATHS.USERS.PERMISSION,
-    component: PermissionManagement,
-    roles: ADMIN_HR
-  },
-  {
-    path: PATHS.USERS.MODULE,
-    component: ModuleManagement,
-    roles: ADMIN_HR
-  }
+  // ── User Management ───────────────────────────────────────────────────────────
+  { path: PATHS.USERS.USER_MANAGEMENT,       component: UserManagement,       permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.USER,                  component: User,                 permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.ROLE,                  component: RoleManagement,       permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.ROLE_DETAIL,           component: RoleDetails,          permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.ROLE_PERMISSION_MATRIX, component: RolePermissionMatrix, permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.PERMISSION,            component: PermissionManagement, permissions: [P.HR_SETUP] },
+  { path: PATHS.USERS.MODULE,                component: ModuleManagement,     permissions: [P.HR_SETUP] },
 ];
