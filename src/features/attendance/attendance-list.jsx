@@ -91,7 +91,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 
 import { useAttendance, useAttendanceSummary, buildExportUrl } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";

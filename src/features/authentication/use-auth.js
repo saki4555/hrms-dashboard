@@ -8,7 +8,7 @@ export function useAuth() {
   const logoutMutation = useLogout();
 
   return {
-    user,                             // { id, username, employee_id, roles: [] }
+    user,                           
     isLoading,
     isAuthenticated: !!user && !isError,
     login:           loginMutation.mutateAsync,   // ({ username, password })

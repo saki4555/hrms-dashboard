@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { useUpdateSupervisor } from "./queries";
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useSupervisorLiteSearch } from "@/hooks/use-lite-search";
 
 const formSchema = z.object({
   supervisorId: z.number({ required_error: "Supervisor is required" }),
@@ -36,7 +36,8 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
   const [supOpen, setSupOpen] = useState(false);
   const [supSearch, setSupSearch] = useState("");
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
-  const { data: supervisors = [], isFetching: supFetching } = useEmployeeLiteSearch(supSearch);
+  // ↓ supervisor-only search — filters by Supervisor / Team Lead / Manager roles
+  const { data: supervisors = [], isFetching: supFetching } = useSupervisorLiteSearch(supSearch);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -52,6 +53,7 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
         id:    assignment.SUPERVISOR_ID,
         name:  [assignment.SUP_TITLE, assignment.SUP_FIRST_NAME, assignment.SUP_LAST_NAME].filter(Boolean).join(" "),
         empNo: assignment.SUP_EMP_NO || "",
+        role:  null, // not available from the existing assignment row
       });
       setSupSearch("");
     }
@@ -89,8 +91,10 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
 
   const isSubmitting = updateMutation.isPending;
   const empName = assignment
-    ? `${assignment.EMP_TITLE ? assignment.EMP_TITLE + " " : ""}${assignment.EMP_FIRST_NAME} ${assignment.EMP_LAST_NAME}`
-    : "";
+  ? [assignment.EMP_TITLE, assignment.EMP_FIRST_NAME, assignment.EMP_LAST_NAME]
+      .filter(Boolean)
+      .join(" ")
+  : "";
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleCancel(); }}>
@@ -110,7 +114,7 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
         <Form {...form}>
           <div className="space-y-4">
 
-            {/* Current Employee — read only */}
+            {/* ── Current Employee — read only ──────────────────────────────── */}
             <div className="space-y-1.5">
               <p className="text-sm font-medium">Employee</p>
               <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
@@ -122,7 +126,7 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
               </div>
             </div>
 
-            {/* New Supervisor */}
+            {/* ── New Supervisor ────────────────────────────────────────────── */}
             <FormField control={form.control} name="supervisorId"
               render={({ field }) => (
                 <FormItem>
@@ -158,24 +162,29 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
                             <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
                           )}
                           {!supFetching && supSearch.length >= 2 && supervisors.length === 0 && (
-                            <CommandEmpty>No employees found.</CommandEmpty>
+                            <CommandEmpty>No supervisors found.</CommandEmpty>
                           )}
                           {!supFetching && supervisors.length > 0 && (
                             <CommandGroup>
-                              {supervisors.map((emp) => (
+                              {supervisors.map((sup) => (
                                 <CommandItem
-                                  key={emp.id}
-                                  value={String(emp.id)}
+                                  key={sup.id}
+                                  value={String(sup.id)}
                                   onSelect={() => {
-                                    setSelectedSupervisor(emp);
-                                    field.onChange(emp.id);
+                                    setSelectedSupervisor(sup);
+                                    field.onChange(sup.id);
                                     setSupOpen(false);
                                     setSupSearch("");
                                   }}
                                 >
-                                  <Check className={cn("mr-2 h-4 w-4", selectedSupervisor?.id === emp.id ? "opacity-100" : "opacity-0")} />
-                                  <span>{emp.name}</span>
-                                  <span className="ml-auto text-xs text-muted-foreground">{emp.empNo}</span>
+                                  <Check className={cn("mr-2 h-4 w-4", selectedSupervisor?.id === sup.id ? "opacity-100" : "opacity-0")} />
+                                  <span>{sup.name}</span>
+                                  {sup.role && (
+                                    <Badge variant="outline" className="ml-2 text-xs">
+                                      {sup.role}
+                                    </Badge>
+                                  )}
+                                  <span className="ml-auto text-xs text-muted-foreground">{sup.empNo}</span>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -184,10 +193,7 @@ export default function UpdateSupervisorDialog({ open, onOpenChange, showConfirm
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <FormDescription className="text-xs">
-                    Current: {assignment?.SUP_TITLE ? assignment.SUP_TITLE + " " : ""}
-                    {assignment?.SUP_FIRST_NAME} {assignment?.SUP_LAST_NAME} ({assignment?.SUP_EMP_NO})
-                  </FormDescription>
+                  
                   <FormMessage />
                 </FormItem>
               )}

@@ -8,7 +8,7 @@ import {
   CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { useEffect, useState } from "react"; // add to existing react import
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 // ─────────────────────────────────────────────────────────────────────────────
 //  EMPLOYEE FILTER COMBOBOX
 // ─────────────────────────────────────────────────────────────────────────────
