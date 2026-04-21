@@ -47,8 +47,9 @@ import { CalendarDays, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { DatePicker } from "@/components/DatePicker";
-import { useUpdateLeaveRequest, useLeaveTypes } from "./queries";
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useUpdateLeaveRequest } from "./queries";
+import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
+import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
 
 const STATUS_OPTIONS = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"];
 

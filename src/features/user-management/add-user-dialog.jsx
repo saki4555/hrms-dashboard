@@ -34,7 +34,7 @@ import { UserPlus, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateUser } from "./queries";
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 import { useHrLocations } from "@/features/settings/work-structure/locations/queries";
 
 const formSchema = z.object({

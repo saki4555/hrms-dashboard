@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { DatePicker } from "@/components/DatePicker";
 import { useCreateContract } from "./queries";
-import { useEmployeeLiteSearch } from "@/hooks/use-employee-lite-search";
+import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 
 const CONTRACT_TYPES = [
   "Permanent", "Temporary", "Probationary",
