@@ -22,16 +22,20 @@ const fetcher = async (url, options = {}) => {
   return res.json();
 };
 
-export const useSupervisorAssignments = () =>
-  useQuery({
-    queryKey: ["supervisors", "list"],
-    queryFn: async () => {
-      const json = await fetcher(BASE);
-      return json.data;
-    },
+// ── Queries ───────────────────────────────────────────────────────────────────
+
+export const useSupervisorAssignments = (params = {}) => {
+  const sp = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== "" && v != null) sp.set(k, v); });
+
+  return useQuery({
+    queryKey: ["supervisorAssignments", params],
+    queryFn:  () => fetcher(`${BASE}?${sp.toString()}`),
     refetchOnMount: true,
+    throwOnError: false,
     ...queryDefaults,
   });
+};
 
 export const useSupervisorByEmployee = (personId) =>
   useQuery({
@@ -55,11 +59,18 @@ export const useTeamBySupervisor = (supervisorId) =>
     ...queryDefaults,
   });
 
+// ── Mutations ─────────────────────────────────────────────────────────────────
+
+const invalidateAll = (qc) => {
+  qc.invalidateQueries({ queryKey: ["supervisorAssignments"] });
+  qc.invalidateQueries({ queryKey: ["supervisors"] });
+};
+
 export const useAssignSupervisor = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data) => fetcher(BASE, { method: "POST", body: JSON.stringify(data) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["supervisors"] }),
+    onSuccess: () => invalidateAll(qc),
   });
 };
 
@@ -68,7 +79,7 @@ export const useUpdateSupervisor = () => {
   return useMutation({
     mutationFn: ({ id, data }) =>
       fetcher(`${BASE}/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["supervisors"] }),
+    onSuccess: () => invalidateAll(qc),
   });
 };
 
@@ -76,6 +87,6 @@ export const useRemoveSupervisor = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id) => fetcher(`${BASE}/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["supervisors"] }),
+    onSuccess: () => invalidateAll(qc),
   });
 };
