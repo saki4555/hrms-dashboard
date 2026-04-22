@@ -18,36 +18,66 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { IconCircleDashedPlus, IconEdit, IconX, IconSelector } from "@tabler/icons-react";
+import {
+  IconCircleDashedPlus,
+  IconEdit,
+  IconX,
+  IconSelector,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 
-import { Button }  from "@/components/ui/button";
-import { Badge }   from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink,
-  BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { DataTablePagination } from "@/components/DataTablePagination";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useAuth }               from "@/features/authentication/use-auth";
-import { cn }                    from "@/lib/utils";
-import { useLeaveTypes }         from "@/features/attendance-management/leave-type/queries";
+import { useAuth } from "@/features/authentication/use-auth";
+import { cn } from "@/lib/utils";
+import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
 
 import {
   useAllLeaves,
@@ -55,30 +85,51 @@ import {
   useEmployeeLeaves,
   useDeleteLeaveRequest,
 } from "./queries";
-import AddLeaveRequestSheet    from "./add-leave-request-sheet";
+import AddLeaveRequestSheet from "./add-leave-request-sheet";
 import UpdateLeaveRequestSheet from "./update-leave-request-sheet";
+import { ROLES } from "@/config/roles";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STATUS_VARIANT = {
-  PENDING:   "warning",
-  APPROVED:  "success",
-  REJECTED:  "destructive",
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "destructive",
   CANCELLED: "secondary",
 };
 
 // TanStack column id → Oracle column name (for server-side sort on admin query)
 const SORT_COLUMN_MAP = {
   EMPLOYEE_NAME: "FIRST_NAME",
-  START_DATE:    "START_DATE",
-  APPLIED_ON:    "APPLIED_ON",
-  LEAVE_ID:      "LEAVE_ID",
+  START_DATE: "START_DATE",
+  APPLIED_ON: "APPLIED_ON",
+  LEAVE_ID: "LEAVE_ID",
 };
 
-const toISO   = (d) => { try { return format(new Date(d), "yyyy-MM-dd"); } catch { return ""; } };
-const fmtDate = (d) => { try { return format(new Date(d), "dd MMM yyyy"); } catch { return "—"; } };
+const toISO = (d) => {
+  try {
+    return format(new Date(d), "yyyy-MM-dd");
+  } catch {
+    return "";
+  }
+};
+const fmtDate = (d) => {
+  try {
+    return format(new Date(d), "dd MMM yyyy");
+  } catch {
+    return "—";
+  }
+};
+
+const fmtDateTime = (d) => {
+  try {
+    return format(new Date(d), "dd MMM yyyy, hh:mm a");
+  } catch {
+    return "—";
+  }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SUB-COMPONENTS
@@ -137,7 +188,7 @@ function SortHeader({ column, children }) {
 function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
   const dateRange = useMemo(() => {
     const from = fromDate ? new Date(fromDate) : undefined;
-    const to   = toDate   ? new Date(toDate)   : undefined;
+    const to = toDate ? new Date(toDate) : undefined;
     return from ? { from, to } : undefined;
   }, [fromDate, toDate]);
 
@@ -164,7 +215,10 @@ function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
             <span
               role="button"
               className="ml-1 rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
             >
               <IconX className="h-3.5 w-3.5" />
             </span>
@@ -178,10 +232,13 @@ function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
           selected={dateRange}
           numberOfMonths={2}
           onSelect={(range) => {
-            if (!range) { onChange({ from: null, to: null }); return; }
+            if (!range) {
+              onChange({ from: null, to: null });
+              return;
+            }
             onChange({
               from: range.from ? toISO(range.from) : null,
-              to:   range.to   ? toISO(range.to)   : null,
+              to: range.to ? toISO(range.to) : null,
             });
           }}
         />
@@ -194,18 +251,28 @@ function DateRangePicker({ fromDate, toDate, onChange, onClear }) {
 //  COLUMNS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildColumns({ isAdminOrHR, onEdit, onDelete, deletePending }) {
+function buildColumns({
+  isAdminOrHR,
+  isSupervisor,
+  onEdit,
+  onDelete,
+  deletePending,
+}) {
   const cols = [];
 
-  if (isAdminOrHR) {
+  if (isAdminOrHR || isSupervisor) {
     cols.push({
       accessorKey: "EMPLOYEE_NAME",
       header: ({ column }) => <SortHeader column={column}>Employee</SortHeader>,
       cell: ({ row }) => (
         <div>
-          <div className="font-medium">{row.getValue("EMPLOYEE_NAME") || "—"}</div>
+          <div className="font-medium">
+            {row.getValue("EMPLOYEE_NAME") || "—"}
+          </div>
           {row.original.EMP_NO && (
-            <div className="text-xs text-muted-foreground">{row.original.EMP_NO}</div>
+            <div className="text-xs text-muted-foreground">
+              {row.original.EMP_NO}
+            </div>
           )}
         </div>
       ),
@@ -219,9 +286,13 @@ function buildColumns({ isAdminOrHR, onEdit, onDelete, deletePending }) {
       enableSorting: false,
       cell: ({ row }) => {
         const code = row.getValue("LEAVE_TYPE_CODE");
-        return code
-          ? <Badge variant="outline" className="font-mono text-xs">{code}</Badge>
-          : <span className="text-muted-foreground">—</span>;
+        return code ? (
+          <Badge variant="outline" className="font-mono text-xs">
+            {code}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
       },
     },
     {
@@ -232,7 +303,9 @@ function buildColumns({ isAdminOrHR, onEdit, onDelete, deletePending }) {
     },
     {
       accessorKey: "START_DATE",
-      header: ({ column }) => <SortHeader column={column}>Start Date</SortHeader>,
+      header: ({ column }) => (
+        <SortHeader column={column}>Start Date</SortHeader>
+      ),
       cell: ({ row }) => <div>{fmtDate(row.getValue("START_DATE"))}</div>,
     },
     {
@@ -247,7 +320,9 @@ function buildColumns({ isAdminOrHR, onEdit, onDelete, deletePending }) {
       enableSorting: false,
       cell: ({ row }) => {
         const days = row.getValue("DAYS");
-        return <div className="font-medium">{days != null ? `${days}d` : "N/A"}</div>;
+        return (
+          <div className="font-medium">{days != null ? `${days}d` : "N/A"}</div>
+        );
       },
     },
     {
@@ -267,58 +342,99 @@ function buildColumns({ isAdminOrHR, onEdit, onDelete, deletePending }) {
       cell: ({ row }) => <StatusBadge status={row.getValue("STATUS")} />,
     },
     {
-      accessorKey: "APPROVER_USERNAME",
-      header: "Approved By",
+      accessorKey: "APPROVER_NAME",
+      header: "Actioned By",
       enableSorting: false,
       cell: ({ row }) => {
-        const username = row.getValue("APPROVER_USERNAME");
-        const status   = row.original.STATUS;
-        return status === "APPROVED" && username
-          ? <div className="text-sm font-medium">{username}</div>
-          : <span className="text-muted-foreground">—</span>;
+        const name = row.getValue("APPROVER_NAME");
+        const empNo = row.original.APPROVER_EMP_NO;
+        const status = row.original.STATUS;
+
+        // Show approver for both APPROVED and REJECTED
+        if ((status !== "APPROVED" && status !== "REJECTED") || !name)
+          return <span className="text-muted-foreground">—</span>;
+
+        return (
+          <div>
+            <div className="text-sm font-medium">{name}</div>
+            {empNo && (
+              <div className="text-xs text-muted-foreground">{empNo}</div>
+            )}
+          </div>
+        );
       },
     },
     {
-      accessorKey: "APPLIED_ON",
-      header: ({ column }) => <SortHeader column={column}>Applied On</SortHeader>,
-      cell: ({ row }) => (
-        <div className="text-muted-foreground text-sm">
-          {fmtDate(row.getValue("APPLIED_ON"))}
-        </div>
-      ),
-    },
+  accessorKey: "APPROVED_ON",
+  header: "Actioned On",
+  enableSorting: false,
+  cell: ({ row }) => {
+    const status     = row.original.STATUS;
+    const actionedOn = row.getValue("APPROVED_ON");
+
+    if ((status !== "APPROVED" && status !== "REJECTED") || !actionedOn)
+      return <span className="text-muted-foreground">—</span>;
+
+    return (
+      <div className="text-sm text-muted-foreground">
+        {fmtDateTime(actionedOn)}  {/* ← changed from fmtDate */}
+      </div>
+    );
+  },
+},
     {
+  accessorKey: "APPLIED_ON",
+  header: ({ column }) => (
+    <SortHeader column={column}>Applied On</SortHeader>
+  ),
+  cell: ({ row }) => (
+    <div className="text-muted-foreground text-sm">
+      {fmtDateTime(row.getValue("APPLIED_ON"))}
+    </div>
+  ),
+},
+  );
+
+  // Actions column — only for general employees
+  if (!isAdminOrHR && !isSupervisor) {
+    cols.push({
       id: "actions",
       header: "Actions",
       enableHiding: false,
       enableSorting: false,
       cell: ({ row }) => {
         const leave = row.original;
+        if (leave.STATUS !== "PENDING") return null;
         return (
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost" size="icon" className="h-8 w-8"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => onEdit(leave)}
             >
               <IconEdit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
             </Button>
             <Button
-              variant="ghost" size="icon"
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 text-destructive hover:text-destructive"
               onClick={() => onDelete(leave)}
               disabled={deletePending}
             >
-              {deletePending
-                ? <Spinner data-icon="inline-start" />
-                : <Trash2 className="h-4 w-4" />}
+              {deletePending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
               <span className="sr-only">Delete</span>
             </Button>
           </div>
         );
       },
-    },
-  );
+    });
+  }
 
   return cols;
 }
@@ -331,57 +447,90 @@ export default function LeaveRequestList() {
   const { user } = useAuth();
   const permissions = user?.permissions ?? [];
 
-  console.log({permissions});
-  const employeeId  = user?.employee_id;
-  
+  console.log({ permissions });
+  const employeeId = user?.employee_id;
 
-  const isAdminOrHR = permissions.includes("DASH_VIEW_ADMIN")
- 
-  const isSupervisor = !isAdminOrHR && (
-    permissions.includes("DASH_VIEW_TEAM")
-  );
- 
+// ── Role checks — use roles array not permissions ──────────────────────────
+const isAdminOrHR  = user?.roles?.includes(ROLES.ADMIN) || user?.roles?.includes(ROLES.HR);
+const isSupervisor = !isAdminOrHR && user?.roles?.includes(ROLES.SUPERVISOR);
+const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLES.EMPLOYEE);
 
-  const isGeneralEmployee = !isAdminOrHR && !isSupervisor;
 
-  console.log({ isAdminOrHR, isSupervisor, isGeneralEmployee });
 
   // ── URL state (nuqs) ────────────────────────────────────────────────────────
-  const [page,        setPage]        = useQueryState("page",        parseAsInteger.withDefault(1));
-  const [limit,       setLimit]       = useQueryState("limit",       parseAsInteger.withDefault(20));
-  const [fromDate,    setFromDate]    = useQueryState("fromDate",    parseAsString.withDefault(""));
-  const [toDate,      setToDate]      = useQueryState("toDate",      parseAsString.withDefault(""));
-  const [status,      setStatus]      = useQueryState("status",      parseAsString.withDefault(""));
-  const [leaveTypeId, setLeaveTypeId] = useQueryState("leaveTypeId", parseAsString.withDefault(""));
-  const [sortBy,      setSortBy]      = useQueryState("sortBy",      parseAsString.withDefault("LEAVE_ID"));
-  const [sortOrder,   setSortOrder]   = useQueryState("sortOrder",   parseAsString.withDefault("DESC"));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [limit, setLimit] = useQueryState(
+    "limit",
+    parseAsInteger.withDefault(20),
+  );
+  const [fromDate, setFromDate] = useQueryState(
+    "fromDate",
+    parseAsString.withDefault(""),
+  );
+  const [toDate, setToDate] = useQueryState(
+    "toDate",
+    parseAsString.withDefault(""),
+  );
+  const [status, setStatus] = useQueryState(
+    "status",
+    parseAsString.withDefault(""),
+  );
+  const [leaveTypeId, setLeaveTypeId] = useQueryState(
+    "leaveTypeId",
+    parseAsString.withDefault(""),
+  );
+  const [sortBy, setSortBy] = useQueryState(
+    "sortBy",
+    parseAsString.withDefault("LEAVE_ID"),
+  );
+  const [sortOrder, setSortOrder] = useQueryState(
+    "sortOrder",
+    parseAsString.withDefault("DESC"),
+  );
 
   // ── Local UI ──────────────────────────────────────────────────────────────────
-  const [columnVisibility,  setColumnVisibility]  = useState({});
-  const [isAddSheetOpen,    setIsAddSheetOpen]    = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isUpdateSheetOpen, setIsUpdateSheetOpen] = useState(false);
-  const [selectedLeave,     setSelectedLeave]     = useState(null);
+  const [selectedLeave, setSelectedLeave] = useState(null);
 
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   // ── Admin query params ────────────────────────────────────────────────────────
-  const adminParams = useMemo(() => ({
-    page, limit, fromDate, toDate, status, leaveTypeId, sortBy, sortOrder,
-  }), [page, limit, fromDate, toDate, status, leaveTypeId, sortBy, sortOrder]);
+  const adminParams = useMemo(
+    () => ({
+      page,
+      limit,
+      fromDate,
+      toDate,
+      status,
+      leaveTypeId,
+      sortBy,
+      sortOrder,
+    }),
+    [page, limit, fromDate, toDate, status, leaveTypeId, sortBy, sortOrder],
+  );
 
   // ── Queries ───────────────────────────────────────────────────────────────────
-  const adminQuery      = useAllLeaves(adminParams);
-  const supervisorQuery = useTeamLeaves(isSupervisor ? employeeId : null, status);
-  const employeeQuery   = useEmployeeLeaves(
+  const adminQuery = useAllLeaves(adminParams);
+  const supervisorQuery = useTeamLeaves(
+    isSupervisor ? employeeId : null,
+    status,
+  );
+  const employeeQuery = useEmployeeLeaves(
     !isAdminOrHR && !isSupervisor ? employeeId : null,
     status,
   );
 
-  const activeQuery = isAdminOrHR ? adminQuery : isSupervisor ? supervisorQuery : employeeQuery;
+  const activeQuery = isAdminOrHR
+    ? adminQuery
+    : isSupervisor
+      ? supervisorQuery
+      : employeeQuery;
   const { isLoading, isError, error, refetch, isFetching } = activeQuery;
 
-  const rows      = activeQuery.data?.data ?? [];
-  const total     = activeQuery.data?.pagination?.total     ?? rows.length;
+  const rows = activeQuery.data?.data ?? [];
+  const total = activeQuery.data?.pagination?.total ?? rows.length;
   const pageCount = activeQuery.data?.pagination?.totalPages ?? 1;
 
   // ── Leave types dropdown ──────────────────────────────────────────────────────
@@ -391,15 +540,18 @@ export default function LeaveRequestList() {
   const deleteMutation = useDeleteLeaveRequest();
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
-  const handleEdit   = (leave) => { setSelectedLeave(leave); setIsUpdateSheetOpen(true); };
+  const handleEdit = (leave) => {
+    setSelectedLeave(leave);
+    setIsUpdateSheetOpen(true);
+  };
 
   const handleDelete = async (leave) => {
     const confirmed = await showConfirmation({
-      title:       "Delete leave request?",
+      title: "Delete leave request?",
       description: `Delete Leave #${leave.LEAVE_ID}? This cannot be undone.`,
       confirmText: "Delete",
-      cancelText:  "Cancel",
-      variant:     "destructive",
+      cancelText: "Cancel",
+      variant: "destructive",
     });
     if (confirmed) {
       try {
@@ -412,8 +564,10 @@ export default function LeaveRequestList() {
   };
 
   const clearFilters = () => {
-    setFromDate(null); setToDate(null);
-    setStatus(null);   setLeaveTypeId(null);
+    setFromDate(null);
+    setToDate(null);
+    setStatus(null);
+    setLeaveTypeId(null);
     setPage(1);
   };
 
@@ -425,100 +579,132 @@ export default function LeaveRequestList() {
     return [{ id: sortBy, desc: sortOrder === "DESC" }];
   }, [sortBy, sortOrder]);
 
-  const onSortingChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function" ? updaterOrValue(sorting) : updaterOrValue;
-    if (next.length === 0) {
-      setSortBy("LEAVE_ID");
-      setSortOrder("DESC");
-    } else {
-      setSortBy(SORT_COLUMN_MAP[next[0].id] ?? next[0].id);
-      setSortOrder(next[0].desc ? "DESC" : "ASC");
-      setPage(1);
-    }
-  }, [sorting, setSortBy, setSortOrder, setPage]);
+  const onSortingChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
+      if (next.length === 0) {
+        setSortBy("LEAVE_ID");
+        setSortOrder("DESC");
+      } else {
+        setSortBy(SORT_COLUMN_MAP[next[0].id] ?? next[0].id);
+        setSortOrder(next[0].desc ? "DESC" : "ASC");
+        setPage(1);
+      }
+    },
+    [sorting, setSortBy, setSortOrder, setPage],
+  );
 
   // ── Pagination bridge ─────────────────────────────────────────────────────────
-  const pagination = useMemo(() => ({ pageIndex: page - 1, pageSize: limit }), [page, limit]);
+  const pagination = useMemo(
+    () => ({ pageIndex: page - 1, pageSize: limit }),
+    [page, limit],
+  );
 
-  const onPaginationChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function" ? updaterOrValue(pagination) : updaterOrValue;
-    setPage(next.pageIndex + 1);
-    setLimit(next.pageSize);
-  }, [pagination, setPage, setLimit]);
+  const onPaginationChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(pagination)
+          : updaterOrValue;
+      setPage(next.pageIndex + 1);
+      setLimit(next.pageSize);
+    },
+    [pagination, setPage, setLimit],
+  );
 
   // ── Columns ───────────────────────────────────────────────────────────────────
-  const columns = useMemo(() => buildColumns({
-    isAdminOrHR,
-    onEdit:        handleEdit,
-    onDelete:      handleDelete,
-    deletePending: deleteMutation.isPending,
-  }), [isAdminOrHR, deleteMutation.isPending]);
+  const columns = useMemo(
+    () =>
+      buildColumns({
+        isAdminOrHR,
+        isSupervisor, // ← was missing
+        onEdit: handleEdit,
+        onDelete: handleDelete,
+        deletePending: deleteMutation.isPending,
+      }),
+    [isAdminOrHR, isSupervisor, deleteMutation.isPending],
+  ); // ← add isSupervisor here too
 
   // ── Table ─────────────────────────────────────────────────────────────────────
   const table = useReactTable({
-    data:     rows,
+    data: rows,
     columns,
     pageCount,
-    state:    { pagination, columnVisibility, sorting },
+    state: { pagination, columnVisibility, sorting },
     onPaginationChange,
     onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel:   getCoreRowModel(),
+    getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(), // client-side sort for supervisor/employee
-    manualPagination:  isAdminOrHR,
-    manualSorting:     isAdminOrHR,        // server-side sort for admin only
-    manualFiltering:   true,
+    manualPagination: isAdminOrHR,
+    manualSorting: isAdminOrHR, // server-side sort for admin only
+    manualFiltering: true,
   });
 
   // ── Loading ───────────────────────────────────────────────────────────────────
-  if (isLoading) return (
-    <div>
-      <PageHeader />
-      <div className="bg-card rounded-md shadow-sm p-4">
-        <div className="flex flex-col items-center justify-center py-16">
-          <Spinner className="h-12 w-12 mb-4" />
-          <p className="text-muted-foreground">Loading leave requests...</p>
+  if (isLoading)
+    return (
+      <div>
+        <PageHeader />
+        <div className="bg-card rounded-md shadow-sm p-4">
+          <div className="flex flex-col items-center justify-center py-16">
+            <Spinner className="h-12 w-12 mb-4" />
+            <p className="text-muted-foreground">Loading leave requests...</p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 
   // ── Error ─────────────────────────────────────────────────────────────────────
-  if (isError) return (
-    <div>
-      <PageHeader onAdd={() => setIsAddSheetOpen(true)} />
-      <div className="bg-card rounded-md shadow-sm p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error Loading Leave Requests</AlertTitle>
-          <AlertDescription className="mt-2 flex flex-col gap-2">
-            <p>{error?.message || "Failed to load leave requests."}</p>
-            <Button
-              variant="outline" size="sm"
-              onClick={refetch} disabled={isFetching} className="w-fit"
-            >
-              {isFetching
-                ? <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
-                : <><RefreshCw className="mr-2 h-4 w-4" />Retry</>}
-            </Button>
-          </AlertDescription>
-        </Alert>
+  if (isError)
+    return (
+      <div>
+        <PageHeader onAdd={isEmployee ? () => setIsAddSheetOpen(true) : undefined} />
+        <div className="bg-card rounded-md shadow-sm p-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Leave Requests</AlertTitle>
+            <AlertDescription className="mt-2 flex flex-col gap-2">
+              <p>{error?.message || "Failed to load leave requests."}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refetch}
+                disabled={isFetching}
+                className="w-fit"
+              >
+                {isFetching ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
+                )}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   // ── Main ──────────────────────────────────────────────────────────────────────
   return (
     <div>
       <PageHeader
-        onRefetch={refetch}
-        isFetching={isFetching}
-        onAdd={() => setIsAddSheetOpen(true)}
-      />
+  onRefetch={refetch}
+  isFetching={isFetching}
+  onAdd={isEmployee ? () => setIsAddSheetOpen(true) : undefined}
+/>
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-
           {/* ── Filter Bar ─────────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
             <DateRangePicker
@@ -529,12 +715,19 @@ export default function LeaveRequestList() {
                 setToDate(to || null);
                 setPage(1);
               }}
-              onClear={() => { setFromDate(null); setToDate(null); setPage(1); }}
+              onClear={() => {
+                setFromDate(null);
+                setToDate(null);
+                setPage(1);
+              }}
             />
 
             <Select
               value={status || "all"}
-              onValueChange={(v) => { setStatus(v === "all" ? null : v); setPage(1); }}
+              onValueChange={(v) => {
+                setStatus(v === "all" ? null : v);
+                setPage(1);
+              }}
             >
               <SelectTrigger className="h-9 w-[150px]">
                 <SelectValue placeholder="All Statuses" />
@@ -551,7 +744,10 @@ export default function LeaveRequestList() {
             {isAdminOrHR && leaveTypes.length > 0 && (
               <Select
                 value={leaveTypeId || "all"}
-                onValueChange={(v) => { setLeaveTypeId(v === "all" ? null : v); setPage(1); }}
+                onValueChange={(v) => {
+                  setLeaveTypeId(v === "all" ? null : v);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="h-9 w-[170px]">
                   <SelectValue placeholder="All Leave Types" />
@@ -559,7 +755,10 @@ export default function LeaveRequestList() {
                 <SelectContent>
                   <SelectItem value="all">All Leave Types</SelectItem>
                   {leaveTypes.map((lt) => (
-                    <SelectItem key={lt.LEAVE_TYPE_ID} value={String(lt.LEAVE_TYPE_ID)}>
+                    <SelectItem
+                      key={lt.LEAVE_TYPE_ID}
+                      value={String(lt.LEAVE_TYPE_ID)}
+                    >
                       {lt.NAME}
                     </SelectItem>
                   ))}
@@ -569,7 +768,8 @@ export default function LeaveRequestList() {
 
             {hasActiveFilters && (
               <Button
-                variant="ghost" size="sm"
+                variant="ghost"
+                size="sm"
                 className="h-9 border border-dashed text-muted-foreground hover:text-foreground"
                 onClick={clearFilters}
               >
@@ -593,16 +793,19 @@ export default function LeaveRequestList() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {table.getAllColumns().filter((c) => c.getCanHide()).map((col) => (
-                  <DropdownMenuCheckboxItem
-                    key={col.id}
-                    className="capitalize"
-                    checked={col.getIsVisible()}
-                    onCheckedChange={(v) => col.toggleVisibility(!!v)}
-                  >
-                    {col.id.replace(/_/g, " ").toLowerCase()}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                {table
+                  .getAllColumns()
+                  .filter((c) => c.getCanHide())
+                  .map((col) => (
+                    <DropdownMenuCheckboxItem
+                      key={col.id}
+                      className="capitalize"
+                      checked={col.getIsVisible()}
+                      onCheckedChange={(v) => col.toggleVisibility(!!v)}
+                    >
+                      {col.id.replace(/_/g, " ").toLowerCase()}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -625,7 +828,10 @@ export default function LeaveRequestList() {
                       <TableHead key={h.id} className="font-medium">
                         {h.isPlaceholder
                           ? null
-                          : flexRender(h.column.columnDef.header, h.getContext())}
+                          : flexRender(
+                              h.column.columnDef.header,
+                              h.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -637,17 +843,25 @@ export default function LeaveRequestList() {
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-32 text-center"
+                    >
                       <Empty>
                         <EmptyHeader>
-                          <EmptyMedia variant="icon"><CalendarDays /></EmptyMedia>
+                          <EmptyMedia variant="icon">
+                            <CalendarDays />
+                          </EmptyMedia>
                           <EmptyTitle>No Leave Requests Found</EmptyTitle>
                         </EmptyHeader>
                       </Empty>
@@ -662,13 +876,14 @@ export default function LeaveRequestList() {
         </div>
       </div>
 
-      {isAddSheetOpen && (
-        <AddLeaveRequestSheet
-          open={isAddSheetOpen}
-          onOpenChange={setIsAddSheetOpen}
-          showConfirmation={showConfirmation}
-        />
-      )}
+     {isAddSheetOpen && (
+  <AddLeaveRequestSheet
+    open={isAddSheetOpen}
+    onOpenChange={setIsAddSheetOpen}
+    showConfirmation={showConfirmation}
+    isAdminOrHR={isAdminOrHR}  // ← new
+  />
+)}
       {isUpdateSheetOpen && (
         <UpdateLeaveRequestSheet
           open={isUpdateSheetOpen}
@@ -692,25 +907,38 @@ function PageHeader({ onAdd, onRefetch, isFetching }) {
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-0.5">
-          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Leave Requests</h1>
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+            Leave Requests
+          </h1>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Dashboard</Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>Leave Management</BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage className="text-muted-foreground/80">Leave Requests</BreadcrumbPage>
+                <BreadcrumbPage className="text-muted-foreground/80">
+                  Leave Requests
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
         <div className="flex items-center gap-2">
           {onRefetch && (
-            <Button variant="outline" size="icon" onClick={onRefetch} disabled={isFetching}>
-              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefetch}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isFetching && "animate-spin")}
+              />
             </Button>
           )}
           {onAdd && (

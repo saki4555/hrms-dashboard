@@ -1,3 +1,5 @@
+// src\config\roles.js
+
 export const ROLES = {
   ADMIN:      "Admin",
   HR:         "HR",

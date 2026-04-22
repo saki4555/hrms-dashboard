@@ -228,25 +228,42 @@ function EmployeeNotificationCard({ notification, onMarkRead }) {
 }
 
 // ─── Main Notification Bell ───────────────────────────────────────────────────
-// mode: "supervisor" | "employee"
-export default function NotificationBell({ userId, mode = "supervisor" }) {
-  const [open, setOpen] = useState(false);
 
+export default function NotificationBell({ userId, isSupervisor = true }) {
+const [open, setOpen] = useState(false);
+
+
+console.log("[NotificationBell] mode →", isSupervisor);
   const {
     data: supervisorNotifications = [],
     isLoading: supLoading,
-  } = useNotificationsForSupervisor(mode === "supervisor" ? userId : null);
+    error: supError,
+  } = useNotificationsForSupervisor(isSupervisor ? userId : null);
 
   const {
     data: employeeNotifications = [],
     isLoading: empLoading,
-  } = useNotificationsForEmployee(mode === "employee" ? userId : null);
+    error: empError,
+  } = useNotificationsForEmployee(!isSupervisor ? userId : null);
 
-  const notifications = mode === "supervisor"
+
+
+  console.log("[NotificationBell] employee query →", {
+    enabled: !isSupervisor,
+    queryUserId: !isSupervisor ? userId : null,
+    isLoading: empLoading,
+    error: empError?.message,
+    count: employeeNotifications.length,
+    data: employeeNotifications,
+  });
+
+  const notifications = isSupervisor
     ? supervisorNotifications
     : employeeNotifications;
 
-  const isLoading = mode === "supervisor" ? supLoading : empLoading;
+
+
+  const isLoading = isSupervisor ? supLoading : empLoading;
 
   const unreadCount = notifications.filter((n) => n.STATUS === 0).length;
 
@@ -262,7 +279,7 @@ export default function NotificationBell({ userId, mode = "supervisor" }) {
   };
 
   const handleMarkAllRead = async () => {
-    if (mode !== "supervisor") return;
+    if (!isSupervisor) return;
     try {
       await markAllMutation.mutateAsync(userId);
       toast.success("All notifications marked as read");
@@ -304,7 +321,7 @@ export default function NotificationBell({ userId, mode = "supervisor" }) {
               </Badge>
             )}
           </div>
-          {unreadCount > 0 && mode === "supervisor" && (
+          {unreadCount > 0 && isSupervisor && (
             <Button
               variant="ghost" size="sm"
               className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1"
@@ -347,7 +364,7 @@ export default function NotificationBell({ userId, mode = "supervisor" }) {
                   {notifications
                     .filter((n) => n.STATUS === 0)
                     .map((n) =>
-                      mode === "supervisor" ? (
+                      isSupervisor ? (
                         <NotificationCard
                           key={n.ID}
                           notification={n}
@@ -377,7 +394,7 @@ export default function NotificationBell({ userId, mode = "supervisor" }) {
                   {notifications
                     .filter((n) => n.STATUS === 1)
                     .map((n) =>
-                      mode === "supervisor" ? (
+                      isSupervisor ? (
                         <NotificationCard
                           key={n.ID}
                           notification={n}

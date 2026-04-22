@@ -49,6 +49,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { useCreateLeaveRequest } from "./queries";
 import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
+import { useAuth } from "@/features/authentication/use-auth";
 
 const formSchema = z
   .object({
@@ -64,7 +65,8 @@ const formSchema = z
     path: ["end_date"],
   });
 
-export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmation }) {
+export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmation, isAdminOrHR }) {
+  const { user } = useAuth();
   const createMutation = useCreateLeaveRequest();
   const { data: leaveTypes = [], isLoading: leaveTypesLoading } = useLeaveTypes();
 
@@ -76,7 +78,7 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      employeeId: undefined,
+      employeeId: isAdminOrHR ? undefined : user?.employee_id,
       leave_type_id: "",
       start_date: "",
       end_date: "",
@@ -91,7 +93,7 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
   useEffect(() => {
     if (open) {
       form.reset({
-        employeeId: undefined,
+        employeeId: isAdminOrHR ? undefined : user?.employee_id,
         leave_type_id: "",
         start_date: "",
         end_date: "",
@@ -103,10 +105,9 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
     }
   }, [open]);
 
-  // Auto-calculate days when dates change
+  // Auto-calculate days
   const startDate = form.watch("start_date");
   const endDate   = form.watch("end_date");
-
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -121,20 +122,27 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
   const onSubmit = async (data) => {
     try {
       const payload = {
-        employee_id:   data.employeeId,
+        employee_id:   isAdminOrHR ? data.employeeId : user.employee_id,
         leave_type_id: Number(data.leave_type_id),
         start_date:    data.start_date,
         end_date:      data.end_date,
         days:          data.days ? Number(data.days) : null,
         reason:        data.reason || null,
-        created_by:    "SYSTEM", // TODO: replace with auth user
+        created_by:    user?.employee_id ?? null,
+        // Admin/HR creates leave as APPROVED directly — no approval flow needed
+        status:        isAdminOrHR ? "APPROVED" : "PENDING",
+        approver_id:   isAdminOrHR ? user?.employee_id : null,
       };
       await createMutation.mutateAsync(payload);
-      toast.success("Leave request submitted successfully!");
+      toast.success(
+        isAdminOrHR
+          ? "Leave request created and approved!"
+          : "Leave request submitted successfully!"
+      );
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      toast.error(error?.message || "Failed to submit leave request. Please try again.");
+      toast.error(error?.message || "Failed to submit leave request.");
     }
   };
 
@@ -159,126 +167,114 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
       <SheetContent className="sm:max-w-xl w-full flex flex-col gap-0 p-0">
 
-        {/* ── Header ─────────────────────────────────────────────────── */}
         <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
               <CalendarDays className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <SheetTitle>Apply Leave Request</SheetTitle>
-              <SheetDescription>Submit a new leave request for approval</SheetDescription>
+              <SheetTitle>
+                {isAdminOrHR ? "Create Leave Request" : "Apply Leave Request"}
+              </SheetTitle>
+              <SheetDescription>
+                {isAdminOrHR
+                  ? "Create and approve a leave request on behalf of an employee"
+                  : "Submit a new leave request for approval"}
+              </SheetDescription>
             </div>
           </div>
         </SheetHeader>
 
-        {/* ── Scrollable form body ────────────────────────────────────── */}
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
-              {/* Employee Search */}
-              <FormField
-                control={form.control}
-                name="employeeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Employee <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Popover open={empOpen} onOpenChange={setEmpOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            disabled={isSubmitting}
-                            className={cn(
-                              "w-full justify-between font-normal",
-                              !selectedEmployee && "text-muted-foreground"
-                            )}
-                          >
-                            {selectedEmployee
-                              ? `${selectedEmployee.name}${selectedEmployee.empNo ? ` (${selectedEmployee.empNo})` : ""}`
-                              : "Search by name or emp no..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[420px] p-0" align="start">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="Type 2+ characters..."
-                            value={empSearch}
-                            onValueChange={setEmpSearch}
-                          />
-                          <CommandList>
-                            {empFetching && (
-                              <div className="flex items-center justify-center py-4">
-                                <Spinner className="h-4 w-4" />
-                              </div>
-                            )}
-                            {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
-                              <CommandEmpty>No employees found.</CommandEmpty>
-                            )}
-                            {!empFetching && empSearch.length < 2 && (
-                              <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
-                            )}
-                            <CommandGroup>
-                              {employees.map((emp) => (
-                                <CommandItem
-                                  key={emp.id}
-                                  value={String(emp.id)}
-                                  onSelect={() => {
-                                    setSelectedEmployee(emp);
-                                    field.onChange(emp.id);
-                                    setEmpOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      selectedEmployee?.id === emp.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  <span>{emp.name}</span>
-                                  <span className="ml-auto text-xs text-muted-foreground">
-                                    {emp.empNo}
-                                  </span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Employee picker — only for Admin/HR */}
+              {isAdminOrHR && (
+                <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Employee <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Popover open={empOpen} onOpenChange={setEmpOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              disabled={isSubmitting}
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                !selectedEmployee && "text-muted-foreground"
+                              )}
+                            >
+                              {selectedEmployee
+                                ? `${selectedEmployee.name}${selectedEmployee.empNo ? ` (${selectedEmployee.empNo})` : ""}`
+                                : "Search by name or emp no..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[420px] p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Type 2+ characters..."
+                              value={empSearch}
+                              onValueChange={setEmpSearch}
+                            />
+                            <CommandList>
+                              {empFetching && (
+                                <div className="flex items-center justify-center py-4">
+                                  <Spinner className="h-4 w-4" />
+                                </div>
+                              )}
+                              {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
+                                <CommandEmpty>No employees found.</CommandEmpty>
+                              )}
+                              {!empFetching && empSearch.length < 2 && (
+                                <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
+                              )}
+                              <CommandGroup>
+                                {employees.map((emp) => (
+                                  <CommandItem
+                                    key={emp.id}
+                                    value={String(emp.id)}
+                                    onSelect={() => {
+                                      setSelectedEmployee(emp);
+                                      field.onChange(emp.id);
+                                      setEmpOpen(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", selectedEmployee?.id === emp.id ? "opacity-100" : "opacity-0")} />
+                                    <span>{emp.name}</span>
+                                    <span className="ml-auto text-xs text-muted-foreground">{emp.empNo}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
-              {/* Leave Type Dropdown */}
+              {/* Leave Type */}
               <FormField
                 control={form.control}
                 name="leave_type_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      Leave Type <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <Select
-                      disabled={isSubmitting || leaveTypesLoading}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <FormLabel>Leave Type <span className="text-destructive">*</span></FormLabel>
+                    <Select disabled={isSubmitting || leaveTypesLoading} onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue
-                            placeholder={leaveTypesLoading ? "Loading..." : "Select leave type"}
-                          />
+                          <SelectValue placeholder={leaveTypesLoading ? "Loading..." : "Select leave type"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -295,49 +291,40 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
                 )}
               />
 
-              {/* Start Date + End Date */}
+              {/* Start + End Date */}
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="start_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Start Date <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel>Start Date <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <DatePicker
                           className="w-full"
                           placeholder="Select start date"
                           disabled={isSubmitting}
                           value={field.value ? new Date(field.value) : undefined}
-                          onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                          }
+                          onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="end_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        End Date <span className="text-destructive">*</span>
-                      </FormLabel>
+                      <FormLabel>End Date <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <DatePicker
                           className="w-full"
                           placeholder="Select end date"
                           disabled={isSubmitting}
                           value={field.value ? new Date(field.value) : undefined}
-                          onChange={(date) =>
-                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                          }
+                          onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
                         />
                       </FormControl>
                       <FormMessage />
@@ -346,7 +333,7 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
                 />
               </div>
 
-              {/* Days (auto-calculated, read-only) */}
+              {/* Days */}
               <FormField
                 control={form.control}
                 name="days"
@@ -389,7 +376,6 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
               />
             </div>
 
-            {/* ── Footer ───────────────────────────────────────────────── */}
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0">
               <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
                 Cancel
@@ -397,9 +383,7 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <><Spinner className="mr-2 h-4 w-4" />Submitting...</>
-                ) : (
-                  "Submit Request"
-                )}
+                ) : isAdminOrHR ? "Create & Approve" : "Submit Request"}
               </Button>
             </div>
           </form>
