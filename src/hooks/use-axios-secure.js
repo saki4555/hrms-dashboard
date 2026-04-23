@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 
 import { useNavigate } from "react-router";
 import { useAuth } from "@/context/auth-context";
+// import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 const axiosSecure = axios.create({
   baseURL: "/api",

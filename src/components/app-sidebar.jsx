@@ -29,7 +29,7 @@ import { NavUser } from "./nav-user";
 
 import { IconCaretRightFilled } from "@tabler/icons-react";
 import { NAV_ITEMS } from "@/config/nav-config";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 // Returns true if user has at least ONE of the required permissions
 const hasAnyPermission = (userPermissions = [], requiredPermissions = []) =>

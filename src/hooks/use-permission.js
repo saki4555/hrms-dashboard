@@ -1,5 +1,5 @@
-// src/hooks/use-can.js
-import { useAuth } from "@/features/authentication/use-auth";
+// src\hooks\use-permission.js
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 // Can user do this one thing?
 // Usage: const canRunPayroll = useCan("PAY_PROCESS");

@@ -23,13 +23,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 
 export function NavUser({ user }) {
-  console.log("user form nav user", user)
+  console.log("user form nav user", user);
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -76,20 +76,19 @@ export function NavUser({ user }) {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user?.avatar} alt={user?.name} />
-                 <AvatarFallback className={cn("rounded-lg", avatarColor)}>
-  {user?.username?.slice(0, 2) || "U"}
-</AvatarFallback>
+                  <AvatarFallback className={cn("rounded-lg", avatarColor)}>
+                    {user?.username?.slice(0, 2) || "U"}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   {/* <span className="truncate font-medium">{user.name}</span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span> */}
-                  
+
                   <span className="truncate font-medium">{user?.username}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {user?.roles?.join(", ")} 
-                   
+                    {user?.roles?.join(", ")}
                   </span>
                 </div>
               </div>
@@ -97,7 +96,7 @@ export function NavUser({ user }) {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuGroup>
+            {/* <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
                 Account
@@ -107,9 +106,9 @@ export function NavUser({ user }) {
                 <IconNotification />
                 Notifications
               </DropdownMenuItem>
-            </DropdownMenuGroup>
+            </DropdownMenuGroup> */}
 
-            <DropdownMenuSeparator />
+            {/* <DropdownMenuSeparator /> */}
 
             <DropdownMenuItem onClick={handleLogout}>
               <IconLogout />

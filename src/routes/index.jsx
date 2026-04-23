@@ -18,12 +18,13 @@ import { NotFoundError } from "@/components/shared/not-found-error";
 import Login from "@/features/authentication";
 import { Forbidden } from "@/features/authentication-old/pages/forbidden";
 import { PERMISSIONS } from "@/config/permissions";
+import LoginV2 from "@/features/authentication-v2";
 
 export default function AppRoutes() {
   return (
     <Routes>
       {/* ── Public ─────────────────────────────────────────────────────────── */}
-      <Route path="/login"        element={<Login />} />
+      <Route path="/login"        element={<LoginV2 />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/forbidden" element={<Forbidden />} />
       

@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/features/authentication-old/hooks/useAuth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 
 export default function LoginForm() {
