@@ -30,7 +30,7 @@ export default function LoginFormV2() {
          <img
           src={pqcLogo}
           alt="PQC Logo"
-          className="w-12 shadow-xl  object-contain"
+          className="w-11 shadow-xl  object-contain"
           aria-hidden="true"
         />
         <div className="text-center mb-4">
