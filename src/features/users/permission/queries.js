@@ -17,7 +17,7 @@ const MODULES_API_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/modules`
 const getPermissions = async () => {
   try {
    const res = await fetch(`${API_BASE_URL}/all`, {
-  credentials: "include",
+  // credentials: "include",
 });
 
     if (!res.ok) {
@@ -40,7 +40,7 @@ const getPermissions = async () => {
 const getModulesForSelect = async () => {
   try {
     const res = await fetch(`${MODULES_API_URL}/all`, {
-  credentials: "include",
+  // credentials: "include",
 });
 
 
@@ -66,7 +66,7 @@ const createPermission = async (data) => {
     const res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      // credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -91,7 +91,7 @@ const deletePermission = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
-      credentials: "include",
+      // credentials: "include",
     });
 
     if (!res.ok) {

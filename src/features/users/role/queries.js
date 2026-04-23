@@ -16,7 +16,7 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/users/roles`;
 const getRoles = async () => {
   try {
    const res = await fetch(`${API_BASE_URL}/all`, {
-  credentials: "include",
+  // credentials: "include",
 });
    
 
@@ -42,7 +42,7 @@ const createRole = async (data) => {
     const res = await fetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-       credentials: "include",
+      //  credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -68,7 +68,7 @@ const updateRole = async ({ id, data }) => {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-       credentials: "include",
+      //  credentials: "include",
       body: JSON.stringify(data),
     });
 
@@ -93,7 +93,7 @@ const deleteRole = async (id) => {
   try {
     const res = await fetch(`${API_BASE_URL}/${id}`, {
       method: "DELETE",
-       credentials: "include",
+      //  credentials: "include",
     });
 
     if (!res.ok) {

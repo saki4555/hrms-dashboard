@@ -84,7 +84,7 @@ export default function RolePermissionMatrix() {
         const res = await fetch(
           `${BASE}/api/users/roles/${role.ID}/permissions`,
           {
-            credentials: "include",
+            // credentials: "include",
             headers: { "Content-Type": "application/json" },
           },
         );

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthV2 } from "./use-auth-v2";
-import pqcLogo from "@/assets/PQC-logo5.png";
+import pqcLogo from "@/assets/pqc-logo.jpg";
 
 export default function LoginFormV2() {
   const id = useId();
@@ -30,7 +30,7 @@ export default function LoginFormV2() {
          <img
           src={pqcLogo}
           alt="PQC Logo"
-          className="w-14 object-contain"
+          className="w-12 shadow-xl  object-contain"
           aria-hidden="true"
         />
         <div className="text-center mb-4">
