@@ -2,7 +2,7 @@
 
 
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
-
+import { getToken } from "@/features/authentication-v2/queries";
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
 const URLS = {
@@ -22,10 +22,14 @@ const queryDefaults = {
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 
+
 const fetcher = async (url, options = {}) => {
+  const token = getToken();
   const res = await fetch(url, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
   if (!res.ok) {
@@ -34,6 +38,18 @@ const fetcher = async (url, options = {}) => {
   }
   return res.json();
 };
+// const fetcher = async (url, options = {}) => {
+//   const res = await fetch(url, {
+//     credentials: "include",
+//     headers: { "Content-Type": "application/json" },
+//     ...options,
+//   });
+//   if (!res.ok) {
+//     const err = await res.json().catch(() => ({}));
+//     throw new Error(err.error || err.message || `Request failed: ${res.status}`);
+//   }
+//   return res.json();
+// };
 
 /** Build query string — skips empty/null/undefined values */
 const buildQS = (params) => {
