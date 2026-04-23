@@ -49,7 +49,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { useCreateLeaveRequest } from "./queries";
 import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 const formSchema = z
   .object({

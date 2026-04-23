@@ -12,7 +12,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {

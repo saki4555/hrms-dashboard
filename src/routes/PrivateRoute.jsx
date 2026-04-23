@@ -1,6 +1,6 @@
 // src/routes/PrivateRoute.jsx
 import { PageLoader } from "@/components/loading-spinner";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 import { Navigate } from "react-router";
 
 export function PrivateRoute({ permissions = [], children }) {

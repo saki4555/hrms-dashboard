@@ -75,7 +75,7 @@ import {
 import { DataTablePagination } from "@/components/DataTablePagination";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 import { cn } from "@/lib/utils";
 import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
 

@@ -7,7 +7,7 @@ import { CommandTrigger } from "./shared/command-trigger";
 import { Separator } from "./ui/separator";
 import { cn } from "@/lib/utils";
 import NotificationBell from "@/features/notifications/notification-bell";
-import { useAuth } from "@/features/authentication/use-auth";
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 
 
