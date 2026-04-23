@@ -143,53 +143,53 @@ export default function RoleList() {
         </div>
       ),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const role = row.original;
+    // {
+    //   id: "actions",
+    //   header: "Actions",
+    //   enableHiding: false,
+    //   cell: ({ row }) => {
+    //     const role = row.original;
 
-        return (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handleEdit(role)}
-            >
-              <IconEdit className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
+    //     return (
+    //       <div className="flex items-center gap-1">
+    //         <Button
+    //           variant="ghost"
+    //           size="icon"
+    //           className="h-8 w-8"
+    //           onClick={() => handleEdit(role)}
+    //         >
+    //           <IconEdit className="h-4 w-4" />
+    //           <span className="sr-only">Edit</span>
+    //         </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => handleDelete(role)}
-              disabled={deleteRoleMutation.isPending}
-            >
-              {deleteRoleMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              <span className="sr-only">Delete</span>
-            </Button>
+    //         <Button
+    //           variant="ghost"
+    //           size="icon"
+    //           className="h-8 w-8 text-destructive hover:text-destructive"
+    //           onClick={() => handleDelete(role)}
+    //           disabled={deleteRoleMutation.isPending}
+    //         >
+    //           {deleteRoleMutation.isPending ? (
+    //             <Spinner data-icon="inline-start" />
+    //           ) : (
+    //             <Trash2 className="h-4 w-4" />
+    //           )}
+    //           <span className="sr-only">Delete</span>
+    //         </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => navigate(`/user-management/roles/${role.ID}`)}
-            >
-              <IconEye className="h-4 w-4" />
-              <span className="sr-only">View</span>
-            </Button>
-          </div>
-        );
-      },
-    },
+    //         <Button
+    //           variant="ghost"
+    //           size="icon"
+    //           className="h-8 w-8"
+    //           onClick={() => navigate(`/user-management/roles/${role.ID}`)}
+    //         >
+    //           <IconEye className="h-4 w-4" />
+    //           <span className="sr-only">View</span>
+    //         </Button>
+    //       </div>
+    //     );
+    //   },
+    // },
   ];
 
   const table = useReactTable({
@@ -223,10 +223,10 @@ export default function RoleList() {
                 Roles
               </h1>
             </div>
-            <Button disabled>
+            {/* <Button disabled>
               <IconPlus />
               Add Role
-            </Button>
+            </Button> */}
           </div>
         </div>
         <div className="bg-card rounded-md shadow-sm p-4">
@@ -249,10 +249,10 @@ export default function RoleList() {
                 Roles
               </h1>
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            {/* <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Role
-            </Button>
+            </Button> */}
           </div>
         </div>
         <div className="bg-card rounded-md shadow-sm p-4">
@@ -318,10 +318,10 @@ export default function RoleList() {
           <div className="flex items-center gap-2">
             
 
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            {/* <Button onClick={() => setIsAddDialogOpen(true)}>
               <IconPlus />
               Add Role
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={() => navigate("/user-management/roles/matrix")}

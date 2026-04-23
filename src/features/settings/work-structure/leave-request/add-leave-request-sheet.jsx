@@ -119,32 +119,55 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
     }
   }, [startDate, endDate]);
 
-  const onSubmit = async (data) => {
-    try {
-      const payload = {
-        employee_id:   isAdminOrHR ? data.employeeId : user.employee_id,
-        leave_type_id: Number(data.leave_type_id),
-        start_date:    data.start_date,
-        end_date:      data.end_date,
-        days:          data.days ? Number(data.days) : null,
-        reason:        data.reason || null,
-        created_by:    user?.employee_id ?? null,
-        // Admin/HR creates leave as APPROVED directly — no approval flow needed
-        status:        isAdminOrHR ? "APPROVED" : "PENDING",
-        approver_id:   isAdminOrHR ? user?.employee_id : null,
-      };
-      await createMutation.mutateAsync(payload);
-      toast.success(
-        isAdminOrHR
-          ? "Leave request created and approved!"
-          : "Leave request submitted successfully!"
-      );
-      form.reset();
-      onOpenChange(false);
-    } catch (error) {
-      toast.error(error?.message || "Failed to submit leave request.");
-    }
-  };
+ const onSubmit = async (data) => {
+  // Confirmation for Admin/HR
+  if (isAdminOrHR) {
+    const confirmed = await showConfirmation({
+      title: "Create & Approve Leave?",
+      description: `This will immediately approve ${selectedEmployee?.name}'s leave from ${data.start_date} to ${data.end_date} (${data.days} days). This cannot be undone automatically.`,
+      confirmText: "Yes, Create & Approve",
+      cancelText: "Review Again",
+      variant: "default",
+    });
+    if (!confirmed) return;
+  }
+
+  // Confirmation for Employee
+  if (!isAdminOrHR) {
+    const confirmed = await showConfirmation({
+      title: "Submit Leave Request?",
+      description: `Submit leave request from ${data.start_date} to ${data.end_date} (${data.days} days)? Your supervisor will be notified.`,
+      confirmText: "Yes, Submit",
+      cancelText: "Review Again",
+      variant: "default",
+    });
+    if (!confirmed) return;
+  }
+
+  try {
+    const payload = {
+      employee_id:   isAdminOrHR ? data.employeeId : user.employee_id,
+      leave_type_id: Number(data.leave_type_id),
+      start_date:    data.start_date,
+      end_date:      data.end_date,
+      days:          data.days ? Number(data.days) : null,
+      reason:        data.reason || null,
+      created_by:    user?.employee_id ?? null,
+      status:        isAdminOrHR ? "APPROVED" : "PENDING",
+      approver_id: isAdminOrHR ? (user?.employee_id ?? user?.id) : null,
+    };
+    await createMutation.mutateAsync(payload);
+    toast.success(
+      isAdminOrHR
+        ? "Leave request created and approved!"
+        : "Leave request submitted successfully!"
+    );
+    form.reset();
+    onOpenChange(false);
+  } catch (error) {
+    toast.error(error?.message || "Failed to submit leave request.");
+  }
+};
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {

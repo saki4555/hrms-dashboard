@@ -395,46 +395,38 @@ function buildColumns({
 },
   );
 
-  // Actions column — only for general employees
-  if (!isAdminOrHR && !isSupervisor) {
-    cols.push({
-      id: "actions",
-      header: "Actions",
-      enableHiding: false,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const leave = row.original;
-        if (leave.STATUS !== "PENDING") return null;
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => onEdit(leave)}
-            >
-              <IconEdit className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={() => onDelete(leave)}
-              disabled={deletePending}
-            >
-              {deletePending ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              <span className="sr-only">Delete</span>
-            </Button>
-          </div>
-        );
-      },
-    });
-  }
+ // Actions column — only for general employees
+if (!isAdminOrHR && !isSupervisor) {
+  cols.push({
+    id: "actions",
+    header: "Actions",
+    enableHiding: false,
+    enableSorting: false,
+    cell: ({ row }) => {
+      const leave = row.original;
+      if (leave.STATUS !== "PENDING") return null;
+      return (
+        <div className="flex items-center gap-2">
+          {/* ← removed edit button entirely */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(leave)}
+            disabled={deletePending}
+          >
+            {deletePending ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            <span className="sr-only">Cancel</span>
+          </Button>
+        </div>
+      );
+    },
+  });
+}
 
   return cols;
 }
@@ -545,24 +537,23 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
     setIsUpdateSheetOpen(true);
   };
 
-  const handleDelete = async (leave) => {
-    const confirmed = await showConfirmation({
-      title: "Delete leave request?",
-      description: `Delete Leave #${leave.LEAVE_ID}? This cannot be undone.`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      variant: "destructive",
-    });
-    if (confirmed) {
-      try {
-        await deleteMutation.mutateAsync(leave.LEAVE_ID);
-        toast.success("Leave request deleted successfully!");
-      } catch (e) {
-        toast.error(e?.message || "Failed to delete leave request.");
-      }
+ const handleDelete = async (leave) => {
+  const confirmed = await showConfirmation({
+    title: "Cancel leave request?",
+    description: `Cancel Leave #${leave.LEAVE_ID} (${leave.LEAVE_TYPE_NAME})? Your supervisor will be notified.`,
+    confirmText: "Yes, Cancel Leave",
+    cancelText: "Keep It",
+    variant: "destructive",
+  });
+  if (confirmed) {
+    try {
+      await deleteMutation.mutateAsync(leave.LEAVE_ID);
+      toast.success("Leave request cancelled successfully!");
+    } catch (e) {
+      toast.error(e?.message || "Failed to cancel leave request.");
     }
-  };
-
+  }
+};
   const clearFilters = () => {
     setFromDate(null);
     setToDate(null);
@@ -662,7 +653,12 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
   if (isError)
     return (
       <div>
-        <PageHeader onAdd={isEmployee ? () => setIsAddSheetOpen(true) : undefined} />
+        <PageHeader
+  onRefetch={refetch}
+  isFetching={isFetching}
+  isAdminOrHR={isAdminOrHR}
+  onAdd={(isEmployee || isAdminOrHR) ? () => setIsAddSheetOpen(true) : undefined}
+/>
         <div className="bg-card rounded-md shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -700,7 +696,8 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
       <PageHeader
   onRefetch={refetch}
   isFetching={isFetching}
-  onAdd={isEmployee ? () => setIsAddSheetOpen(true) : undefined}
+  isAdminOrHR={isAdminOrHR}
+  onAdd={(isEmployee || isAdminOrHR) ? () => setIsAddSheetOpen(true) : undefined}
 />
 
       <div className="bg-card rounded-md shadow-sm p-4">
@@ -902,7 +899,7 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
 //  PAGE HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageHeader({ onAdd, onRefetch, isFetching }) {
+function PageHeader({ onAdd, onRefetch, isFetching , isAdminOrHR }) {
   return (
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -944,7 +941,7 @@ function PageHeader({ onAdd, onRefetch, isFetching }) {
           {onAdd && (
             <Button onClick={onAdd}>
               <IconCircleDashedPlus className="mr-2 h-4 w-4" />
-              Apply Leave
+              {isAdminOrHR ? "Create Leave" : "Apply Leave"}
             </Button>
           )}
         </div>

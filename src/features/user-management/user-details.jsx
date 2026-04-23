@@ -57,19 +57,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronsUpDown, Check } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
 import {
   Tooltip,
   TooltipContent,
@@ -84,11 +71,8 @@ import { getAvatarColor } from "@/lib/avatar-utils";
 import {
   useUserById,
   useRoles,
-  usePermissions,
   useAssignRole,
   useRevokeRole,
-  useAssignPermission,
-  useRevokePermission,
   useDeleteUser,
   useActivateUser,
   useRolePermissionsBatch,
@@ -117,14 +101,11 @@ function DataItem({ label, value }) {
 }
 
 // ─── Smart Avatar ─────────────────────────────────────────────────────────────
-// Priority: user's own uploaded image → assigned employee's image → initials
 function UserAvatar({ user }) {
-  console.log("avatar user", user);
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const BASE = import.meta.env.VITE_API_BASE_URL;
 
-  // Build the ordered list of image URLs to try
   const urlsToTry = [
     `${BASE}/api/emp-images/person/${user.ID}`,
     user.EMPLOYEE_ID
@@ -132,16 +113,14 @@ function UserAvatar({ user }) {
       : null,
   ].filter(Boolean);
 
-  const [srcIndex, setSrcIndex] = useState(0); // which URL we're currently on
-  const [failed, setFailed] = useState(false); // all URLs exhausted → show initials
+  const [srcIndex, setSrcIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
 
   const handleError = () => {
     const next = srcIndex + 1;
     if (next < urlsToTry.length) {
-      console.log(`[Avatar] Trying fallback image [${next}]:`, urlsToTry[next]);
       setSrcIndex(next);
     } else {
-      console.log("[Avatar] All image sources exhausted, showing initials");
       setFailed(true);
     }
   };
@@ -164,10 +143,8 @@ function UserAvatar({ user }) {
         });
       }
       if (!res.ok) throw new Error("Upload failed");
-      // Reset back to user's own image with cache bust
       setSrcIndex(0);
       setFailed(false);
-      // Force re-fetch by temporarily pointing at busted URL
       urlsToTry[0] = `${BASE}/api/emp-images/person/${user.ID}?t=${Date.now()}`;
       toast.success("Profile photo updated!");
     } catch {
@@ -193,8 +170,6 @@ function UserAvatar({ user }) {
         className="hidden"
         onChange={handleUpload}
       />
-
-      {/* Use plain <Avatar> shell but raw <img> inside for reliable onError */}
       <div
         className={cn(
           "h-32 w-32 rounded-full border-4 border-card shadow-md overflow-hidden flex items-center justify-center",
@@ -203,7 +178,7 @@ function UserAvatar({ user }) {
       >
         {!failed ? (
           <img
-            key={urlsToTry[srcIndex]} // key change forces React to remount → fresh onError
+            key={urlsToTry[srcIndex]}
             src={urlsToTry[srcIndex]}
             onError={handleError}
             alt={user.USERNAME}
@@ -213,8 +188,6 @@ function UserAvatar({ user }) {
           <span className="text-2xl font-bold text-white">{initials}</span>
         )}
       </div>
-
-      {/* Camera overlay */}
       <button
         type="button"
         disabled={uploading}
@@ -232,9 +205,7 @@ function UserAvatar({ user }) {
         {uploading ? (
           <>
             <Loader2 className="h-6 w-6 text-white animate-spin" />
-            <span className="text-white text-[10px] font-medium">
-              Uploading
-            </span>
+            <span className="text-white text-[10px] font-medium">Uploading</span>
           </>
         ) : (
           <>
@@ -243,8 +214,6 @@ function UserAvatar({ user }) {
           </>
         )}
       </button>
-
-      {/* Status dot */}
       <span
         className={cn(
           "absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-card z-10",
@@ -264,7 +233,6 @@ export default function UserDetailsPage() {
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState("");
-  const [selectedPermissionId, setSelectedPermissionId] = useState("");
 
   const {
     data: user,
@@ -275,81 +243,50 @@ export default function UserDetailsPage() {
     isFetching,
   } = useUserById(id);
 
-  console.log("single user ----.", user);
   const { data: allRoles = [] } = useRoles();
-  const { data: allPermissions = [] } = usePermissions();
 
   const roleIds = useMemo(
-  () => (user?.roles ?? []).map((r) => r.ID),
-  [user?.roles],
-);
+    () => (user?.roles ?? []).map((r) => r.ID),
+    [user?.roles],
+  );
 
-const rolePermissionsQueries = useRolePermissionsBatch(roleIds);
+  const rolePermissionsQueries = useRolePermissionsBatch(roleIds);
 
-const isRolePermissionsLoading = rolePermissionsQueries.some(
-  (q) => q.isLoading || q.isFetching,
-);
+  const isRolePermissionsLoading = rolePermissionsQueries.some(
+    (q) => q.isLoading || q.isFetching,
+  );
 
-const rolePermissionsByRole = useMemo(() => {
-  return (user?.roles ?? []).reduce((acc, role, index) => {
-    acc[role.ID] = rolePermissionsQueries[index]?.data ?? [];
-    return acc;
-  }, {});
-}, [user?.roles, rolePermissionsQueries]);
+  const rolePermissionsByRole = useMemo(() => {
+    return (user?.roles ?? []).reduce((acc, role, index) => {
+      acc[role.ID] = rolePermissionsQueries[index]?.data ?? [];
+      return acc;
+    }, {});
+  }, [user?.roles, rolePermissionsQueries]);
 
-const inheritedPermissions = useMemo(() => {
-  const map = new Map();
-  Object.values(rolePermissionsByRole).forEach((perms) => {
-    perms.forEach((perm) => map.set(perm.ID, perm));
-  });
-  return Array.from(map.values());
-}, [rolePermissionsByRole]);
+  const inheritedPermissions = useMemo(() => {
+    const map = new Map();
+    Object.values(rolePermissionsByRole).forEach((perms) => {
+      perms.forEach((perm) => map.set(perm.ID, perm));
+    });
+    return Array.from(map.values());
+  }, [rolePermissionsByRole]);
 
-const groupedDirectPermissions = useMemo(() => {
-  return user?.permissions?.reduce((acc, p) => {
-    const mod = p.MODULE_NAME || "Other";
-    if (!acc[mod]) acc[mod] = [];
-    acc[mod].push(p);
-    return acc;
-  }, {}) ?? {};
-}, [user?.permissions]);
-
-const groupByModule = (perms = []) =>
-  perms.reduce((acc, p) => {
-    const mod = p.MODULE_NAME || "Other";
-    if (!acc[mod]) acc[mod] = [];
-    acc[mod].push(p);
-    return acc;
-  }, {});
-
-const inheritedPermissionIds = new Set(inheritedPermissions.map((p) => p.ID));
-const directPermissionIds = new Set((user?.permissions ?? []).map((p) => p.ID));
-const effectivePermissionIds = new Set([
-  ...inheritedPermissionIds,
-  ...directPermissionIds,
-]);
-
-const assignablePermissions = allPermissions.filter(
-  (p) => !effectivePermissionIds.has(p.ID),
-);
-
-const allPermissionsAssigned = assignablePermissions.length === 0;
+  const groupByModule = (perms = []) =>
+    perms.reduce((acc, p) => {
+      const mod = p.MODULE_NAME || "Other";
+      if (!acc[mod]) acc[mod] = [];
+      acc[mod].push(p);
+      return acc;
+    }, {});
 
   const assignRoleMutation = useAssignRole();
   const revokeRoleMutation = useRevokeRole();
-  const assignPermissionMutation = useAssignPermission();
-  const revokePermissionMutation = useRevokePermission();
   const deactivateMutation = useDeleteUser();
   const activateMutation = useActivateUser();
 
   const assignedRoleIds = new Set(user?.roles?.map((r) => r.ID));
-  const assignedPermissionIds = new Set(user?.permissions?.map((p) => p.ID));
   const availableRoles = allRoles.filter((r) => !assignedRoleIds.has(r.ID));
   const allRolesAssigned = availableRoles.length === 0;
-  const availablePermissions = allPermissions.filter(
-    (p) => !assignedPermissionIds.has(p.ID),
-  );
- 
 
   const handleDeactivate = async () => {
     const confirmed = await showConfirmation({
@@ -417,45 +354,6 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
     }
   };
 
-  const handleAssignPermission = async () => {
-    if (!selectedPermissionId) return toast.error("Please select a permission");
-    try {
-      await assignPermissionMutation.mutateAsync({
-        userId: id,
-        permissionId: parseInt(selectedPermissionId),
-      });
-      toast.success("Permission assigned!");
-      setSelectedPermissionId("");
-    } catch (err) {
-      toast.error(err?.message || "Failed to assign permission.");
-    }
-  };
-
-  const handleRevokePermission = async (permissionId, permissionName) => {
-    const confirmed = await showConfirmation({
-      title: "Revoke permission?",
-      description: `Remove "${permissionName}" from this user?`,
-      confirmText: "Revoke",
-      cancelText: "Cancel",
-      variant: "destructive",
-    });
-    if (!confirmed) return;
-    try {
-      await revokePermissionMutation.mutateAsync({ userId: id, permissionId });
-      toast.success("Permission revoked!");
-    } catch (err) {
-      toast.error(err?.message || "Failed to revoke permission.");
-    }
-  };
-
-  const groupedPermissions =
-    user?.permissions?.reduce((acc, p) => {
-      const mod = p.MODULE_NAME || "Other";
-      if (!acc[mod]) acc[mod] = [];
-      acc[mod].push(p);
-      return acc;
-    }, {}) ?? {};
-
   // ── Loading ──
   if (isLoading)
     return (
@@ -485,15 +383,9 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
               className="w-fit"
             >
               {isFetching ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Retrying...
-                </>
+                <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
               ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry
-                </>
+                <><RefreshCw className="mr-2 h-4 w-4" />Retry</>
               )}
             </Button>
           </AlertDescription>
@@ -522,15 +414,11 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
       <Breadcrumb className="mb-4">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/">Dashboard</Link>
-            </BreadcrumbLink>
+            <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/user-management/users">Users</Link>
-            </BreadcrumbLink>
+            <BreadcrumbLink asChild><Link to="/user-management/users">Users</Link></BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -542,10 +430,8 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
       <div className="space-y-6">
         {/* ── Hero Card ── */}
         <Card className="border-border shadow-sm overflow-hidden bg-card">
-          {/* Banner */}
           <div className="h-32 bg-gradient-to-r from-muted/50 to-muted border-b border-border relative">
             <div className="absolute top-4 right-6 flex items-center gap-3">
-              {/* Edit User */}
               <Button
                 variant="outline"
                 size="sm"
@@ -554,8 +440,6 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
               >
                 <Pencil className="h-4 w-4 mr-2" /> Edit User
               </Button>
-
-              {/* Change Password */}
               <Button
                 variant="outline"
                 size="sm"
@@ -564,20 +448,9 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
               >
                 <Lock className="h-4 w-4 mr-2" /> Change Password
               </Button>
-
-              {/* Deactivate / Activate */}
               {isActive ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeactivate}
-                  disabled={isBusy}
-                >
-                  {deactivateMutation.isPending ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    <UserX className="h-4 w-4 mr-2" />
-                  )}
+                <Button variant="destructive" size="sm" onClick={handleDeactivate} disabled={isBusy}>
+                  {deactivateMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <UserX className="h-4 w-4 mr-2" />}
                   Deactivate
                 </Button>
               ) : (
@@ -588,29 +461,19 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                   onClick={handleActivate}
                   disabled={isBusy}
                 >
-                  {activateMutation.isPending ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    <UserCheck className="h-4 w-4 mr-2" />
-                  )}
+                  {activateMutation.isPending ? <Spinner className="mr-2 h-4 w-4" /> : <UserCheck className="h-4 w-4 mr-2" />}
                   Activate
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Body */}
           <div className="px-8 pb-8 relative">
             <div className="flex flex-col md:flex-row items-start md:items-end -mt-12 gap-6">
-              {/* Smart avatar with upload */}
               <UserAvatar user={user} />
-
-              {/* Name / meta */}
               <div className="flex-1 pt-2 md:pt-0">
                 <div className="flex items-center gap-3 flex-wrap mb-1">
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {user.USERNAME}
-                  </h1>
+                  <h1 className="text-3xl font-bold tracking-tight">{user.USERNAME}</h1>
                   <Badge
                     variant="outline"
                     className={cn(
@@ -626,67 +489,45 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                   <p className="text-base font-medium text-foreground/80">
                     {fullName}
                     {user.EMP_NO && (
-                      <span className="text-muted-foreground font-normal">
-                        {" "}
-                        · {user.EMP_NO}
-                      </span>
+                      <span className="text-muted-foreground font-normal"> · {user.EMP_NO}</span>
                     )}
                   </p>
                 )}
                 {user.LOCATION_NAME && (
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {user.LOCATION_NAME}
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{user.LOCATION_NAME}</p>
                 )}
               </div>
-
-              {/* User ID chip — mirrors Employee ID chip */}
               <div className="hidden md:block bg-muted/50 p-3 rounded-lg border border-border">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  User ID
-                </div>
-                <div className="font-mono text-lg font-medium text-foreground">
-                  #{user.ID}
-                </div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">User ID</div>
+                <div className="font-mono text-lg font-medium text-foreground">#{user.ID}</div>
               </div>
             </div>
 
-            {/* Quick stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 pt-6 border-t border-border">
               <DataItem label="Location" value={user.LOCATION_NAME} />
               <DataItem label="Created" value={formatDate(user.CREATED_AT)} />
-              <DataItem
-                label="Last Updated"
-                value={formatDate(user.UPDATED_AT)}
-              />
-              <DataItem
-                label="Roles"
-                value={`${user.roles?.length ?? 0} assigned`}
-              />
+              <DataItem label="Last Updated" value={formatDate(user.UPDATED_AT)} />
+              <DataItem label="Roles" value={`${user.roles?.length ?? 0} assigned`} />
             </div>
           </div>
         </Card>
 
-        {/* ── Tabs (unchanged) ── */}
+        {/* ── Tabs ── */}
         <Tabs defaultValue="roles">
           <TabsList className="bg-background border shadow-sm p-1 h-auto mb-4">
             <TabsTrigger value="roles" className="px-5 py-2 gap-2">
               <Shield className="h-4 w-4" />
               Roles
-              <Badge variant="secondary" className="ml-1">
-                {user.roles?.length ?? 0}
-              </Badge>
+              <Badge variant="secondary" className="ml-1">{user.roles?.length ?? 0}</Badge>
             </TabsTrigger>
             <TabsTrigger value="permissions" className="px-5 py-2 gap-2">
               <ShieldCheck className="h-4 w-4" />
               Permissions
-              <Badge variant="secondary" className="ml-1">
-                {user.permissions?.length ?? 0}
-              </Badge>
+              <Badge variant="secondary" className="ml-1">{inheritedPermissions.length}</Badge>
             </TabsTrigger>
           </TabsList>
 
-          {/* Roles Tab */}
+          {/* ── Roles Tab ── */}
           <TabsContent value="roles">
             <Card className="shadow-sm">
               <CardHeader>
@@ -695,7 +536,7 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                   Assigned Roles
                 </CardTitle>
                 <CardDescription>
-                  Roles determine the user's level of access in the system.
+                  Roles determine the user's level of access. Each role carries a set of permissions automatically.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -707,10 +548,7 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                   </div>
                 ) : (
                   <div className="flex gap-3 p-4 rounded-lg border border-dashed bg-muted/30">
-                    <Select
-                      value={selectedRoleId}
-                      onValueChange={setSelectedRoleId}
-                    >
+                    <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Select role to assign..." />
                       </SelectTrigger>
@@ -722,17 +560,12 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                         ))}
                       </SelectContent>
                     </Select>
-
                     <Button
                       onClick={handleAssignRole}
                       disabled={!selectedRoleId || assignRoleMutation.isPending}
                       className="gap-2"
                     >
-                      {assignRoleMutation.isPending ? (
-                        <Spinner className="h-4 w-4" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
+                      {assignRoleMutation.isPending ? <Spinner className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                       Assign
                     </Button>
                   </div>
@@ -750,18 +583,13 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                             <Shield className="h-4 w-4 text-primary" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">
-                              {role.ROLE_NAME}
-                            </p>
+                            <p className="text-sm font-medium">{role.ROLE_NAME}</p>
                             {role.DESCRIPTION && (
-                              <p className="text-xs text-muted-foreground">
-                                {role.DESCRIPTION}
-                              </p>
+                              <p className="text-xs text-muted-foreground">{role.DESCRIPTION}</p>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          {/* View */}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -769,11 +597,7 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() =>
-                                    navigate(
-                                      `/user-management/roles/${role.ID}`,
-                                    )
-                                  }
+                                  onClick={() => navigate(`/user-management/roles/${role.ID}`)}
                                 >
                                   <ShieldCheck className="h-4 w-4" />
                                 </Button>
@@ -781,8 +605,6 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                               <TooltipContent>View Role</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-
-                          {/* Revoke */}
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -790,9 +612,7 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                  onClick={() =>
-                                    handleRevokeRole(role.ID, role.ROLE_NAME)
-                                  }
+                                  onClick={() => handleRevokeRole(role.ID, role.ROLE_NAME)}
                                   disabled={revokeRoleMutation.isPending}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -814,371 +634,141 @@ const allPermissionsAssigned = assignablePermissions.length === 0;
             </Card>
           </TabsContent>
 
-          {/* Permissions Tab */}
+          {/* ── Permissions Tab — read-only, role-inherited only ── */}
           <TabsContent value="permissions">
-  <Card className="shadow-sm">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-lg">
-        <ShieldCheck className="h-5 w-5 text-accent-foreground" />
-        Permissions
-      </CardTitle>
-      <CardDescription>
-        View permissions inherited from roles and permissions assigned directly to this user.
-      </CardDescription>
-    </CardHeader>
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ShieldCheck className="h-5 w-5 text-accent-foreground" />
+                  Permissions
+                </CardTitle>
+                <CardDescription>
+                  All permissions this user has are inherited automatically from their assigned roles.
+                  To change permissions, assign or revoke a role.
+                </CardDescription>
+              </CardHeader>
 
-    <CardContent className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-xl border bg-muted/20 p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Effective Permissions
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{effectivePermissionIds.size}</p>
-          <p className="text-xs text-muted-foreground">All permissions this user can use</p>
-        </div>
+              <CardContent className="space-y-6">
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Permissions</p>
+                    <p className="mt-2 text-2xl font-semibold">{inheritedPermissions.length}</p>
+                    <p className="text-xs text-muted-foreground">All permissions this user can use</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">From Roles</p>
+                    <p className="mt-2 text-2xl font-semibold">{user.roles?.length ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Roles currently assigned</p>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Modules Covered</p>
+                    <p className="mt-2 text-2xl font-semibold">
+                      {Object.keys(groupByModule(inheritedPermissions)).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Distinct modules accessible</p>
+                  </div>
+                </div>
 
-        <div className="rounded-xl border bg-muted/20 p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            From Roles
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{inheritedPermissions.length}</p>
-          <p className="text-xs text-muted-foreground">Permissions inherited automatically</p>
-        </div>
+                <Alert>
+                  <ShieldCheck className="h-4 w-4" />
+                  <AlertDescription>
+                    Permissions are fully managed through roles. To grant or remove access, assign or revoke a role from the Roles tab.
+                  </AlertDescription>
+                </Alert>
 
-        <div className="rounded-xl border bg-muted/20 p-4">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Direct Permissions
-          </p>
-          <p className="mt-2 text-2xl font-semibold">{user.permissions?.length ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Permissions assigned only to this user</p>
-        </div>
-      </div>
+                {/* Permissions grouped by role */}
+                {isRolePermissionsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+                    <Spinner className="h-4 w-4" />
+                    Loading permissions...
+                  </div>
+                ) : user.roles?.length ? (
+                  <Accordion type="multiple" defaultValue={user.roles.map((r) => String(r.ID))} className="space-y-3">
+                    {user.roles.map((role) => {
+                      const rolePerms = rolePermissionsByRole[role.ID] ?? [];
+                      const groupedRolePerms = groupByModule(rolePerms);
 
-      <Alert>
-        <ShieldCheck className="h-4 w-4" />
-        <AlertDescription>
-          Role permissions are included automatically. Assign direct permissions only when this user needs extra access beyond their roles.
-        </AlertDescription>
-      </Alert>
+                      return (
+                        <AccordionItem
+                          key={role.ID}
+                          value={String(role.ID)}
+                          className="border rounded-xl bg-card shadow-sm px-0"
+                        >
+                          <AccordionTrigger className="px-5 py-4 hover:no-underline">
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 rounded-md bg-primary/10">
+                                <Shield className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-semibold">{role.ROLE_NAME}</p>
+                                {role.DESCRIPTION && (
+                                  <p className="text-xs text-muted-foreground">{role.DESCRIPTION}</p>
+                                )}
+                              </div>
+                              <Badge variant="secondary" className="ml-2">
+                                {rolePerms.length} permissions
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
 
-      <Card className="border-dashed bg-muted/20">
-        <CardHeader>
-          <CardTitle className="text-base">Assign Direct Permission</CardTitle>
-          <CardDescription>
-            Choose a permission that is not already granted through a role or assigned directly.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          {isRolePermissionsLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner className="h-4 w-4" />
-              Loading role permissions...
-            </div>
-          ) : allPermissionsAssigned ? (
-            <div className="flex items-center justify-center p-4 rounded-lg border border-dashed bg-background/60">
-              <p className="text-sm text-muted-foreground text-center">
-                All available permissions are already covered by this user’s roles or direct assignments.
-              </p>
-            </div>
-          ) : (
-            <div className="flex gap-3 p-4 rounded-lg border border-dashed bg-background/60">
-              <div className="flex-1">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {selectedPermissionId
-                        ? (() => {
-                            const selected = assignablePermissions.find(
-                              (p) => String(p.ID) === selectedPermissionId,
-                            );
-                            return selected ? (
-                              <div className="flex items-center gap-2 truncate">
-                                <span className="font-mono text-xs text-muted-foreground">
-                                  {selected.PERMISSION_CODE}
-                                </span>
-                                <span className="truncate">
-                                  {selected.PERMISSION_NAME}
-                                </span>
+                          <AccordionContent className="px-5 pb-5">
+                            {rolePerms.length ? (
+                              <div className="space-y-5">
+                                {Object.entries(groupedRolePerms).map(([moduleName, perms]) => (
+                                  <div key={moduleName}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Puzzle className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        {moduleName}
+                                      </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                      {perms.map((perm) => (
+                                        <div
+                                          key={perm.ID}
+                                          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                                        >
+                                          <Badge variant="outline" className="font-mono text-xs shrink-0">
+                                            {perm.PERMISSION_CODE}
+                                          </Badge>
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-medium truncate">{perm.PERMISSION_NAME}</p>
+                                            {perm.DESCRIPTION && (
+                                              <p className="text-xs text-muted-foreground">{perm.DESCRIPTION}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             ) : (
-                              "Select permission..."
-                            );
-                          })()
-                        : "Select permission to assign..."}
-
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-
-                  <PopoverContent className="w-[460px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search permission..." />
-                      <CommandEmpty>No permission found.</CommandEmpty>
-
-                      <div className="max-h-[320px] overflow-y-auto">
-                        {Object.entries(groupByModule(assignablePermissions)).map(
-                          ([module, perms]) => (
-                            <CommandGroup key={module} heading={module}>
-                              {perms.map((p) => (
-                                <CommandItem
-                                  key={p.ID}
-                                  value={`${p.PERMISSION_NAME} ${p.PERMISSION_CODE} ${module}`}
-                                  onSelect={() =>
-                                    setSelectedPermissionId(String(p.ID))
-                                  }
-                                >
-                                  <div className="flex items-center gap-2 w-full">
-                                    <span className="font-mono text-xs text-muted-foreground">
-                                      {p.PERMISSION_CODE}
-                                    </span>
-                                    <span className="truncate flex-1">
-                                      {p.PERMISSION_NAME}
-                                    </span>
-                                    <Check
-                                      className={`h-4 w-4 ${
-                                        selectedPermissionId === String(p.ID)
-                                          ? "opacity-100"
-                                          : "opacity-0"
-                                      }`}
-                                    />
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          ),
-                        )}
-                      </div>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <Button
-                onClick={handleAssignPermission}
-                disabled={
-                  !selectedPermissionId ||
-                  assignPermissionMutation.isPending ||
-                  isRolePermissionsLoading
-                }
-                className="gap-2"
-              >
-                {assignPermissionMutation.isPending ? (
-                  <Spinner className="h-4 w-4" />
+                              <p className="text-sm text-muted-foreground py-4">
+                                No permissions found for this role.
+                              </p>
+                            )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
                 ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-                Assign
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Accordion type="single" collapsible defaultValue="roles" className="space-y-4">
-  <AccordionItem value="roles" className="border rounded-xl bg-card shadow-sm px-0">
-    <AccordionTrigger className="px-5 py-4 hover:no-underline">
-      <div className="flex items-center gap-3 text-left">
-        <Shield className="h-5 w-5 text-accent-foreground" />
-        <div>
-          <p className="text-base font-semibold">Permissions from Roles</p>
-          <p className="text-sm text-muted-foreground">
-            These permissions come from the user’s assigned roles and cannot be removed here.
-          </p>
-        </div>
-      </div>
-    </AccordionTrigger>
-
-    <AccordionContent className="px-5 pb-5">
-      <div className="space-y-6">
-        {user.roles?.length ? (
-          user.roles.map((role) => {
-            const rolePerms = rolePermissionsByRole[role.ID] ?? [];
-            const groupedRolePerms = groupByModule(rolePerms);
-
-            return (
-              <div key={role.ID} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-semibold">{role.ROLE_NAME}</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <Shield className="h-10 w-10 mb-3 opacity-30" />
+                    <p className="text-sm font-medium">No roles assigned</p>
+                    <p className="text-xs mt-1">Assign a role from the Roles tab to grant permissions.</p>
                   </div>
-                  <Badge variant="secondary">{rolePerms.length} permissions</Badge>
-                </div>
-
-                {rolePerms.length ? (
-                  <div className="space-y-4">
-                    {Object.entries(groupedRolePerms).map(([moduleName, perms]) => (
-                      <div key={moduleName}>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Puzzle className="h-3.5 w-3.5 text-muted-foreground" />
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            {moduleName}
-                          </p>
-                        </div>
-
-                        <div className="space-y-2">
-                          {perms.map((perm) => (
-                            <div
-                              key={perm.ID}
-                              className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <Badge variant="outline" className="font-mono text-xs">
-                                  {perm.PERMISSION_CODE}
-                                </Badge>
-
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="text-sm font-medium truncate">
-                                      {perm.PERMISSION_NAME}
-                                    </p>
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      Inherited
-                                    </Badge>
-                                  </div>
-
-                                  {perm.DESCRIPTION && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {perm.DESCRIPTION}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <span className="text-xs text-muted-foreground whitespace-nowrap ml-3">
-                                From {role.ROLE_NAME}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No permissions found for this role.
-                  </p>
                 )}
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No role-based permissions found for this user.
-          </p>
-        )}
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="direct" className="border rounded-xl bg-card shadow-sm px-0">
-    <AccordionTrigger className="px-5 py-4 hover:no-underline">
-      <div className="flex items-center gap-3 text-left">
-        <ShieldCheck className="h-5 w-5 text-accent-foreground" />
-        <div>
-          <p className="text-base font-semibold">Direct Permissions</p>
-          <p className="text-sm text-muted-foreground">
-            These permissions were assigned manually to this user.
-          </p>
-        </div>
-      </div>
-    </AccordionTrigger>
-
-    <AccordionContent className="px-5 pb-5">
-      <div className="space-y-5">
-        {Object.keys(groupedDirectPermissions).length ? (
-          <div className="space-y-5">
-            {Object.entries(groupedDirectPermissions).map(([moduleName, perms]) => (
-              <div key={moduleName}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Puzzle className="h-3.5 w-3.5 text-muted-foreground" />
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {moduleName}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {perms.map((perm) => (
-                    <div
-                      key={perm.ID}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {perm.PERMISSION_CODE}
-                        </Badge>
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium truncate">
-                              {perm.PERMISSION_NAME}
-                            </p>
-                            <Badge variant="secondary" className="text-[10px]">
-                              Direct
-                            </Badge>
-                          </div>
-
-                          {perm.DESCRIPTION && (
-                            <p className="text-xs text-muted-foreground">
-                              {perm.DESCRIPTION}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                              onClick={() =>
-                                handleRevokePermission(
-                                  perm.ID,
-                                  perm.PERMISSION_NAME,
-                                )
-                              }
-                              disabled={revokePermissionMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Revoke Permission</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No direct permissions assigned.
-          </p>
-        )}
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
-    </CardContent>
-  </Card>
-</TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
       {isPasswordOpen && (
-        <ChangePasswordDialog
-          open={isPasswordOpen}
-          onOpenChange={setIsPasswordOpen}
-          user={user}
-        />
+        <ChangePasswordDialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen} user={user} />
       )}
       {isUpdateOpen && (
         <UpdateUserDialog
