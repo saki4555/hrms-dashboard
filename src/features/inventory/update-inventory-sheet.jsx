@@ -341,15 +341,26 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                 </FormItem>
               )} />
 
-               <FormField control={form.control} name="price" render={({ field }) => (
+                <FormField control={form.control} name="invtDate" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormLabel>Invt Date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        className="w-full"
+                        placeholder="Select date"
+                        disabled={isSubmitting}
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-
               </div>
+
+              
+
+             
              
               {/* Inv Qty + GRN No */}
               <div className="grid grid-cols-2 gap-4">
@@ -413,24 +424,16 @@ export default function UpdateInventorySheet({ open, onOpenChange, showConfirmat
                {/* Price + Invt Date */}
               <div className="grid grid-cols-2 gap-4">
                
-                <FormField control={form.control} name="invtDate" render={({ field }) => (
+               <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Invt Date</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        className="w-full"
-                        placeholder="Select date"
-                        disabled={isSubmitting}
-                        value={field.value ? new Date(field.value) : undefined}
-                        onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
-                      />
-                    </FormControl>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl><Input type="number" step="0.01" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-              </div>
 
 
+            </div>
             </div>
 
             {/* Footer */}

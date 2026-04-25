@@ -122,17 +122,17 @@ export default function ItemList() {
     },
 
     // Item ID
-    {
-      accessorKey: "ITEM_ID",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Item ID <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="font-medium text-muted-foreground">{row.getValue("ITEM_ID")}</div>
-      ),
-    },
+    // {
+    //   accessorKey: "ITEM_ID",
+    //   header: ({ column }) => (
+    //     <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+    //       Item ID <ArrowUpDown className="ml-2 h-4 w-4" />
+    //     </Button>
+    //   ),
+    //   cell: ({ row }) => (
+    //     <div className="font-medium text-muted-foreground">{row.getValue("ITEM_ID")}</div>
+    //   ),
+    // },
 
     // Name + Model
     {
@@ -154,42 +154,47 @@ export default function ItemList() {
 
     // Description
     {
-      accessorKey: "DESCRIPTION",
-      header: "Description",
+      accessorKey: "TYPE_NAME",
+      header: "Type Name",
       cell: ({ row }) => (
         <div className="max-w-[200px] truncate text-muted-foreground text-sm">
-          {row.getValue("DESCRIPTION") || "—"}
+          {row.getValue("TYPE_NAME") || "—"}
         </div>
       ),
     },
+     {
+      accessorKey: "MIN_LEVEL",
+      header: "Min Level",
+      cell: ({ row }) => <div>{row.getValue("MIN_LEVEL") ?? "—"}</div>,
+    },
 
     // Brand
-    {
-      accessorKey: "BRAND_ID",
-      header: "Brand",
-      cell: ({ row }) => (
-        <Badge variant="outline" className="font-mono text-xs">
-          {row.getValue("BRAND_ID") || "—"}
-        </Badge>
-      ),
-    },
+    // {
+    //   accessorKey: "BRAND_ID",
+    //   header: "Brand",
+    //   cell: ({ row }) => (
+    //     <Badge variant="outline" className="font-mono text-xs">
+    //       {row.getValue("BRAND_ID") || "—"}
+    //     </Badge>
+    //   ),
+    // },
 
     // Category
-    {
-      accessorKey: "CATEGORY_ID",
-      header: "Category",
-      cell: ({ row }) => <div>{row.getValue("CATEGORY_ID") ?? "—"}</div>,
-    },
+    // {
+    //   accessorKey: "CATEGORY_ID",
+    //   header: "Category",
+    //   cell: ({ row }) => <div>{row.getValue("CATEGORY_ID") ?? "—"}</div>,
+    // },
 
     // Price
-    {
-      accessorKey: "PRICE",
-      header: "Price",
-      cell: ({ row }) => {
-        const p = row.getValue("PRICE");
-        return <div className="font-medium">{p != null ? Number(p).toFixed(2) : "—"}</div>;
-      },
-    },
+    // {
+    //   accessorKey: "PRICE",
+    //   header: "Price",
+    //   cell: ({ row }) => {
+    //     const p = row.getValue("PRICE");
+    //     return <div className="font-medium">{p != null ? Number(p).toFixed(2) : "—"}</div>;
+    //   },
+    // },
 
     // Unit
     {

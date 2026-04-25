@@ -124,17 +124,17 @@ export default function InventoryList() {
     },
 
     // TID
-    {
-      accessorKey: "TID",
-      header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          TID <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="font-medium text-muted-foreground">{row.getValue("TID")}</div>
-      ),
-    },
+    // {
+    //   accessorKey: "TID",
+    //   header: ({ column }) => (
+    //     <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+    //       TID <ArrowUpDown className="ml-2 h-4 w-4" />
+    //     </Button>
+    //   ),
+    //   cell: ({ row }) => (
+    //     <div className="font-medium text-muted-foreground">{row.getValue("TID")}</div>
+    //   ),
+    // },
 
     // Item
     {
@@ -154,6 +154,31 @@ export default function InventoryList() {
         </div>
       ),
     },
+    
+    //  {
+    //   accessorKey: "ITEM_DESCRIPTION",
+    //   header: "description",
+    //   cell: ({ row }) => <div>{row.getValue("ITEM_DESCRIPTION") ?? "—"}</div>,
+    // },
+     {
+      accessorKey: "ITEM_DESCRIPTION",
+      header: "Description",
+      cell: ({ row }) => (
+        <div className="max-w-[200px] truncate text-muted-foreground text-sm">
+          {row.getValue("ITEM_DESCRIPTION") || "—"}
+        </div>
+      ),
+    },
+
+    {
+      accessorKey: "INVTDATE",
+      header: "Invt Date",
+      cell: ({ row }) => {
+        const val = row.getValue("INVTDATE");
+        return <div>{val ? format(new Date(val), "dd MMM yyyy") : "—"}</div>;
+      },
+    },
+
 
     // GRN No
     {
@@ -245,15 +270,7 @@ export default function InventoryList() {
     },
 
     // Inv Date
-    {
-      accessorKey: "INVTDATE",
-      header: "Invt Date",
-      cell: ({ row }) => {
-        const val = row.getValue("INVTDATE");
-        return <div>{val ? format(new Date(val), "dd MMM yyyy") : "—"}</div>;
-      },
-    },
-
+    
     // Inv Status
 //    {
 //   accessorKey: "INVSTATUS",

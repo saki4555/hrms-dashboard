@@ -343,14 +343,14 @@ export default function ItemStockList() {
     },
 
     // Last Price
-    {
-      accessorKey: "LAST_PRICE",
-      header: "Last Price",
-      cell: ({ row }) => {
-        const p = row.getValue("LAST_PRICE");
-        return <div className="text-muted-foreground">{p != null ? Number(p).toFixed(2) : "—"}</div>;
-      },
-    },
+    // {
+    //   accessorKey: "LAST_PRICE",
+    //   header: "Last Price",
+    //   cell: ({ row }) => {
+    //     const p = row.getValue("LAST_PRICE");
+    //     return <div className="text-muted-foreground">{p != null ? Number(p).toFixed(2) : "—"}</div>;
+    //   },
+    // },
 
     // UOM
     {
@@ -360,11 +360,11 @@ export default function ItemStockList() {
     },
 
     // Booked
-    {
-      accessorKey: "BOOKED",
-      header: "Booked",
-      cell: ({ row }) => <div>{row.getValue("BOOKED") ?? 0}</div>,
-    },
+    // {
+    //   accessorKey: "BOOKED",
+    //   header: "Booked",
+    //   cell: ({ row }) => <div>{row.getValue("BOOKED") ?? 0}</div>,
+    // },
 
     // Status
     {

@@ -211,7 +211,7 @@ export default function AddInventorySheet({
 
   const defaultValues = {
     item: null,
-    storeId: "",
+    storeId: "1",
     invQty: "",
     grnNo: "",
     poNo: "",
@@ -337,7 +337,10 @@ export default function AddInventorySheet({
                   </FormItem>
                 )}
               />
+           
 
+
+           
               {/* Store */}
              <div className="grid grid-cols-2 gap-4">
                  <FormField
@@ -380,25 +383,33 @@ export default function AddInventorySheet({
                 )}
               />
 
-              <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField
+  control={form.control}
+  name="invtDate"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Invt Date</FormLabel>
+      <FormControl>
+        <DatePicker
+          className="w-full"
+          placeholder="Select date"
+          disabled={isSubmitting}
+          value={
+            field.value ? new Date(field.value) : new Date()
+          }
+          onChange={(date) =>
+            field.onChange(
+              date ? format(date, "yyyy-MM-dd") : ""
+            )
+          }
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
+             
              </div>
            
 
@@ -542,31 +553,27 @@ export default function AddInventorySheet({
                     <FormMessage />
                   </FormItem>
                 )} /> */}
-               <FormField
-  control={form.control}
-  name="invtDate"
-  render={({ field }) => (
-    <FormItem>
-      <FormLabel>Invt Date</FormLabel>
-      <FormControl>
-        <DatePicker
-          className="w-full"
-          placeholder="Select date"
-          disabled={isSubmitting}
-          value={
-            field.value ? new Date(field.value) : new Date()
-          }
-          onChange={(date) =>
-            field.onChange(
-              date ? format(date, "yyyy-MM-dd") : ""
-            )
-          }
-        />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  )}
-/>
+
+                 <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+             
               </div>
 
               {/* Unit ID + Inventory Type */}
