@@ -55,6 +55,13 @@ const useUoms = () =>
     staleTime: 10 * 60 * 1000,
   });
 
+  const useInvTypes = () =>
+    useQuery({
+      queryKey: ["invTypes"],
+      queryFn: () => fetchJSON(`${BASE}/api/inv-type`),
+      staleTime: 10 * 60 * 1000,
+    });
+
 const formSchema = z.object({
   name:        z.string().min(1, "Name is required").max(1000),
   description: z.string().max(1000).optional(),
@@ -158,6 +165,7 @@ export default function UpdateItemSheet({ open, onOpenChange, showConfirmation, 
   const isSubmitting = updateMutation.isPending;
 
 const { data: uoms = [], isLoading: uomsLoading } = useUoms();
+const { data: invTypes = [], isLoading: invTypesLoading } = useInvTypes();
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
       <SheetContent className="sm:max-w-xl w-full flex flex-col gap-0 p-0">
@@ -218,13 +226,13 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
               {/* Model + Unit */}
           
 <div className="grid grid-cols-2 gap-4">
-  <FormField control={form.control} name="model" render={({ field }) => (
+  {/* <FormField control={form.control} name="model" render={({ field }) => (
     <FormItem>
       <FormLabel>Model</FormLabel>
       <FormControl><Input placeholder="Model" disabled={isSubmitting} {...field} /></FormControl>
       <FormMessage />
     </FormItem>
-  )} />
+  )} /> */}
   <FormField control={form.control} name="unitId" render={({ field }) => (
     <FormItem>
       <FormLabel>Unit</FormLabel>
@@ -253,10 +261,43 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
       <FormMessage />
     </FormItem>
   )} />
+
+   {/* <FormField control={form.control} name="typeId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type ID</FormLabel>
+                    <FormControl><Input type="number" placeholder="Type" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} /> */}
+
+                 <FormField control={form.control} name="typeId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select
+                      disabled={isSubmitting || invTypesLoading}
+                      onValueChange={(val) => field.onChange(Number(val))}
+                      value={field.value ? String(field.value) : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={invTypesLoading ? "Loading..." : "Select type"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {invTypes.map((t) => (
+                          <SelectItem key={t.ID} value={String(t.ID)}>
+                            {t.DESCRIPTIO}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 </div>
 
               {/* Brand + Size */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="brandId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Brand ID</FormLabel>
@@ -271,17 +312,17 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
                     <FormMessage />
                   </FormItem>
                 )} />
-              </div>
+              </div> */}
 
               {/* Price + Min Level */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="price" render={({ field }) => (
+                {/* <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl><Input type="number" step="0.01" placeholder="0.00" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
                 <FormField control={form.control} name="minLevel" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Min Level</FormLabel>
@@ -289,10 +330,24 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                 <FormField control={form.control} name="status" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                    <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">Active</SelectItem>
+                        <SelectItem value="0">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
               {/* Category + Origin */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="categoryId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category ID</FormLabel>
@@ -307,24 +362,24 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
                     <FormMessage />
                   </FormItem>
                 )} />
-              </div>
+              </div> */}
 
               {/* Type + Color */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="typeId" render={({ field }) => (
+                {/* <FormField control={form.control} name="typeId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Type" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
-                <FormField control={form.control} name="colorId" render={({ field }) => (
+                )} /> */}
+                {/* <FormField control={form.control} name="colorId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Color ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Color" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
               </div>
 
               {/* Unit ID + Subcat */}
@@ -336,14 +391,14 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
                     <FormMessage />
                   </FormItem>
                 )} /> */}
-                <FormField control={form.control} name="subcatId" render={({ field }) => (
+                {/* <FormField control={form.control} name="subcatId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Subcat ID</FormLabel>
                     <FormControl><Input type="number" placeholder="Subcategory" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
-                 <FormField control={form.control} name="status" render={({ field }) => (
+                )} /> */}
+                 {/* <FormField control={form.control} name="status" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
                     <Select disabled={isSubmitting} onValueChange={field.onChange} value={field.value}>
@@ -355,7 +410,7 @@ const { data: uoms = [], isLoading: uomsLoading } = useUoms();
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
               </div>
 
             </div>

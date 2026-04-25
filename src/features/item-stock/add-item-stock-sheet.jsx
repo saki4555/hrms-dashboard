@@ -316,20 +316,20 @@ export default function AddItemStockSheet({ open, onOpenChange, showConfirmation
 
               {/* Price + Last Price */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="price" render={({ field }) => (
+                {/* <FormField control={form.control} name="price" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl><Input type="number" step="0.01" placeholder="0.00" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
-                <FormField control={form.control} name="lastPrice" render={({ field }) => (
+                )} /> */}
+                {/* <FormField control={form.control} name="lastPrice" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Last Price</FormLabel>
                     <FormControl><Input type="number" step="0.01" placeholder="0.00" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
               </div>
 
               {/* UOM + Unit ID */}
@@ -362,6 +362,14 @@ export default function AddItemStockSheet({ open, onOpenChange, showConfirmation
       <FormMessage />
     </FormItem>
   )} /> 
+
+   <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl><Input type="number" step="0.01" placeholder="0.00" disabled={isSubmitting} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
   
                 {/* <FormField control={form.control} name="unitId" render={({ field }) => (
                   <FormItem>
@@ -374,13 +382,13 @@ export default function AddItemStockSheet({ open, onOpenChange, showConfirmation
 
               {/* Booked + Status */}
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="booked" render={({ field }) => (
+                {/* <FormField control={form.control} name="booked" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Booked</FormLabel>
                     <FormControl><Input type="number" placeholder="0" disabled={isSubmitting} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} /> */}
                 <FormField control={form.control} name="status" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status <span className="text-destructive">*</span></FormLabel>

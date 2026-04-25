@@ -8,6 +8,7 @@ import {
   IconReport,
   IconSettings,
   IconUsersGroup,
+  IconPackage
 } from "@tabler/icons-react";
 
 import { PATHS } from "./paths";
@@ -101,10 +102,10 @@ export const NAV_ITEMS = [
           { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        permissions: [P.SHIFT_SETUP] },
           { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     permissions: [P.HR_SETUP] },
           // Admin-only — using PAY_CONFIG as the Admin-only gate
-          { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
-          { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
-          { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   permissions: [P.PAY_CONFIG] },
-          { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  permissions: [P.PAY_CONFIG] },
+          // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
+          // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
+          // { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   permissions: [P.PAY_CONFIG] },
+          // { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  permissions: [P.PAY_CONFIG] },
         ],
       },
     ],
@@ -127,4 +128,25 @@ export const NAV_ITEMS = [
       },
     ],
   },
+
+  {
+    label: "Inventory",
+    items: [
+      {
+        title: "Inventory",
+        icon: IconPackage,
+        permissions: [P.INVENTORY_VIEW],
+        defaultOpen: true,
+        subItems: [
+          { title: "Inventory",   url: PATHS.SETTINGS.INVENTORYS,  permissions: [P.INVENTORY_VIEW] },
+          { title: "Items",       url: PATHS.SETTINGS.ITEMS,        permissions: [P.INVENTORY_VIEW] },
+          { title: "Item Stocks", url: PATHS.SETTINGS.ITEM_STOCKS,  permissions: [P.INVENTORY_VIEW] },
+          { title: "Dispatch",    url: PATHS.SETTINGS.REQUISITIONS, permissions: [P.INVENTORY_VIEW] },
+        ],
+      },
+    ],
+  },
 ];
+
+
+ 
