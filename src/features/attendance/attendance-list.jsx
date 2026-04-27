@@ -121,6 +121,26 @@ const STATUS_CONFIG = {
     icon: XCircle,
     class: "bg-red-500/10 text-red-600 border-red-500/20",
   },
+  HOLIDAY: {
+    label: "Holiday",
+    icon: CalendarIcon,
+    class: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  },
+  WEEKLY_OFF: {
+    label: "Weekly Off",
+    icon: CalendarIcon,
+    class: "bg-slate-500/10 text-slate-600 border-slate-500/20",
+  },
+  ON_LEAVE: {
+    label: "On Leave",
+    icon: LogOut,
+    class: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
+  },
+  UNSCHEDULED: {
+    label: "Unscheduled",
+    icon: AlertCircle,
+    class: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+  },
   PENDING: {
     label: "Pending",
     icon: Clock,
@@ -206,45 +226,18 @@ function StatusBadge({ status }) {
 
 function SummaryCards({ summary, isLoading }) {
   const cards = [
-    {
-      key: "TOTAL",
-      label: "Total",
-      icon: Users,
-      color: "text-foreground",
-      bg: "bg-muted/50",
-    },
-    {
-      key: "PRESENT",
-      label: "Present",
-      icon: CheckCircle2,
-      color: "text-green-600",
-      bg: "bg-green-500/10",
-    },
-    {
-      key: "LATE",
-      label: "Late",
-      icon: AlertTriangle,
-      color: "text-amber-600",
-      bg: "bg-amber-500/10",
-    },
-    {
-      key: "EARLY_LEAVE",
-      label: "Early Leave",
-      icon: LogOut,
-      color: "text-blue-600",
-      bg: "bg-blue-500/10",
-    },
-    {
-      key: "ABSENT",
-      label: "Absent",
-      icon: XCircle,
-      color: "text-red-600",
-      bg: "bg-red-500/10",
-    },
-  ];
+  { key: "TOTAL",       label: "Total",       icon: Users,        color: "text-foreground",  bg: "bg-muted/50"         },
+  { key: "PRESENT",     label: "Present",     icon: CheckCircle2, color: "text-green-600",   bg: "bg-green-500/10"     },
+  { key: "LATE",        label: "Late",        icon: AlertTriangle,color: "text-amber-600",   bg: "bg-amber-500/10"     },
+  { key: "EARLY_LEAVE", label: "Early Leave", icon: LogOut,       color: "text-blue-600",    bg: "bg-blue-500/10"      },
+  { key: "ABSENT",      label: "Absent",      icon: XCircle,      color: "text-red-600",     bg: "bg-red-500/10"       },
+  { key: "HOLIDAY",     label: "Holiday",     icon: CalendarIcon, color: "text-purple-600",  bg: "bg-purple-500/10"    },
+  { key: "WEEKLY_OFF",  label: "Weekly Off",  icon: CalendarIcon, color: "text-slate-600",   bg: "bg-slate-500/10"     },
+  { key: "ON_LEAVE",    label: "On Leave",    icon: LogOut,       color: "text-cyan-600",    bg: "bg-cyan-500/10"      },
+];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
       {cards.map(({ key, label, icon: Icon, color, bg }) => (
         <Card key={key} className="shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
@@ -1022,23 +1015,27 @@ export default function AttendanceList() {
 
             {/* Status */}
             <Select
-              value={status || "all"}
-              onValueChange={(v) => {
-                setStatus(v === "all" ? null : v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-9 w-[150px]">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="PRESENT">Present</SelectItem>
-                <SelectItem value="LATE">Late</SelectItem>
-                <SelectItem value="EARLY_LEAVE">Early Leave</SelectItem>
-                <SelectItem value="ABSENT">Absent</SelectItem>
-              </SelectContent>
-            </Select>
+  value={status || "all"}
+  onValueChange={(v) => {
+    setStatus(v === "all" ? null : v);
+    setPage(1);
+  }}
+>
+  <SelectTrigger className="h-9 w-[150px]">
+    <SelectValue placeholder="All Statuses" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">All Statuses</SelectItem>
+    <SelectItem value="PRESENT">Present</SelectItem>
+    <SelectItem value="LATE">Late</SelectItem>
+    <SelectItem value="EARLY_LEAVE">Early Leave</SelectItem>
+    <SelectItem value="ABSENT">Absent</SelectItem>
+    <SelectItem value="HOLIDAY">Holiday</SelectItem>
+    <SelectItem value="WEEKLY_OFF">Weekly Off</SelectItem>
+    <SelectItem value="ON_LEAVE">On Leave</SelectItem>
+    <SelectItem value="UNSCHEDULED">Unscheduled</SelectItem>
+  </SelectContent>
+</Select>
 
             {/* Reset all */}
             {hasActiveFilters && (
