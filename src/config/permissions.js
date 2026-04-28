@@ -85,5 +85,5 @@ export const PERMISSIONS = {
   REP_GENERATE:  "REP_GENERATE",  // Standard reports — scoped by role
   REP_PAYROLL:   "REP_PAYROLL",   // Payroll reports — Admin & HR only
 
-  INVENTORY_VIEW: "INVENTORY_VIEW", // View inventory, items, item stocks & dispatch — assigned manually per user
+ 
 };
