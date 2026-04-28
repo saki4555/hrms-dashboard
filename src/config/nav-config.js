@@ -129,23 +129,23 @@ export const NAV_ITEMS = [
     ],
   },
 
-  {
-    label: "Inventory",
-    items: [
-      {
-        title: "Inventory",
-        icon: IconPackage,
-        permissions: [P.INVENTORY_VIEW],
-        defaultOpen: true,
-        subItems: [
-          { title: "Inventory",   url: PATHS.SETTINGS.INVENTORYS,  permissions: [P.INVENTORY_VIEW] },
-          { title: "Items",       url: PATHS.SETTINGS.ITEMS,        permissions: [P.INVENTORY_VIEW] },
-          { title: "Item Stocks", url: PATHS.SETTINGS.ITEM_STOCKS,  permissions: [P.INVENTORY_VIEW] },
-          { title: "Dispatch",    url: PATHS.SETTINGS.REQUISITIONS, permissions: [P.INVENTORY_VIEW] },
-        ],
-      },
-    ],
-  },
+  // {
+  //   label: "Inventory",
+  //   items: [
+  //     {
+  //       title: "Inventory",
+  //       icon: IconPackage,
+  //       permissions: [P.INVENTORY_VIEW],
+  //       defaultOpen: true,
+  //       subItems: [
+  //         { title: "Inventory",   url: PATHS.SETTINGS.INVENTORYS,  permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Items",       url: PATHS.SETTINGS.ITEMS,        permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Item Stocks", url: PATHS.SETTINGS.ITEM_STOCKS,  permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Dispatch",    url: PATHS.SETTINGS.REQUISITIONS, permissions: [P.INVENTORY_VIEW] },
+  //       ],
+  //     },
+  //   ],
+  // },
 ];
 
 
