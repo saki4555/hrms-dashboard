@@ -71,3 +71,60 @@ export const useAttendanceDetail = (employeeId, date) =>
 // ── Export URL builder (used directly as <a href> — no react-query needed) ────
 export const buildExportUrl = (format, params) =>
   `${BASE}/export/${format}?${buildQS(params)}`;
+
+
+
+
+// ── Team attendance (Supervisor) ───────────────────────────────────────────
+export const useTeamAttendance = (supervisorId, params) =>
+  useQuery({
+    queryKey: ["attendance", "team", supervisorId, params],
+    queryFn: async () => {
+      const json = await fetcher(`${BASE}/team/${supervisorId}?${buildQS(params)}`);
+      return json;
+    },
+    enabled: !!supervisorId,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev,
+    ...queryDefaults,
+  });
+
+// ── My attendance list (ESS) ───────────────────────────────────────────────
+export const useMyAttendance = (employeeId, params) =>
+  useQuery({
+    queryKey: ["attendance", "my", employeeId, params],
+    queryFn: async () => {
+      const json = await fetcher(`${BASE}/my/${employeeId}?${buildQS(params)}`);
+      return json;
+    },
+    enabled: !!employeeId,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev,
+    ...queryDefaults,
+  });
+
+// ── My attendance summary (ESS) ────────────────────────────────────────────
+export const useMyAttendanceSummary = (employeeId, params) =>
+  useQuery({
+    queryKey: ["attendance", "my", "summary", employeeId, params],
+    queryFn: async () => {
+      const json = await fetcher(`${BASE}/my/${employeeId}/summary?${buildQS(params)}`);
+      console.log({json});
+      return json.data;
+    },
+    enabled: !!employeeId && !!(params.fromDate && params.toDate),
+    ...queryDefaults,
+  });
+
+
+  // ── Team attendance stats (Supervisor dashboard widget) ────────────────────
+export const useTeamAttendanceStats = (supervisorId, params) =>
+  useQuery({
+    queryKey: ["attendance", "team", "stats", supervisorId, params],
+    queryFn: async () => {
+      const json = await fetcher(`${BASE}/team/${supervisorId}/stats?${buildQS(params)}`);
+      return json.data;
+    },
+    enabled: !!supervisorId && !!(params.date || (params.fromDate && params.toDate)),
+    ...queryDefaults,
+  });

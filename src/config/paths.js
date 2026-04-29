@@ -28,6 +28,8 @@ export const PATHS = {
     ASSIGNMENT: "attendance/assignment",
     SCHEDULE: "attendance/schedule",
     DATA: "attendance/data",
+    TEAM:          "attendance/team", 
+  MY:            "attendance/my",          
     REPORTS: "attendance/reports",
     LEAVE_REQUEST: "attendance/leave-requests",
     LEAVE_TYPES: "attendance/leave-types",
