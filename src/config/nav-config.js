@@ -1,4 +1,4 @@
-
+// src\config\nav-config.js
 
 import {
   IconLayoutDashboard,
@@ -65,6 +65,16 @@ export const NAV_ITEMS = [
             title: "Attendance Data",
             url: PATHS.ATTENDANCE.DATA,
             permissions: [P.ATT_VIEW_TEAM, P.ATT_REPORT_ALL],
+          },
+          {
+            title: "Attendance My",
+            url: PATHS.ATTENDANCE.MY,
+            permissions: [P.ESS_ATT_VIEW],
+          },
+          {
+            title: "Attendance Team",
+            url: PATHS.ATTENDANCE.TEAM,
+            permissions: [P.MSS_TEAM_VIEW],
           },
           {
             title: "Leave Requests",

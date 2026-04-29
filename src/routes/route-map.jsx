@@ -1,4 +1,4 @@
-
+// src\routes\route-map.jsx
 
 import { lazy } from "react";
 
@@ -64,6 +64,8 @@ const ModuleManagement     = lazy(() => import("@/features/users/module"));
 
 // ─── Attendance ───────────────────────────────────────────────────────────────
 const Attendance = lazy(() => import("@/features/attendance"));
+const AttendanceTeam = lazy(() => import("@/features/attendance/attendance-team.jsx"));
+const AttendanceMy   = lazy(() => import("@/features/attendance/attendance-my.jsx"));
 
 // ─── Route Map ────────────────────────────────────────────────────────────────
 // permissions: [] — user must have AT LEAST ONE of these to access the route
@@ -81,6 +83,8 @@ export const ROUTE_MAP = [
 
   // ── Attendance ────────────────────────────────────────────────────────────────
   { path: PATHS.ATTENDANCE.DATA,          component: Attendance,    permissions: [P.ATT_VIEW_TEAM, P.ATT_REPORT_ALL] },
+  { path: PATHS.ATTENDANCE.TEAM,          component: AttendanceTeam,     permissions: [P.MSS_TEAM_VIEW] },  // ← new
+{ path: PATHS.ATTENDANCE.MY,            component: AttendanceMy,       permissions: [P.ESS_ATT_VIEW] },   // ← new
   { path: PATHS.ATTENDANCE.LEAVE_REQUEST, component: LeaveRequests, permissions: [P.ATT_LEAVE_APPROVE, P.MSS_APPROVE_TEAM, P.ATT_LEAVE_APPLY] },
   { path: PATHS.ATTENDANCE.LEAVE_TYPES,   component: LeaveTypes,    permissions: [P.SHIFT_SETUP, P.HR_SETUP] },
 
