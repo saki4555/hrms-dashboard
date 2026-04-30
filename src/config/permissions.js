@@ -84,4 +84,6 @@ export const PERMISSIONS = {
   REP_ANALYTICS: "REP_ANALYTICS", // Full analytics dashboard — Admin & HR only
   REP_GENERATE:  "REP_GENERATE",  // Standard reports — scoped by role
   REP_PAYROLL:   "REP_PAYROLL",   // Payroll reports — Admin & HR only
+
+ 
 };

@@ -82,11 +82,11 @@ export const PATHS = {
     HOLIDAY_TYPES: "settings/work-structure/holiday-types",
     SHIFTS: "settings/work-structure/shifts",
     CONTRACTS: "settings/work-structure/contracts",
-    INVENTORYS: "settings/work-structure/inventory",
-    ITEMS: "settings/work-structure/item",
-    ITEM_STOCKS: "settings/work-structure/item-stock",
+    // INVENTORYS: "settings/work-structure/inventory",
+    // ITEMS: "settings/work-structure/item",
+    // ITEM_STOCKS: "settings/work-structure/item-stock",
     // REQUISITION: "settings/work-structure/req-master",
-    REQUISITIONS: "settings/work-structure/requisitions",
+    // REQUISITIONS: "settings/work-structure/requisitions",
    
   
   },

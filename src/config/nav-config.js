@@ -9,6 +9,7 @@ import {
   IconUserCheck,
   IconSettings,
   IconUsersGroup,
+  IconPackage
 } from "@tabler/icons-react";
 
 const { ADMIN, EMPLOYEE, SUPERVISOR } = ROLES;
@@ -75,6 +76,23 @@ export const NAV_ITEMS = [
           { title: "Items",              url: PATHS.SETTINGS.ITEMS,         roles: [ADMIN]   },
           { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   roles: [ADMIN]   },
           { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  roles: [ADMIN]   },
+          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  permissions: [P.HR_SETUP] },
+          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     permissions: [P.HR_SETUP] },
+          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        permissions: [P.HR_SETUP] },
+          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  permissions: [P.HR_SETUP] },
+          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       permissions: [P.HR_SETUP] },
+          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     permissions: [P.HR_SETUP] },
+          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     permissions: [P.HR_SETUP] },
+          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     permissions: [P.HR_SETUP] },
+          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      permissions: [P.HR_SETUP] },
+          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, permissions: [P.HR_SETUP] },
+          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        permissions: [P.SHIFT_SETUP] },
+          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     permissions: [P.HR_SETUP] },
+          // Admin-only — using PAY_CONFIG as the Admin-only gate
+          // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
+          // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
+          // { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   permissions: [P.PAY_CONFIG] },
+          // { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  permissions: [P.PAY_CONFIG] },
         ],
       },
     ],
@@ -96,4 +114,25 @@ export const NAV_ITEMS = [
       },
     ],
   },
+
+  // {
+  //   label: "Inventory",
+  //   items: [
+  //     {
+  //       title: "Inventory",
+  //       icon: IconPackage,
+  //       permissions: [P.INVENTORY_VIEW],
+  //       defaultOpen: true,
+  //       subItems: [
+  //         { title: "Inventory",   url: PATHS.SETTINGS.INVENTORYS,  permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Items",       url: PATHS.SETTINGS.ITEMS,        permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Item Stocks", url: PATHS.SETTINGS.ITEM_STOCKS,  permissions: [P.INVENTORY_VIEW] },
+  //         { title: "Dispatch",    url: PATHS.SETTINGS.REQUISITIONS, permissions: [P.INVENTORY_VIEW] },
+  //       ],
+  //     },
+  //   ],
+  // },
 ];
+
+
+ 

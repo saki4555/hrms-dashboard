@@ -4,12 +4,12 @@ import { lazy } from "react";
 
 import { PERMISSIONS } from "@/config/permissions";
 import { PATHS } from "@/config/paths";
-import InventoriesPage from "@/features/inventory";
-import ItemsPage from "@/features/item";
-import ItemStockPage from "@/features/item-stock";
-import RequisitionList from "@/features/requisition-managemant/requisition-list";
-import Requisition from "@/features/requisition-managemant";
-import Requisitions from "@/features/requisition-master";
+// import InventoriesPage from "@/features/inventory";
+// import ItemsPage from "@/features/item";
+// import ItemStockPage from "@/features/item-stock";
+// import RequisitionList from "@/features/requisition-managemant/requisition-list";
+// import Requisition from "@/features/requisition-managemant";
+// import Requisitions from "@/features/requisition-master";
 
 const P = PERMISSIONS; // shorthand
 
@@ -102,10 +102,12 @@ export const ROUTE_MAP = [
   { path: PATHS.SETTINGS.SHIFTS,        component: Shifts,        permissions: [P.SHIFT_SETUP] },
   { path: PATHS.SETTINGS.CONTRACTS,     component: Contracts,     permissions: [P.HR_SETUP] },
   // Admin-only settings — PAY_CONFIG is Admin-only per seed
-  { path: PATHS.SETTINGS.INVENTORYS,    component: InventoriesPage, permissions: [P.PAY_CONFIG] },
-  { path: PATHS.SETTINGS.ITEMS,         component: ItemsPage,       permissions: [P.PAY_CONFIG] },
-  { path: PATHS.SETTINGS.ITEM_STOCKS,   component: ItemStockPage,   permissions: [P.PAY_CONFIG] },
-  { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisitions,    permissions: [P.PAY_CONFIG] },
+  // { path: PATHS.SETTINGS.INVENTORYS,    component: InventoriesPage, permissions: [P.PAY_CONFIG] },
+  // { path: PATHS.SETTINGS.ITEMS,         component: ItemsPage,       permissions: [P.PAY_CONFIG] },
+  // { path: PATHS.SETTINGS.ITEM_STOCKS,   component: ItemStockPage,   permissions: [P.PAY_CONFIG] },
+  // { path: PATHS.SETTINGS.REQUISITIONS,  component: Requisitions,    permissions: [P.PAY_CONFIG] },
+
+  
 
   // ── User Management ───────────────────────────────────────────────────────────
   { path: PATHS.USERS.USER_MANAGEMENT,       component: UserManagement,       permissions: [P.HR_SETUP] },
