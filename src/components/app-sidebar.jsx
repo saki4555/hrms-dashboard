@@ -32,13 +32,13 @@ import { NAV_ITEMS } from "@/config/nav-config";
 import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 
 // Returns true if user has at least ONE of the required permissions
-const hasAnyPermission = (userPermissions = [], requiredPermissions = []) =>
-  requiredPermissions.some((p) => userPermissions.includes(p));
+const hasAnyRole = (userRoles = [], requiredRoles = []) =>
+  requiredRoles.some((r) => userRoles.includes(r));
 
 export function AppSidebar({ ...props }) {
   const location = useLocation();
   const { user } = useAuth();
-  const userPermissions = user?.permissions ?? [];
+  const userRoles = user?.roles ?? [];
 
   return (
     <Sidebar {...props}>
@@ -57,10 +57,10 @@ export function AppSidebar({ ...props }) {
       {/* CONTENT */}
       <SidebarContent>
         {NAV_ITEMS.map((section) => {
-          // Filter section items by permission
-          const visibleItems = section.items.filter((item) =>
-            hasAnyPermission(userPermissions, item.permissions)
-          );
+          // Filter section items by role
+         const visibleItems = section.items.filter((item) =>
+  hasAnyRole(userRoles, item.roles)
+);
 
           // Don't render the section group at all if no items are visible
           if (visibleItems.length === 0) return null;
@@ -70,10 +70,9 @@ export function AppSidebar({ ...props }) {
               <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
 
               {visibleItems.map((item) => {
-                // Filter sub-items by permission
-                const filteredSubItems = item.subItems?.filter((sub) =>
-                  hasAnyPermission(userPermissions, sub.permissions)
-                );
+               const filteredSubItems = item.subItems?.filter((sub) =>
+  hasAnyRole(userRoles, sub.roles)
+);
 
                 return (
                   <SidebarMenu key={item.title}>

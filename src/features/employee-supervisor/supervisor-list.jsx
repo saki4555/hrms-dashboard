@@ -46,6 +46,7 @@ import { useEmployeeLiteSearch, useSupervisorLiteSearch } from "@/hooks/use-lite
 import { useSupervisorAssignments, useRemoveSupervisor } from "./queries";
 import AssignSupervisorDialog from "./assign-supervisor-dialog";
 import UpdateSupervisorDialog from "./update-supervisor-dialog";
+import { EmployeeCell } from "@/components/shared/employee/employee-cell";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -72,25 +73,6 @@ const formatDate = (d) => {
 //  SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function EmployeeCell({ firstName, lastName, empNo, title, personId }) {
-  const fullName    = [title, firstName, lastName].filter(Boolean).join(" ");
-  const displayName = [firstName, lastName].filter(Boolean).join(" ") || "—";
-  const initials    = [firstName?.[0], lastName?.[0]].filter(Boolean).join("").toUpperCase();
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <Avatar className="h-8 w-8 shrink-0">
-        <AvatarImage src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${personId}`} />
-        <AvatarFallback className={cn("text-xs font-semibold text-white", getAvatarColor(fullName))}>
-          {initials}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex flex-col min-w-0">
-        <span className="font-medium leading-tight truncate">{displayName}</span>
-        <span className="text-xs text-muted-foreground">{empNo}</span>
-      </div>
-    </div>
-  );
-}
 
 function SortHeader({ column, children }) {
   return (
@@ -346,33 +328,39 @@ export default function SupervisorList() {
   // ── Columns ────────────────────────────────────────────────────────────────────
   const columns = useMemo(() => [
     {
-      id: "employee",
-      accessorFn: (row) => [row.EMP_FIRST_NAME, row.EMP_LAST_NAME].filter(Boolean).join(" "),
-      header: ({ column }) => <SortHeader column={column}>Employee</SortHeader>,
-      cell: ({ row }) => {
-        const r = row.original;
-        return (
-          <EmployeeCell
-            firstName={r.EMP_FIRST_NAME} lastName={r.EMP_LAST_NAME}
-            empNo={r.EMP_NO} title={r.EMP_TITLE} personId={r.PERSON_ID}
-          />
-        );
-      },
-    },
-    {
-      id: "supervisor",
-      accessorFn: (row) => [row.SUP_FIRST_NAME, row.SUP_LAST_NAME].filter(Boolean).join(" "),
-      header: ({ column }) => <SortHeader column={column}>Supervisor</SortHeader>,
-      cell: ({ row }) => {
-        const r = row.original;
-        return (
-          <EmployeeCell
-            firstName={r.SUP_FIRST_NAME} lastName={r.SUP_LAST_NAME}
-            empNo={r.SUP_EMP_NO} title={r.SUP_TITLE} personId={r.SUPERVISOR_ID}
-          />
-        );
-      },
-    },
+  id: "employee",
+  accessorFn: (row) => [row.EMP_FIRST_NAME, row.EMP_LAST_NAME].filter(Boolean).join(" "),
+  header: ({ column }) => <SortHeader column={column}>Employee</SortHeader>,
+  cell: ({ row }) => {
+    const r = row.original;
+    return (
+      <EmployeeCell
+        id={r.PERSON_ID}
+        firstName={r.EMP_FIRST_NAME}
+        lastName={r.EMP_LAST_NAME}
+        empNo={r.EMP_NO}
+        title={r.EMP_TITLE}
+      />
+    );
+  },
+},
+{
+  id: "supervisor",
+  accessorFn: (row) => [row.SUP_FIRST_NAME, row.SUP_LAST_NAME].filter(Boolean).join(" "),
+  header: ({ column }) => <SortHeader column={column}>Supervisor</SortHeader>,
+  cell: ({ row }) => {
+    const r = row.original;
+    return (
+      <EmployeeCell
+        id={r.SUPERVISOR_ID}
+        firstName={r.SUP_FIRST_NAME}
+        lastName={r.SUP_LAST_NAME}
+        empNo={r.SUP_EMP_NO}
+        title={r.SUP_TITLE}
+      />
+    );
+  },
+},
     {
       accessorKey: "ASSIGNED_ON",
       header: ({ column }) => <SortHeader column={column}>Assigned On</SortHeader>,

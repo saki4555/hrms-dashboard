@@ -4,71 +4,111 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import {
-  parseAsInteger,
-  parseAsString,
-  useQueryState,
-} from "nuqs";
-import {
-  UserX, UserCheck, AlertCircle, RefreshCw, Users,
-  KeyRound, Eye, ArrowUp, ArrowDown
+  UserX,
+  UserCheck,
+  AlertCircle,
+  RefreshCw,
+  Users,
+  KeyRound,
+  Eye,
+  ArrowUp,
+  ArrowDown,
+  UsersIcon,
 } from "lucide-react";
-import { IconColumns3Filled, IconEdit, IconPlus, IconSelector, IconX } from "@tabler/icons-react";
+import {
+  IconColumns3Filled,
+  IconEdit,
+  IconPlus,
+  IconSelector,
+  IconX,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router";
 import { format } from "date-fns";
 
-import { Button }   from "@/components/ui/button";
-import { Badge }    from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input }    from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import {
-  Combobox, ComboboxContent, ComboboxEmpty,
-  ComboboxInput, ComboboxItem, ComboboxList,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
 } from "@/components/ui/combobox";
 import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu, DropdownMenuCheckboxItem,
-  DropdownMenuContent, DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Tooltip, TooltipContent,
-  TooltipProvider, TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { DataTablePagination } from "@/components/DataTablePagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { Spinner } from "@/components/ui/spinner";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink,
-  BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { cn }             from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 
-import { useUsers, useDeleteUser, useActivateUser, useRoles, useModules, usePermissions } from "./queries";
-import AddUserDialog        from "./add-user-dialog";
-import UpdateUserDialog     from "./update-user-dialog";
+import {
+  useUsers,
+  useDeleteUser,
+  useActivateUser,
+  useRoles,
+  useModules,
+  usePermissions,
+} from "./queries";
+import AddUserDialog from "./add-user-dialog";
+import UpdateUserDialog from "./update-user-dialog";
 import ChangePasswordDialog from "./change-password-dialog";
 import { SearchInput } from "@/components/shared/search-input";
+import { DataTable, TableLoadingOverlay } from "@/components/shared/data-table";
+import { EmployeeCell } from "@/components/shared/employee/employee-cell";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SORT_COLUMN_MAP = {
-  user:       "USERNAME",
+  user: "USERNAME",
   CREATED_AT: "CREATED_AT",
 };
 
 const REVERSE_SORT_MAP = {
-  USERNAME:   "user",
+  USERNAME: "user",
   CREATED_AT: "CREATED_AT",
 };
 
@@ -78,7 +118,11 @@ const REVERSE_SORT_MAP = {
 
 const formatDate = (d) => {
   if (!d) return "—";
-  try { return format(new Date(d), "MMM dd, yyyy"); } catch { return "—"; }
+  try {
+    return format(new Date(d), "MMM dd, yyyy");
+  } catch {
+    return "—";
+  }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,9 +142,13 @@ function SortHeader({ column, children, className }) {
         )}
       >
         {children}
-        {column.getIsSorted() === "desc" ? <ArrowDown /> :
-         column.getIsSorted() === "asc"  ? <ArrowUp />   :
-                                           <IconSelector />}
+        {column.getIsSorted() === "desc" ? (
+          <ArrowDown />
+        ) : column.getIsSorted() === "asc" ? (
+          <ArrowUp />
+        ) : (
+          <IconSelector />
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-28">
         <DropdownMenuCheckboxItem
@@ -143,7 +191,10 @@ function FilterCombobox({ placeholder, options, value, onValueChange }) {
       items={options.map((o) => o.label)}
       value={selectedLabel}
       onValueChange={(label) => {
-        if (!label) { onValueChange(""); return; }
+        if (!label) {
+          onValueChange("");
+          return;
+        }
         const opt = options.find((o) => o.label === label);
         onValueChange(opt?.value ?? "");
       }}
@@ -167,23 +218,25 @@ function FilterCombobox({ placeholder, options, value, onValueChange }) {
   );
 }
 
-
 // ── Small avatar for the list (h-8 w-8) ──────────────────────────────────────
 function UserListAvatar({ user }) {
   const BASE = import.meta.env.VITE_API_BASE_URL;
 
   const urlsToTry = [
     `${BASE}/api/emp-images/person/${user.ID}`,
-    user.EMPLOYEE_ID ? `${BASE}/api/emp-images/person/${user.EMPLOYEE_ID}` : null,
+    user.EMPLOYEE_ID
+      ? `${BASE}/api/emp-images/person/${user.EMPLOYEE_ID}`
+      : null,
   ].filter(Boolean);
 
   const [srcIndex, setSrcIndex] = useState(0);
-  const [failed,   setFailed]   = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  const initials = (
-    [user.FIRST_NAME?.[0], user.LAST_NAME?.[0]].filter(Boolean).join("").toUpperCase()
-    || user.USERNAME?.[0]?.toUpperCase()
-  );
+  const initials =
+    [user.FIRST_NAME?.[0], user.LAST_NAME?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || user.USERNAME?.[0]?.toUpperCase();
 
   const handleError = () => {
     const next = srcIndex + 1;
@@ -195,10 +248,12 @@ function UserListAvatar({ user }) {
   };
 
   return (
-    <div className={cn(
-      "h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center",
-      getAvatarColor(user.USERNAME),
-    )}>
+    <div
+      className={cn(
+        "h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center",
+        getAvatarColor(user.USERNAME),
+      )}
+    >
       {!failed ? (
         <img
           key={urlsToTry[srcIndex]}
@@ -221,21 +276,42 @@ export default function UserList() {
   const navigate = useNavigate();
 
   // ── URL state via nuqs ──────────────────────────────────────────────────────
-  const [page,         setPage]         = useQueryState("page",         parseAsInteger.withDefault(1));
-  const [limit,        setLimit]        = useQueryState("limit",        parseAsInteger.withDefault(20));
-  const [search,       setSearch]       = useQueryState("search",       parseAsString.withDefault(""));
-  const [roleId,       setRoleId]       = useQueryState("roleId",       parseAsString.withDefault(""));
-  const [moduleId,     setModuleId]     = useQueryState("moduleId",     parseAsString.withDefault(""));
-  const [permissionId, setPermissionId] = useQueryState("permissionId", parseAsString.withDefault(""));
-  const [sortBy,       setSortBy]       = useQueryState("sortBy",       parseAsString.withDefault("CREATED_AT"));
-  const [sortOrder,    setSortOrder]    = useQueryState("sortOrder",    parseAsString.withDefault("DESC"));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [limit, setLimit] = useQueryState(
+    "limit",
+    parseAsInteger.withDefault(20),
+  );
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
+  const [roleId, setRoleId] = useQueryState(
+    "roleId",
+    parseAsString.withDefault(""),
+  );
+  const [moduleId, setModuleId] = useQueryState(
+    "moduleId",
+    parseAsString.withDefault(""),
+  );
+  const [permissionId, setPermissionId] = useQueryState(
+    "permissionId",
+    parseAsString.withDefault(""),
+  );
+  const [sortBy, setSortBy] = useQueryState(
+    "sortBy",
+    parseAsString.withDefault("CREATED_AT"),
+  );
+  const [sortOrder, setSortOrder] = useQueryState(
+    "sortOrder",
+    parseAsString.withDefault("DESC"),
+  );
 
   // ── Local UI state ──────────────────────────────────────────────────────────
   const [columnVisibility, setColumnVisibility] = useState({});
-  const [isAddOpen,        setIsAddOpen]        = useState(false);
-  const [isUpdateOpen,     setIsUpdateOpen]     = useState(false);
-  const [isPasswordOpen,   setIsPasswordOpen]   = useState(false);
-  const [selectedUser,     setSelectedUser]     = useState(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   // Local search input — debounced before hitting the URL/backend
   const [searchInput, setSearchInput] = useState(search);
@@ -243,8 +319,8 @@ export default function UserList() {
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
 
   // ── Filter data ─────────────────────────────────────────────────────────────
-  const { data: roles       = [] } = useRoles();
-  const { data: modules     = [] } = useModules();
+  const { data: roles = [] } = useRoles();
+  const { data: modules = [] } = useModules();
   const { data: permissions = [] } = usePermissions();
 
   // ── Combobox options ────────────────────────────────────────────────────────
@@ -262,24 +338,37 @@ export default function UserList() {
   }));
 
   // ── Backend params ──────────────────────────────────────────────────────────
-  const backendParams = useMemo(() => ({
-    page, limit, search, roleId, moduleId, permissionId, sortBy, sortOrder,
-  }), [page, limit, search, roleId, moduleId, permissionId, sortBy, sortOrder]);
+  const backendParams = useMemo(
+    () => ({
+      page,
+      limit,
+      search,
+      roleId,
+      moduleId,
+      permissionId,
+      sortBy,
+      sortOrder,
+    }),
+    [page, limit, search, roleId, moduleId, permissionId, sortBy, sortOrder],
+  );
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
     data: response,
-    isLoading, isError, error, refetch, isFetching,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
   } = useUsers(backendParams);
- 
 
   const deleteMutation = useDeleteUser();
 
-const activateMutation = useActivateUser();
+  const activateMutation = useActivateUser();
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const rows      = response?.data                  ?? [];
-  const total     = response?.pagination?.total     ?? 0;
+  const rows = response?.data ?? [];
+  const total = response?.pagination?.total ?? 0;
   const pageCount = response?.pagination?.totalPages ?? 1;
 
   // ── Debounced search ────────────────────────────────────────────────────────
@@ -300,34 +389,45 @@ const activateMutation = useActivateUser();
     return [{ id: columnId, desc: sortOrder === "DESC" }];
   }, [sortBy, sortOrder]);
 
-  const onSortingChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function"
-      ? updaterOrValue(sorting)
-      : updaterOrValue;
-    if (next.length === 0) {
-      setSortBy("CREATED_AT");
-      setSortOrder("DESC");
-    } else {
-      const col = SORT_COLUMN_MAP[next[0].id] ?? "CREATED_AT";
-      setSortBy(col);
-      setSortOrder(next[0].desc ? "DESC" : "ASC");
-      setPage(1);
-    }
-  }, [sorting, setSortBy, setSortOrder, setPage]);
+  const onSortingChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
+      if (next.length === 0) {
+        setSortBy("CREATED_AT");
+        setSortOrder("DESC");
+      } else {
+        const col = SORT_COLUMN_MAP[next[0].id] ?? "CREATED_AT";
+        setSortBy(col);
+        setSortOrder(next[0].desc ? "DESC" : "ASC");
+        setPage(1);
+      }
+    },
+    [sorting, setSortBy, setSortOrder, setPage],
+  );
 
   // ── Pagination bridge ───────────────────────────────────────────────────────
-  const pagination = useMemo(() => ({
-    pageIndex: page - 1,
-    pageSize:  limit,
-  }), [page, limit]);
+  const pagination = useMemo(
+    () => ({
+      pageIndex: page - 1,
+      pageSize: limit,
+    }),
+    [page, limit],
+  );
 
-  const onPaginationChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function"
-      ? updaterOrValue(pagination)
-      : updaterOrValue;
-    setPage(next.pageIndex + 1);
-    setLimit(next.pageSize);
-  }, [pagination, setPage, setLimit]);
+  const onPaginationChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(pagination)
+          : updaterOrValue;
+      setPage(next.pageIndex + 1);
+      setLimit(next.pageSize);
+    },
+    [pagination, setPage, setLimit],
+  );
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
   const hasActiveFilters = search || roleId || moduleId || permissionId;
@@ -342,49 +442,56 @@ const activateMutation = useActivateUser();
   };
 
   // ── Dialog helpers ──────────────────────────────────────────────────────────
-  const handleEdit     = (user) => { setSelectedUser(user); setIsUpdateOpen(true); };
-  const handlePassword = (user) => { setSelectedUser(user); setIsPasswordOpen(true); };
-
-  
-
+  const handleEdit = (user) => {
+    setSelectedUser(user);
+    setIsUpdateOpen(true);
+  };
+  const handlePassword = (user) => {
+    setSelectedUser(user);
+    setIsPasswordOpen(true);
+  };
 
   const handleDelete = async (user) => {
-  const confirmed = await showConfirmation({
-    title: "Deactivate user?",
-    description: `Are you sure you want to deactivate "${user.USERNAME}"?`,
-    confirmText: "Deactivate", cancelText: "Cancel", variant: "destructive",
-  });
-  if (!confirmed) return;
-  try {
-    await deleteMutation.mutateAsync(user.ID);
-    toast.success("User deactivated successfully!");
-  } catch (err) {
-    toast.error(err?.message || "Failed to deactivate user.");
-  }
-};
+    const confirmed = await showConfirmation({
+      title: "Deactivate user?",
+      description: `Are you sure you want to deactivate "${user.USERNAME}"?`,
+      confirmText: "Deactivate",
+      cancelText: "Cancel",
+      variant: "destructive",
+    });
+    if (!confirmed) return;
+    try {
+      await deleteMutation.mutateAsync(user.ID);
+      toast.success("User deactivated successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Failed to deactivate user.");
+    }
+  };
 
-const handleActivate = async (user) => {
-  const confirmed = await showConfirmation({
-    title: "Activate user?",
-    description: `Are you sure you want to activate "${user.USERNAME}"?`,
-    confirmText: "Activate", cancelText: "Cancel",
-  });
-  if (!confirmed) return;
-  try {
-    await activateMutation.mutateAsync(user.ID);
-    toast.success("User activated successfully!");
-  } catch (err) {
-    toast.error(err?.message || "Failed to activate user.");
-  }
-};
+  const handleActivate = async (user) => {
+    const confirmed = await showConfirmation({
+      title: "Activate user?",
+      description: `Are you sure you want to activate "${user.USERNAME}"?`,
+      confirmText: "Activate",
+      cancelText: "Cancel",
+    });
+    if (!confirmed) return;
+    try {
+      await activateMutation.mutateAsync(user.ID);
+      toast.success("User activated successfully!");
+    } catch (err) {
+      toast.error(err?.message || "Failed to activate user.");
+    }
+  };
   // ── Columns ─────────────────────────────────────────────────────────────────
-  const columns = useMemo(() => [
-   {
+  const columns = useMemo(
+    () => [
+      {
   id: "user",
   accessorFn: (row) => row.USERNAME,
   header: ({ column }) => <SortHeader column={column}>User</SortHeader>,
   cell: ({ row }) => {
-    const u       = row.original;
+    const u = row.original;
     const fullName = [u.FIRST_NAME, u.LAST_NAME].filter(Boolean).join(" ");
 
     return (
@@ -392,218 +499,269 @@ const handleActivate = async (user) => {
         <UserListAvatar user={u} />
 
         <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium leading-tight">{u.USERNAME}</span>
-            {u.EMP_NO  && 
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
-                {u.EMP_NO}
-              </Badge>
-             }
-          </div>
+          {/* Username */}
+          <span className="font-medium leading-tight">{u.USERNAME}</span>
+
+          {/* Linked employee info */}
           {fullName && (
-            <span className="text-xs text-muted-foreground truncate">{fullName}</span>
+            <span className="text-xs text-muted-foreground truncate">
+              {fullName}
+              {u.EMP_NO && (
+                <span className="ml-1 font-mono opacity-70">{u.EMP_NO}</span>
+                
+              )}
+            </span>
           )}
+
+          {/* Location */}
           {u.LOCATION_NAME && (
-            <span className="text-xs text-muted-foreground/70">{u.LOCATION_NAME}</span>
+            <span className="text-xs text-muted-foreground/60 truncate">
+              {u.LOCATION_NAME}
+            </span>
           )}
         </div>
       </div>
     );
   },
 },
-    {
-      accessorKey: "STATUS",
-      header: "Status",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const status = row.getValue("STATUS");
-        return (
-          <Badge
-            variant="outline"
-            className={cn(
-              status === "ACTIVE"
-                ? "bg-green-500/10 text-green-600 border-green-500/20"
-                : "bg-muted text-muted-foreground border-border",
-            )}
-          >
-            {status}
-          </Badge>
-        );
+      {
+        accessorKey: "STATUS",
+        header: "Status",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const status = row.getValue("STATUS");
+          return (
+            <Badge
+              variant="outline"
+              className={cn(
+                status === "ACTIVE"
+                  ? "bg-green-500/10 text-green-600 border-green-500/20"
+                  : "bg-muted text-muted-foreground border-border",
+              )}
+            >
+              {status}
+            </Badge>
+          );
+        },
       },
-    },
-    {
-      accessorKey: "CREATED_AT",
-      header: ({ column }) => <SortHeader column={column}>Created</SortHeader>,
-      cell: ({ row }) => (
-        <div className="text-sm font-light">{formatDate(row.getValue("CREATED_AT"))}</div>
-      ),
-    },
-    {
-  id: "actions",
-  header: "Actions",
-  enableHiding:  false,
-  enableSorting: false,
-  cell: ({ row }) => {
-    const user      = row.original;
-    const isActive  = user.STATUS === "ACTIVE";
-    const isBusy    = deleteMutation.isPending || activateMutation.isPending;
+      {
+        accessorKey: "CREATED_AT",
+        header: ({ column }) => (
+          <SortHeader column={column}>Created</SortHeader>
+        ),
+        cell: ({ row }) => (
+          <div className="text-sm font-light">
+            {formatDate(row.getValue("CREATED_AT"))}
+          </div>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableHiding: false,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const user = row.original;
+          const isActive = user.STATUS === "ACTIVE";
+          const isBusy = deleteMutation.isPending || activateMutation.isPending;
 
-    return (
-      <TooltipProvider>
-        <div className="flex items-center gap-1">
+          return (
+            <TooltipProvider>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        navigate(`/user-management/users/${user.ID}`)
+                      }
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>View Details</TooltipContent>
+                </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => navigate(`/user-management/users/${user.ID}`)}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>View Details</TooltipContent>
-          </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(user)}
+                    >
+                      <IconEdit className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit User</TooltipContent>
+                </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => handleEdit(user)}
-              >
-                <IconEdit className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit User</TooltipContent>
-          </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+                      onClick={() => handlePassword(user)}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Change Password</TooltipContent>
+                </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost" size="icon"
-                className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
-                onClick={() => handlePassword(user)}
-              >
-                <KeyRound className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Change Password</TooltipContent>
-          </Tooltip>
-
-          {isActive ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(user)}
-                  disabled={isBusy}
-                >
-                  {deleteMutation.isPending
-                    ? <Spinner data-icon="inline-start" />
-                    : <UserX className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Deactivate</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
-                  onClick={() => handleActivate(user)}
-                  disabled={isBusy}
-                >
-                  {activateMutation.isPending
-                    ? <Spinner data-icon="inline-start" />
-                    : <UserCheck className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Activate</TooltipContent>
-            </Tooltip>
-          )}
-
-        </div>
-      </TooltipProvider>
-    );
-  },
-},
-  ], [deleteMutation.isPending]);
+                {isActive ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(user)}
+                        disabled={isBusy}
+                      >
+                        {deleteMutation.isPending ? (
+                          <Spinner data-icon="inline-start" />
+                        ) : (
+                          <UserX className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Deactivate</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                        onClick={() => handleActivate(user)}
+                        disabled={isBusy}
+                      >
+                        {activateMutation.isPending ? (
+                          <Spinner data-icon="inline-start" />
+                        ) : (
+                          <UserCheck className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Activate</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </TooltipProvider>
+          );
+        },
+      },
+    ],
+    [deleteMutation.isPending],
+  );
 
   // ── TanStack table ──────────────────────────────────────────────────────────
   const table = useReactTable({
-    data:     rows,
+    data: rows,
     columns,
     pageCount,
-    state:    { pagination, columnVisibility, sorting },
+    state: { pagination, columnVisibility, sorting },
     onPaginationChange,
     onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel:          getCoreRowModel(),
+    getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
-    manualSorting:    true,
-    manualFiltering:  true,
+    manualSorting: true,
+    manualFiltering: true,
   });
 
   // ── Loading state ───────────────────────────────────────────────────────────
-  if (isLoading) return (
-    <div>
-      <PageHeader disabled />
-      <div className="bg-card rounded-md shadow-sm p-4">
-        <div className="flex flex-col items-center justify-center py-16">
-          <Spinner className="h-12 w-12 mb-4" />
-          <p className="text-muted-foreground">Loading users...</p>
+  if (isLoading)
+    return (
+      <div>
+        <PageHeader disabled />
+        <div className="bg-card rounded-md shadow-sm p-4">
+          <div className="flex flex-col items-center justify-center py-16">
+            <Spinner className="h-12 w-12 mb-4" />
+            <p className="text-muted-foreground">Loading users...</p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 
   // ── Error state ─────────────────────────────────────────────────────────────
-  if (isError) return (
-    <div>
-      <PageHeader onRefetch={refetch} isFetching={isFetching} onAdd={() => setIsAddOpen(true)} />
-      <div className="bg-card rounded-md shadow-sm p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error Loading Users</AlertTitle>
-          <AlertDescription className="mt-2 flex flex-col gap-2">
-            <p>{error?.message || "Failed to load users."}</p>
-            <Button variant="outline" size="sm" onClick={refetch} disabled={isFetching} className="w-fit">
-              {isFetching
-                ? <><Spinner className="mr-2 h-4 w-4" />Retrying...</>
-                : <><RefreshCw className="mr-2 h-4 w-4" />Retry</>}
-            </Button>
-          </AlertDescription>
-        </Alert>
+  if (isError)
+    return (
+      <div>
+        <PageHeader
+          onRefetch={refetch}
+          isFetching={isFetching}
+          onAdd={() => setIsAddOpen(true)}
+        />
+        <div className="bg-card rounded-md shadow-sm p-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Users</AlertTitle>
+            <AlertDescription className="mt-2 flex flex-col gap-2">
+              <p>{error?.message || "Failed to load users."}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refetch}
+                disabled={isFetching}
+                className="w-fit"
+              >
+                {isFetching ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" />
+                    Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </>
+                )}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <div>
-      <PageHeader onRefetch={refetch} isFetching={isFetching} onAdd={() => setIsAddOpen(true)} />
+      <PageHeader
+        onRefetch={refetch}
+        isFetching={isFetching}
+        onAdd={() => setIsAddOpen(true)}
+      />
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-
           {/* ── Filter Bar ─────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
-
             {/* Search — debounced 300ms */}
             <SearchInput
-  placeholder="Search username..."
-  value={searchInput}
-  onChange={handleSearchChange}
-  onClear={() => { setSearchInput(""); debouncedSearch(""); }}
-/>
+              placeholder="Search username..."
+              value={searchInput}
+              onChange={handleSearchChange}
+              onClear={() => {
+                setSearchInput("");
+                debouncedSearch("");
+              }}
+            />
 
             {/* Role — Combobox */}
             <FilterCombobox
               placeholder="Role"
               options={roleOptions}
               value={roleId}
-              onValueChange={(v) => { setRoleId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setRoleId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Module — Combobox */}
@@ -611,7 +769,10 @@ const handleActivate = async (user) => {
               placeholder="Module"
               options={moduleOptions}
               value={moduleId}
-              onValueChange={(v) => { setModuleId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setModuleId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Permission — Combobox */}
@@ -619,13 +780,17 @@ const handleActivate = async (user) => {
               placeholder="Permission"
               options={permissionOptions}
               value={permissionId}
-              onValueChange={(v) => { setPermissionId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setPermissionId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Reset all */}
             {hasActiveFilters && (
               <Button
-                variant="ghost" size="sm"
+                variant="ghost"
+                size="sm"
                 className="h-9 border border-dashed text-muted-foreground hover:text-foreground"
                 onClick={clearAllFilters}
               >
@@ -637,12 +802,17 @@ const handleActivate = async (user) => {
             <div className="ml-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 font-medium shadow-sm">
-                  <IconColumns3Filled className="size-3.5"/>  Columns 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 font-medium shadow-sm"
+                  >
+                    <IconColumns3Filled className="size-3.5" /> Columns
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[160px]">
-                  {table.getAllColumns()
+                  {table
+                    .getAllColumns()
                     .filter((col) => col.getCanHide())
                     .map((col) => (
                       <DropdownMenuCheckboxItem
@@ -667,62 +837,43 @@ const handleActivate = async (user) => {
           </p>
 
           {/* ── Table ──────────────────────────────────────────────────── */}
-          <div className="relative overflow-hidden rounded-md border">
-            {isFetching && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 rounded-md">
-                <div className="flex items-center gap-2.5 rounded-lg bg-background/90 px-4 py-2.5 shadow-md border text-sm font-medium">
-                  <Spinner className="h-4 w-4" />
-                  Loading users…
-                </div>
-              </div>
-            )}
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id}>
-                    {hg.headers.map((h) => (
-                      <TableHead key={h.id} className="font-medium">
-                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-
-              <TableBody>
-                {rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-32 text-center">
-                      <Empty>
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon"><Users /></EmptyMedia>
-                          <EmptyTitle>No Users Found</EmptyTitle>
-                        </EmptyHeader>
-                      </Empty>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            table={table}
+            isFetching={isFetching}
+            loadingLabel="Loading users..."
+            empty={{
+              colSpan: columns.length,
+              icon: UsersIcon,
+              title: "No Users Found",
+            }}
+          />
 
           <DataTablePagination table={table} />
         </div>
       </div>
 
-      {isAddOpen      && <AddUserDialog        open={isAddOpen}      onOpenChange={setIsAddOpen}      showConfirmation={showConfirmation} />}
-      {isUpdateOpen   && <UpdateUserDialog     open={isUpdateOpen}   onOpenChange={setIsUpdateOpen}   showConfirmation={showConfirmation} user={selectedUser} />}
-      {isPasswordOpen && <ChangePasswordDialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen} user={selectedUser} />}
+      {isAddOpen && (
+        <AddUserDialog
+          open={isAddOpen}
+          onOpenChange={setIsAddOpen}
+          showConfirmation={showConfirmation}
+        />
+      )}
+      {isUpdateOpen && (
+        <UpdateUserDialog
+          open={isUpdateOpen}
+          onOpenChange={setIsUpdateOpen}
+          showConfirmation={showConfirmation}
+          user={selectedUser}
+        />
+      )}
+      {isPasswordOpen && (
+        <ChangePasswordDialog
+          open={isPasswordOpen}
+          onOpenChange={setIsPasswordOpen}
+          user={selectedUser}
+        />
+      )}
       <ConfirmationDialog />
     </div>
   );
@@ -737,11 +888,15 @@ function PageHeader({ isFetching, onRefetch, onAdd, disabled }) {
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-0.5">
-          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Users</h1>
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+            Users
+          </h1>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Dashboard</Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>User Management</BreadcrumbItem>
@@ -754,8 +909,15 @@ function PageHeader({ isFetching, onRefetch, onAdd, disabled }) {
         </div>
         <div className="flex items-center gap-2">
           {onRefetch && (
-            <Button variant="outline" size="icon" onClick={onRefetch} disabled={isFetching || disabled}>
-              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefetch}
+              disabled={isFetching || disabled}
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isFetching && "animate-spin")}
+              />
             </Button>
           )}
           <Button onClick={onAdd} disabled={disabled}>
