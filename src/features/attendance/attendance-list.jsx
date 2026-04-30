@@ -95,6 +95,7 @@ import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 
 import { useAttendance, useAttendanceSummary, buildExportUrl } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";
+import { DataTable } from "@/components/shared/data-table";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -1092,67 +1093,17 @@ export default function AttendanceList() {
           </div>
 
           {/* ── Table ──────────────────────────────────────────────────── */}
-          <div className="relative overflow-hidden rounded-md border">
-            {isFetching && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 rounded-md">
-                <div className="flex items-center gap-2.5 rounded-lg bg-background/90 px-4 py-2.5 shadow-md border text-sm font-medium">
-                  <Spinner className="h-4 w-4" />
-                  Loading Attendances…
-                </div>
-              </div>
-            )}
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id}>
-                    {hg.headers.map((h) => (
-                      <TableHead key={h.id} className="font-medium">
-                        {h.isPlaceholder
-                          ? null
-                          : flexRender(
-                              h.column.columnDef.header,
-                              h.getContext(),
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-
-              <TableBody>
-                {rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-32 text-center"
-                    >
-                      <Empty>
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon">
-                            <Clock />
-                          </EmptyMedia>
-                          <EmptyTitle>No Attendance Records Found</EmptyTitle>
-                        </EmptyHeader>
-                      </Empty>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+  table={table}
+  columns={columns}
+  isFetching={isFetching}
+  loadingLabel="Loading Attendances…"
+  empty={{
+    colSpan: columns.length,
+    icon: Clock,
+    title: "No Attendance Records Found",
+  }}
+/>
 
           <DataTablePagination table={table} />
         </div>

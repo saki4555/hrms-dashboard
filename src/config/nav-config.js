@@ -1,19 +1,17 @@
 // src\config\nav-config.js
 
+
+
+import { PATHS } from "./paths";
+import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "./roles";
 import {
   IconLayoutDashboard,
   IconUserCheck,
-  IconPaywall,
-  IconPerspectiveOff,
-  IconReport,
   IconSettings,
   IconUsersGroup,
 } from "@tabler/icons-react";
 
-import { PATHS } from "./paths";
-import { PERMISSIONS } from "./permissions";
-
-const P = PERMISSIONS; // shorthand for readability
+const { ADMIN, EMPLOYEE, SUPERVISOR } = ROLES;
 
 export const NAV_ITEMS = [
   {
@@ -22,69 +20,32 @@ export const NAV_ITEMS = [
       {
         title: "Dashboard",
         icon: IconLayoutDashboard,
-        // DASH_VIEW_SELF — every role has this, so everyone sees Dashboard
-        permissions: [P.DASH_VIEW_ADMIN, P.DASH_VIEW_TEAM, P.DASH_VIEW_SELF],
+        roles: ALL_ROLES,
         defaultOpen: true,
         subItems: [
-          {
-            title: "Overview",
-            url: PATHS.DASHBOARD,
-            permissions: [P.DASH_VIEW_ADMIN, P.DASH_VIEW_TEAM, P.DASH_VIEW_SELF],
-          },
+          { title: "Overview", url: PATHS.DASHBOARD, roles: ALL_ROLES },
         ],
       },
       {
         title: "Core HR",
         icon: IconUserCheck,
-        permissions: [P.EMP_MANAGE, P.HR_SETUP, P.EMP_LIFECYCLE],
+        roles: ADMIN_HR,
         subItems: [
-          {
-            title: "Employee Management",
-            url: PATHS.CORE_HR.EMPLOYEES,
-            permissions: [P.EMP_MANAGE],
-          },
-          {
-            title: "Employee Types",
-            url: PATHS.CORE_HR.EMPLOYEE_TYPES,
-            permissions: [P.HR_SETUP],
-          },
-          {
-            title: "Supervisor Assignment",
-            url: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,
-            permissions: [P.HR_SETUP],
-          },
+          { title: "Employee Management",   url: PATHS.CORE_HR.EMPLOYEES,             roles: ADMIN_HR },
+          { title: "Employee Types",        url: PATHS.CORE_HR.EMPLOYEE_TYPES,        roles: ADMIN_HR },
+          { title: "Supervisor Assignment", url: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT, roles: ADMIN_HR },
         ],
       },
       {
         title: "Attendance Management",
         icon: IconUserCheck,
-        permissions: [P.ATT_VIEW_TEAM, P.ATT_LEAVE_APPROVE, P.SHIFT_SETUP, P.ATT_LEAVE_APPLY],
+        roles: ALL_ROLES,
         subItems: [
-          {
-            title: "Attendance Data",
-            url: PATHS.ATTENDANCE.DATA,
-            permissions: [P.ATT_VIEW_TEAM, P.ATT_REPORT_ALL],
-          },
-          {
-            title: "Attendance My",
-            url: PATHS.ATTENDANCE.MY,
-            permissions: [P.ESS_ATT_VIEW],
-          },
-          {
-            title: "Attendance Team",
-            url: PATHS.ATTENDANCE.TEAM,
-            permissions: [P.MSS_TEAM_VIEW],
-          },
-          {
-            title: "Leave Requests",
-            url: PATHS.ATTENDANCE.LEAVE_REQUEST,
-            permissions: [P.ATT_LEAVE_APPROVE, P.MSS_APPROVE_TEAM, P.ATT_LEAVE_APPLY],
-          },
-          {
-            title: "Leave Types",
-            url: PATHS.ATTENDANCE.LEAVE_TYPES,
-            permissions: [P.SHIFT_SETUP, P.HR_SETUP],
-          },
+          { title: "Attendance Data",   url: PATHS.ATTENDANCE.DATA,         roles: ADMIN_HR     },
+          { title: "My Attendance",     url: PATHS.ATTENDANCE.MY,           roles: [EMPLOYEE]   },
+          { title: "Team Attendance",   url: PATHS.ATTENDANCE.TEAM,         roles: [SUPERVISOR] },
+          { title: "Leave Requests",    url: PATHS.ATTENDANCE.LEAVE_REQUEST, roles: ALL_ROLES   },
+          { title: "Leave Types",       url: PATHS.ATTENDANCE.LEAVE_TYPES,  roles: ADMIN_HR     },
         ],
       },
     ],
@@ -96,25 +57,24 @@ export const NAV_ITEMS = [
       {
         title: "Work Structure",
         icon: IconSettings,
-        permissions: [P.HR_SETUP],
+        roles: ADMIN_HR,
         subItems: [
-          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  permissions: [P.HR_SETUP] },
-          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     permissions: [P.HR_SETUP] },
-          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        permissions: [P.HR_SETUP] },
-          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  permissions: [P.HR_SETUP] },
-          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       permissions: [P.HR_SETUP] },
-          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     permissions: [P.HR_SETUP] },
-          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     permissions: [P.HR_SETUP] },
-          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     permissions: [P.HR_SETUP] },
-          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      permissions: [P.HR_SETUP] },
-          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, permissions: [P.HR_SETUP] },
-          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        permissions: [P.SHIFT_SETUP] },
-          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     permissions: [P.HR_SETUP] },
-          // Admin-only — using PAY_CONFIG as the Admin-only gate
-          { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
-          { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
-          { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   permissions: [P.PAY_CONFIG] },
-          { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  permissions: [P.PAY_CONFIG] },
+          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  roles: ADMIN_HR  },
+          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     roles: ADMIN_HR  },
+          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        roles: ADMIN_HR  },
+          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  roles: ADMIN_HR  },
+          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       roles: ADMIN_HR  },
+          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     roles: ADMIN_HR  },
+          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     roles: ADMIN_HR  },
+          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     roles: ADMIN_HR  },
+          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      roles: ADMIN_HR  },
+          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, roles: ADMIN_HR  },
+          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        roles: ADMIN_HR  },
+          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     roles: ADMIN_HR  },
+          { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    roles: [ADMIN]   },
+          { title: "Items",              url: PATHS.SETTINGS.ITEMS,         roles: [ADMIN]   },
+          { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   roles: [ADMIN]   },
+          { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  roles: [ADMIN]   },
         ],
       },
     ],
@@ -126,13 +86,12 @@ export const NAV_ITEMS = [
       {
         title: "User Management",
         icon: IconUsersGroup,
-        // HR_SETUP is Admin+HR — same access level as before
-        permissions: [P.HR_SETUP],
+        roles: ADMIN_HR,
         subItems: [
-          { title: "User Management",  url: PATHS.USERS.USER_MANAGEMENT, permissions: [P.HR_SETUP] },
-          { title: "Role",             url: PATHS.USERS.ROLE,            permissions: [P.HR_SETUP] },
-          { title: "Permission",       url: PATHS.USERS.PERMISSION,      permissions: [P.HR_SETUP] },
-          { title: "Module",           url: PATHS.USERS.MODULE,          permissions: [P.HR_SETUP] },
+          { title: "User Management", url: PATHS.USERS.USER_MANAGEMENT, roles: ADMIN_HR },
+          { title: "Role",            url: PATHS.USERS.ROLE,            roles: ADMIN_HR },
+          { title: "Permission",      url: PATHS.USERS.PERMISSION,      roles: ADMIN_HR },
+          { title: "Module",          url: PATHS.USERS.MODULE,          roles: ADMIN_HR },
         ],
       },
     ],

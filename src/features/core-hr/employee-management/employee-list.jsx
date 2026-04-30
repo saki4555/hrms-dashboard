@@ -4,67 +4,90 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  parseAsInteger,
-  parseAsString,
-  useQueryState,
-} from "nuqs";
+import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 
 import { format } from "date-fns";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
-  RefreshCw, Pencil, Trash2, FileTextIcon,
-  AlertCircle, Users, ArrowUpDown, ArrowUp, ArrowDown,
+  RefreshCw,
+  Pencil,
+  Trash2,
+  FileTextIcon,
+  AlertCircle,
+  UsersIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   ChevronDown,
   EyeOff,
 } from "lucide-react";
 import { IconCirclePlus, IconSelector, IconX } from "@tabler/icons-react";
 
-import { Button }   from "@/components/ui/button";
-import { Input }    from "@/components/ui/input";
-import { Badge }    from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Combobox, ComboboxContent, ComboboxEmpty,
-  ComboboxInput, ComboboxItem, ComboboxList,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
 } from "@/components/ui/combobox";
 import {
-  DropdownMenu, DropdownMenuCheckboxItem,
-  DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink,
-  BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
-  Empty, EmptyHeader, EmptyMedia, EmptyTitle,
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
 } from "@/components/ui/empty";
-import { Spinner }              from "@/components/ui/spinner";
-import { DataTablePagination }  from "@/components/DataTablePagination";
+import { Spinner } from "@/components/ui/spinner";
+import { DataTablePagination } from "@/components/DataTablePagination";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
-import {
-  useEmployees, useDeleteEmployee,
-  
-} from "./queries";
+import { useEmployees, useDeleteEmployee } from "./queries";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
 import { usePersonTypes } from "../employee-types/queries";
 import { useCompanies } from "@/features/settings/work-structure/company/queries";
 import { usePositions } from "@/features/settings/work-structure/hr-position/queries";
 import { useCountries } from "@/features/settings/work-structure/country/queries";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getAvatarColor } from "@/lib/avatar-utils";
+
+import { EmployeeCell } from "@/components/shared/employee/employee-cell";
+import { TableEmptyState } from "@/components/shared/empty-state";
+import { DataTable, TableLoadingOverlay } from "@/components/shared/data-table";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -75,21 +98,18 @@ const formatSimpleDate = (d) => {
 
 // Maps TanStack column id → Oracle column name
 const SORT_COLUMN_MAP = {
-  EMP_NO:    "EMP_NO",
-  fullName:  "FIRST_NAME",
+  EMP_NO: "EMP_NO",
+  fullName: "FIRST_NAME",
   JOIN_DATE: "JOIN_DATE",
 };
 
 // Reverse: Oracle column name → TanStack column id (for reading URL back into table)
 const REVERSE_SORT_MAP = {
-  EMP_NO:        "EMP_NO",
-  FIRST_NAME:    "fullName",
-  JOIN_DATE:     "JOIN_DATE",
+  EMP_NO: "EMP_NO",
+  FIRST_NAME: "fullName",
+  JOIN_DATE: "JOIN_DATE",
   CREATION_DATE: "createdAt",
 };
-
-
-
 
 // ── Sortable Column Header ────────────────────────────────────────────────────
 
@@ -103,15 +123,18 @@ function SortHeader({ column, children, className }) {
       <DropdownMenuTrigger
         className={cn(
           "-ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring data-[state=open]:bg-accent [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
-          className
+          className,
         )}
       >
         {children}
-        {column.getCanSort() && (
-          column.getIsSorted() === "desc" ? <ArrowDown /> :
-          column.getIsSorted() === "asc"  ? <ArrowUp />   :
-                                            <IconSelector />
-        )}
+        {column.getCanSort() &&
+          (column.getIsSorted() === "desc" ? (
+            <ArrowDown />
+          ) : column.getIsSorted() === "asc" ? (
+            <ArrowUp />
+          ) : (
+            <IconSelector />
+          ))}
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" className="w-28">
@@ -167,29 +190,78 @@ export default function EmployeeList() {
 
   // ── URL State via nuqs ─────────────────────────────────────────────────────
   // These are the ONLY source of truth — no useState for filters
-  const [page,       setPage]       = useQueryState("page",       parseAsInteger.withDefault(1));
-  const [limit,      setLimit]      = useQueryState("limit",      parseAsInteger.withDefault(10));
-  const [search,     setSearch]     = useQueryState("search",     parseAsString.withDefault(""));
-  const [sortBy,     setSortBy]     = useQueryState("sortBy",     parseAsString.withDefault("CREATION_DATE"));
-  const [sortOrder,  setSortOrder]  = useQueryState("sortOrder",  parseAsString.withDefault("DESC"));
-  const [gender,     setGender]     = useQueryState("gender",     parseAsString.withDefault(""));
-  const [personType, setPersonType] = useQueryState("personType", parseAsString.withDefault(""));
-  const [companyId,  setCompanyId]  = useQueryState("companyId",  parseAsString.withDefault(""));
-  const [positionId, setPositionId] = useQueryState("positionId", parseAsString.withDefault(""));
-  const [countryId,  setCountryId]  = useQueryState("countryId",  parseAsString.withDefault(""));
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const [limit, setLimit] = useQueryState(
+    "limit",
+    parseAsInteger.withDefault(10),
+  );
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault(""),
+  );
+  const [sortBy, setSortBy] = useQueryState(
+    "sortBy",
+    parseAsString.withDefault("CREATION_DATE"),
+  );
+  const [sortOrder, setSortOrder] = useQueryState(
+    "sortOrder",
+    parseAsString.withDefault("DESC"),
+  );
+  const [gender, setGender] = useQueryState(
+    "gender",
+    parseAsString.withDefault(""),
+  );
+  const [personType, setPersonType] = useQueryState(
+    "personType",
+    parseAsString.withDefault(""),
+  );
+  const [companyId, setCompanyId] = useQueryState(
+    "companyId",
+    parseAsString.withDefault(""),
+  );
+  const [positionId, setPositionId] = useQueryState(
+    "positionId",
+    parseAsString.withDefault(""),
+  );
+  const [countryId, setCountryId] = useQueryState(
+    "countryId",
+    parseAsString.withDefault(""),
+  );
 
   // Local state only for the search input (so typing is snappy before debounce)
   const [searchInput, setSearchInput] = useState(search);
 
   // ── Table UI state (not in URL — not needed after page reload) ─────────────
   const [columnVisibility, setColumnVisibility] = useState({});
-  const [rowSelection,     setRowSelection]     = useState({});
+  const [rowSelection, setRowSelection] = useState({});
 
   // ── Backend params (passed to react-query) ─────────────────────────────────
-  const backendParams = useMemo(() => ({
-    page, limit, search, sortBy, sortOrder,
-    gender, personType, companyId, positionId, countryId,
-  }), [page, limit, search, sortBy, sortOrder, gender, personType, companyId, positionId, countryId]);
+  const backendParams = useMemo(
+    () => ({
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      gender,
+      personType,
+      companyId,
+      positionId,
+      countryId,
+    }),
+    [
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      gender,
+      personType,
+      companyId,
+      positionId,
+      countryId,
+    ],
+  );
 
   // ── Data Fetching ──────────────────────────────────────────────────────────
   const {
@@ -205,16 +277,16 @@ export default function EmployeeList() {
 
   // Lookup data for filter dropdowns
   const { data: personTypes = [] } = usePersonTypes();
-  const { data: companies   = [] } = useCompanies();
-  const { data: positions   = [] } = usePositions();
-  const { data: countries   = [] } = useCountries();
+  const { data: companies = [] } = useCompanies();
+  const { data: positions = [] } = usePositions();
+  const { data: countries = [] } = useCountries();
 
   const deleteEmployeeMutation = useDeleteEmployee();
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const employees  = response?.data        ?? [];
-  const total      = response?.total       ?? 0;
-  const pageCount  = response?.totalPages  ?? 1;
+  const employees = response?.data ?? [];
+  const total = response?.total ?? 0;
+  const pageCount = response?.totalPages ?? 1;
 
   // ── Debounced Search ───────────────────────────────────────────────────────
   const debouncedSearch = useDebouncedCallback((val) => {
@@ -228,46 +300,58 @@ export default function EmployeeList() {
   };
 
   // ── Sorting bridge: TanStack [{id, desc}] ↔ backend sortBy + sortOrder ─────
-const sorting = useMemo(() => {
-  if (!sortBy) return [];
-  // Convert Oracle column name back to TanStack column id
-  const columnId = REVERSE_SORT_MAP[sortBy] ?? sortBy;
-  return [{ id: columnId, desc: sortOrder === "DESC" }];
-}, [sortBy, sortOrder]);
+  const sorting = useMemo(() => {
+    if (!sortBy) return [];
+    // Convert Oracle column name back to TanStack column id
+    const columnId = REVERSE_SORT_MAP[sortBy] ?? sortBy;
+    return [{ id: columnId, desc: sortOrder === "DESC" }];
+  }, [sortBy, sortOrder]);
 
-  const onSortingChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function"
-      ? updaterOrValue(sorting)
-      : updaterOrValue;
+  const onSortingChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(sorting)
+          : updaterOrValue;
 
-    if (next.length === 0) {
-      setSortBy("CREATION_DATE");
-      setSortOrder("DESC");
-    } else {
-      // Map TanStack column id → Oracle column name
-      const oracleCol = SORT_COLUMN_MAP[next[0].id] ?? "CREATION_DATE";
-      setSortBy(oracleCol);
-      setSortOrder(next[0].desc ? "DESC" : "ASC");
-      setPage(1);
-    }
-  }, [sorting, setSortBy, setSortOrder, setPage]);
+      if (next.length === 0) {
+        setSortBy("CREATION_DATE");
+        setSortOrder("DESC");
+      } else {
+        // Map TanStack column id → Oracle column name
+        const oracleCol = SORT_COLUMN_MAP[next[0].id] ?? "CREATION_DATE";
+        setSortBy(oracleCol);
+        setSortOrder(next[0].desc ? "DESC" : "ASC");
+        setPage(1);
+      }
+    },
+    [sorting, setSortBy, setSortOrder, setPage],
+  );
 
   // ── Pagination bridge ──────────────────────────────────────────────────────
-  const pagination = useMemo(() => ({
-    pageIndex: page - 1,
-    pageSize:  limit,
-  }), [page, limit]);
+  const pagination = useMemo(
+    () => ({
+      pageIndex: page - 1,
+      pageSize: limit,
+    }),
+    [page, limit],
+  );
 
-  const onPaginationChange = useCallback((updaterOrValue) => {
-    const next = typeof updaterOrValue === "function"
-      ? updaterOrValue(pagination)
-      : updaterOrValue;
-    setPage(next.pageIndex + 1);
-    setLimit(next.pageSize);
-  }, [pagination, setPage, setLimit]);
+  const onPaginationChange = useCallback(
+    (updaterOrValue) => {
+      const next =
+        typeof updaterOrValue === "function"
+          ? updaterOrValue(pagination)
+          : updaterOrValue;
+      setPage(next.pageIndex + 1);
+      setLimit(next.pageSize);
+    },
+    [pagination, setPage, setLimit],
+  );
 
   // ── Filter helpers ─────────────────────────────────────────────────────────
-  const hasActiveFilters = search || gender || personType || companyId || positionId || countryId;
+  const hasActiveFilters =
+    search || gender || personType || companyId || positionId || countryId;
 
   const clearAllFilters = () => {
     setSearchInput("");
@@ -299,117 +383,110 @@ const sorting = useMemo(() => {
   };
 
   // ── Columns ────────────────────────────────────────────────────────────────
-  const columns = useMemo(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(v) => row.toggleSelected(!!v)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding:  false,
-    },
-   {
-  id: "fullName",
-  // accessorFn: (row) => `${row.TITLE || ""} ${row.FIRST_NAME } ${row.LAST_NAME}`.trim(),
-  accessorFn: (row) =>
-  [row.TITLE, row.FIRST_NAME, row.LAST_NAME]
-    .filter(Boolean)
-    .join(" "),
-  header: ({ column }) => <SortHeader column={column}>Employee</SortHeader>,
-  cell: ({ row }) => {
-    const emp = row.original;
-    const fullName = `${emp.FIRST_NAME ?? ""} ${emp.LAST_NAME ?? ""}`.trim();
-    const initials = `${emp.FIRST_NAME?.[0] ?? ""}${emp.LAST_NAME?.[0] ?? ""}`.toUpperCase();
-
-   const avatarColor = getAvatarColor(fullName);
-
-    return (
-      <div className="flex items-center gap-3 py-1">
-        <Avatar className="h-8 w-8 shrink-0">
-           <AvatarImage
-          src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${emp.PERSON_ID}`}
-        />
-          <AvatarFallback className={cn("text-xs font-semibold text-white", avatarColor)}>
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <span className="font-medium leading-tight">
-            {emp.TITLE && (
-              <span className="text-muted-foreground mr-1">{emp?.TITLE}</span>
-            )}
-            {fullName}
-          </span>
-          <span className="text-xs text-muted-foreground">ID : {emp.EMP_NO}</span>
-        </div>
-      </div>
-    );
-  },
-},
-    {
-      id: "GENDER",
-      accessorKey: "GENDER",
-      header: "Gender",
-      cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
-      enableSorting: false,
-    },
-    {
-      id: "JOIN_DATE",
-      accessorKey: "JOIN_DATE",
-      header: ({ column }) => <SortHeader column={column}>Join Date</SortHeader>,
-      cell: ({ row }) => (
-        <div className="ps-2 font-light">{formatSimpleDate(row.getValue("JOIN_DATE"))}</div>
-      ),
-    },
-    {
-      id: "personType",
-      accessorFn: (row) => row.personType?.PERSON_TYPE ?? row.PERSON_TYPE_ID,
-      header: "Person Type",
-      cell: ({ row }) => {
-        const label = row.original.personType?.PERSON_TYPE ?? row.original.PERSON_TYPE_ID;
-        return <Badge variant="outline">{label || "N/A"}</Badge>;
+  const columns = useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(v) => row.toggleSelected(!!v)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
       },
-      enableSorting: false,
-    },
-    {
-      id: "company",
-      accessorFn: (row) => row.assignment?.COMPANY_NAME ?? "",
-      header: "Company",
-      cell: ({ row }) => (
-        <div>{row.original.assignment?.COMPANY_NAME || "N/A"}</div>
-      ),
-      enableSorting: false,
-    },
-    {
-      id: "position",
-      accessorFn: (row) => row.assignment?.POSITION_TITLE ?? "",
-      header: "Position",
-      cell: ({ row }) => (
-        <div>{row.original.assignment?.POSITION_TITLE || "N/A"}</div>
-      ),
-      enableSorting: false,
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      enableHiding:  false,
-      enableSorting: false,
-      cell: ({ row }) => {
-        const emp = row.original;
-        return (
-          <div className="flex items-center gap-1">
-            {/* <Button
+
+      {
+        id: "fullName",
+        accessorFn: (row) =>
+          [row.TITLE, row.FIRST_NAME, row.LAST_NAME].filter(Boolean).join(" "),
+        header: ({ column }) => (
+          <SortHeader column={column}>Employee</SortHeader>
+        ),
+        cell: ({ row }) => {
+          const emp = row.original;
+
+          return (
+            <EmployeeCell
+              id={emp.PERSON_ID}
+              firstName={emp.FIRST_NAME}
+              lastName={emp.LAST_NAME}
+              title={emp.TITLE}
+              empNo={emp.EMP_NO}
+            />
+          );
+        },
+      },
+      {
+        id: "GENDER",
+        accessorKey: "GENDER",
+        header: "Gender",
+        cell: ({ row }) => <div>{row.getValue("GENDER") || "N/A"}</div>,
+        enableSorting: false,
+      },
+      {
+        id: "JOIN_DATE",
+        accessorKey: "JOIN_DATE",
+        header: ({ column }) => (
+          <SortHeader column={column}>Join Date</SortHeader>
+        ),
+        cell: ({ row }) => (
+          <div className="ps-2 font-light">
+            {formatSimpleDate(row.getValue("JOIN_DATE"))}
+          </div>
+        ),
+      },
+      {
+        id: "personType",
+        accessorFn: (row) => row.personType?.PERSON_TYPE ?? row.PERSON_TYPE_ID,
+        header: "Person Type",
+        cell: ({ row }) => {
+          const label =
+            row.original.personType?.PERSON_TYPE ?? row.original.PERSON_TYPE_ID;
+          return <Badge variant="outline">{label || "N/A"}</Badge>;
+        },
+        enableSorting: false,
+      },
+      {
+        id: "company",
+        accessorFn: (row) => row.assignment?.COMPANY_NAME ?? "",
+        header: "Company",
+        cell: ({ row }) => (
+          <div>{row.original.assignment?.COMPANY_NAME || "N/A"}</div>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "position",
+        accessorFn: (row) => row.assignment?.POSITION_TITLE ?? "",
+        header: "Position",
+        cell: ({ row }) => (
+          <div>{row.original.assignment?.POSITION_TITLE || "N/A"}</div>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        enableHiding: false,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const emp = row.original;
+          return (
+            <div className="flex items-center gap-1">
+              {/* <Button
               variant="outline" size="icon" className="h-8 w-8"
               onClick={() => navigate(`/core-hr/employee-management/update/${emp.PERSON_ID}`)}
             >
@@ -423,44 +500,55 @@ const sorting = useMemo(() => {
               <Pencil className="h-4 w-4" />
               <span className="sr-only">Edit Modern</span>
             </Button> */}
-            <Button
-              variant="outline" size="icon"
-              className="h-8 w-8 text-destructive hover:bg-destructive hover:text-white"
-              onClick={() => handleDelete(emp)}
-              disabled={deleteEmployeeMutation.isPending}
-            >
-              {deleteEmployeeMutation.isPending
-                ? <Spinner data-icon="inline-start" />
-                : <Trash2 className="h-4 w-4" />}
-              <span className="sr-only">Delete</span>
-            </Button>
-            <Button
-              variant="outline" size="icon" className="h-8 w-8"
-              onClick={() => navigate(`/core-hr/employee-management/employee-details/${emp.PERSON_ID}`)}
-            >
-              <FileTextIcon className="w-4 h-4" />
-              <span className="sr-only">Details</span>
-            </Button>
-          </div>
-        );
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:bg-destructive hover:text-white"
+                onClick={() => handleDelete(emp)}
+                disabled={deleteEmployeeMutation.isPending}
+              >
+                {deleteEmployeeMutation.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span className="sr-only">Delete</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() =>
+                  navigate(
+                    `/core-hr/employee-management/employee-details/${emp.PERSON_ID}`,
+                  )
+                }
+              >
+                <FileTextIcon className="w-4 h-4" />
+                <span className="sr-only">Details</span>
+              </Button>
+            </div>
+          );
+        },
       },
-    },
-  ], [deleteEmployeeMutation.isPending]);
+    ],
+    [deleteEmployeeMutation.isPending],
+  );
 
   // ── TanStack Table ─────────────────────────────────────────────────────────
   const table = useReactTable({
-    data:      employees,
+    data: employees,
     columns,
     pageCount,
-    state:     { sorting, pagination, columnVisibility, rowSelection },
+    state: { sorting, pagination, columnVisibility, rowSelection },
     onSortingChange,
     onPaginationChange,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange:     setRowSelection,
-    getCoreRowModel:          getCoreRowModel(),
-    manualPagination: true,  // backend handles pagination
-    manualSorting:    true,  // backend handles sorting
-    manualFiltering:  true,  // backend handles filtering
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true, // backend handles pagination
+    manualSorting: true, // backend handles sorting
+    manualFiltering: true, // backend handles filtering
   });
 
   // ── Combobox options ───────────────────────────────────────────────────────
@@ -508,14 +596,21 @@ const sorting = useMemo(() => {
             <AlertDescription className="mt-2 flex flex-col gap-2">
               <p>{error?.message || "Failed to load employees."}</p>
               <Button
-                variant="outline" size="sm"
+                variant="outline"
+                size="sm"
                 onClick={() => refetch()}
                 disabled={isFetching}
                 className="w-fit"
               >
-                {isFetching
-                  ? <><Spinner className="mr-2 h-4 w-4" /> Retrying...</>
-                  : <><RefreshCw className="mr-2 h-4 w-4" /> Retry</>}
+                {isFetching ? (
+                  <>
+                    <Spinner className="mr-2 h-4 w-4" /> Retrying...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Retry
+                  </>
+                )}
               </Button>
             </AlertDescription>
           </Alert>
@@ -536,10 +631,8 @@ const sorting = useMemo(() => {
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
-
           {/* ── Filter Bar ──────────────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2">
-
             {/* Search — debounced 300ms */}
             <Input
               placeholder="Search name, emp no, NID..."
@@ -572,7 +665,10 @@ const sorting = useMemo(() => {
               placeholder="Person Type"
               options={personTypeOptions}
               value={personType}
-              onValueChange={(v) => { setPersonType(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setPersonType(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Company — Combobox */}
@@ -580,7 +676,10 @@ const sorting = useMemo(() => {
               placeholder="Company"
               options={companyOptions}
               value={companyId}
-              onValueChange={(v) => { setCompanyId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setCompanyId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Position — Combobox */}
@@ -588,7 +687,10 @@ const sorting = useMemo(() => {
               placeholder="Position"
               options={positionOptions}
               value={positionId}
-              onValueChange={(v) => { setPositionId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setPositionId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Country — Combobox */}
@@ -596,12 +698,20 @@ const sorting = useMemo(() => {
               placeholder="Country"
               options={countryOptions}
               value={countryId}
-              onValueChange={(v) => { setCountryId(v || null); setPage(1); }}
+              onValueChange={(v) => {
+                setCountryId(v || null);
+                setPage(1);
+              }}
             />
 
             {/* Reset all filters */}
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-9 border border-dashed" onClick={clearAllFilters}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 border border-dashed"
+                onClick={clearAllFilters}
+              >
                 Reset
                 <IconX className="ml-2 h-4 w-4" />
               </Button>
@@ -616,7 +726,8 @@ const sorting = useMemo(() => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {table.getAllColumns()
+                  {table
+                    .getAllColumns()
                     .filter((col) => col.getCanHide())
                     .map((col) => (
                       <DropdownMenuCheckboxItem
@@ -641,63 +752,16 @@ const sorting = useMemo(() => {
           </p>
 
           {/* ── Table ───────────────────────────────────────────────────── */}
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id}>
-                    {hg.headers.map((header) => (
-                      <TableHead key={header.id} className="font-medium">
-                        {header.isPlaceholder ? null : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-
-              <TableBody>
-                {isFetching ? (
-                  // Skeleton rows while fetching
-                  Array.from({ length: limit }).map((_, i) => (
-                    <TableRow key={i} className="animate-pulse">
-                      {columns.map((_, j) => (
-                        <TableCell key={j}>
-                          <div className="h-4 bg-muted rounded w-3/4" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-32 text-center">
-                      <Empty>
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon"><Users /></EmptyMedia>
-                          <EmptyTitle>No Employees Found</EmptyTitle>
-                        </EmptyHeader>
-                      </Empty>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+<DataTable
+  table={table}
+  isFetching={isFetching}
+  loadingLabel="Loading employees..."
+  empty={{
+    colSpan: columns.length,
+    icon: UsersIcon,
+    title: "No Employees Found",
+  }}
+/>
 
           <DataTablePagination table={table} />
         </div>
@@ -722,15 +786,18 @@ function FilterCombobox({ placeholder, options, value, onValueChange }) {
       items={options.map((o) => o.label)}
       value={selectedLabel}
       onValueChange={(label) => {
-        if (!label) { onValueChange(""); return; }
+        if (!label) {
+          onValueChange("");
+          return;
+        }
         const opt = options.find((o) => o.label === label);
         onValueChange(opt?.value ?? "");
       }}
     >
       <ComboboxInput
         placeholder={placeholder}
-         showTrigger={!hasValue}  // chevron when nothing selected
-        showClear={hasValue}     // X only when something is selected       
+        showTrigger={!hasValue} // chevron when nothing selected
+        showClear={hasValue} // X only when something is selected
         // className="h-9 w-[160px]"
       />
       <ComboboxContent>
@@ -753,11 +820,15 @@ function PageHeader({ isFetching, onRefetch, onAdd, onAddModern, disabled }) {
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Employees</h1>
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+            Employees
+          </h1>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Dashboard</Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>Core HR</BreadcrumbItem>
@@ -773,12 +844,15 @@ function PageHeader({ isFetching, onRefetch, onAdd, onAddModern, disabled }) {
         <div className="flex items-center gap-2">
           {onRefetch && (
             <Button
-              variant="outline" size="icon"
+              variant="outline"
+              size="icon"
               onClick={onRefetch}
               disabled={isFetching || disabled}
               title="Refresh"
             >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+              />
             </Button>
           )}
           <Button onClick={onAdd} disabled={disabled}>

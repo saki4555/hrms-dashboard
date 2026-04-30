@@ -125,35 +125,38 @@ function UserAvatar({ user }) {
     }
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("image", file);
-    setUploading(true);
-    try {
-      let res = await fetch(`${BASE}/api/emp-images/${user.ID}`, {
-        method: "PUT",
+const handleUpload = async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // Use EMPLOYEE_ID if linked, otherwise fall back to user ID
+  const uploadId = user.EMPLOYEE_ID ?? user.ID;
+
+  const formData = new FormData();
+  formData.append("image", file);
+  setUploading(true);
+  try {
+    let res = await fetch(`${BASE}/api/emp-images/${uploadId}`, {
+      method: "PUT",
+      body: formData,
+    });
+    if (res.status === 404) {
+      res = await fetch(`${BASE}/api/emp-images/${uploadId}`, {
+        method: "POST",
         body: formData,
       });
-      if (res.status === 404) {
-        res = await fetch(`${BASE}/api/emp-images/${user.ID}`, {
-          method: "POST",
-          body: formData,
-        });
-      }
-      if (!res.ok) throw new Error("Upload failed");
-      setSrcIndex(0);
-      setFailed(false);
-      urlsToTry[0] = `${BASE}/api/emp-images/person/${user.ID}?t=${Date.now()}`;
-      toast.success("Profile photo updated!");
-    } catch {
-      toast.error("Image upload failed.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
     }
-  };
+    if (!res.ok) throw new Error("Upload failed");
+    setSrcIndex(0);
+    setFailed(false);
+    toast.success("Profile photo updated!");
+  } catch {
+    toast.error("Image upload failed.");
+  } finally {
+    setUploading(false);
+    e.target.value = "";
+  }
+};
 
   const initials =
     [user.FIRST_NAME?.[0], user.LAST_NAME?.[0]]
