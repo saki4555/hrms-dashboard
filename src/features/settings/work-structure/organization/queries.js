@@ -1,3 +1,4 @@
+// src\features\settings\work-structure\organization\queries.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const organizationsQueryKeys = {

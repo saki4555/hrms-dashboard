@@ -47,6 +47,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import {
   Table,
   TableBody,
   TableCell,
@@ -92,6 +100,10 @@ import { cn } from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 
 import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
+import { useCompanies } from "@/features/settings/work-structure/company/queries";
+import { useOrganizations } from "@/features/settings/work-structure/organization/queries";
+import { useHrLocations } from "@/features/settings/work-structure/locations/queries";
+import { useShifts } from "@/features/settings/work-structure/shift/queries";
 
 import { useAttendance, useAttendanceSummary, buildExportUrl } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";
@@ -174,7 +186,6 @@ const formatDuration = (minutes) => {
   return `${h}h ${m}m`;
 };
 
-
 const fmtDate = (dt) => {
   if (!dt) return "—";
   try {
@@ -227,15 +238,63 @@ function StatusBadge({ status }) {
 
 function SummaryCards({ summary, isLoading }) {
   const cards = [
-  { key: "TOTAL",       label: "Total",       icon: Users,        color: "text-foreground",  bg: "bg-muted/50"         },
-  { key: "PRESENT",     label: "Present",     icon: CheckCircle2, color: "text-green-600",   bg: "bg-green-500/10"     },
-  { key: "LATE",        label: "Late",        icon: AlertTriangle,color: "text-amber-600",   bg: "bg-amber-500/10"     },
-  { key: "EARLY_LEAVE", label: "Early Leave", icon: LogOut,       color: "text-blue-600",    bg: "bg-blue-500/10"      },
-  { key: "ABSENT",      label: "Absent",      icon: XCircle,      color: "text-red-600",     bg: "bg-red-500/10"       },
-  { key: "HOLIDAY",     label: "Holiday",     icon: CalendarIcon, color: "text-purple-600",  bg: "bg-purple-500/10"    },
-  { key: "WEEKLY_OFF",  label: "Weekly Off",  icon: CalendarIcon, color: "text-slate-600",   bg: "bg-slate-500/10"     },
-  { key: "ON_LEAVE",    label: "On Leave",    icon: LogOut,       color: "text-cyan-600",    bg: "bg-cyan-500/10"      },
-];
+    {
+      key: "TOTAL",
+      label: "Total",
+      icon: Users,
+      color: "text-foreground",
+      bg: "bg-muted/50",
+    },
+    {
+      key: "PRESENT",
+      label: "Present",
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bg: "bg-green-500/10",
+    },
+    {
+      key: "LATE",
+      label: "Late",
+      icon: AlertTriangle,
+      color: "text-amber-600",
+      bg: "bg-amber-500/10",
+    },
+    {
+      key: "EARLY_LEAVE",
+      label: "Early Leave",
+      icon: LogOut,
+      color: "text-blue-600",
+      bg: "bg-blue-500/10",
+    },
+    {
+      key: "ABSENT",
+      label: "Absent",
+      icon: XCircle,
+      color: "text-red-600",
+      bg: "bg-red-500/10",
+    },
+    {
+      key: "HOLIDAY",
+      label: "Holiday",
+      icon: CalendarIcon,
+      color: "text-purple-600",
+      bg: "bg-purple-500/10",
+    },
+    {
+      key: "WEEKLY_OFF",
+      label: "Weekly Off",
+      icon: CalendarIcon,
+      color: "text-slate-600",
+      bg: "bg-slate-500/10",
+    },
+    {
+      key: "ON_LEAVE",
+      label: "On Leave",
+      icon: LogOut,
+      color: "text-cyan-600",
+      bg: "bg-cyan-500/10",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
@@ -494,6 +553,22 @@ export default function AttendanceList() {
     "sortOrder",
     parseAsString.withDefault("DESC"),
   );
+  const [companyId, setCompanyId] = useQueryState(
+    "companyId",
+    parseAsString.withDefault(""),
+  );
+  const [orgId, setOrgId] = useQueryState(
+    "orgId",
+    parseAsString.withDefault(""),
+  );
+  const [locationId, setLocationId] = useQueryState(
+    "locationId",
+    parseAsString.withDefault(""),
+  );
+  const [shiftId, setShiftId] = useQueryState(
+    "shiftId",
+    parseAsString.withDefault(""),
+  );
 
   // ── Local UI state ──────────────────────────────────────────────────────────
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -504,6 +579,10 @@ export default function AttendanceList() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const { data: employees = [], isFetching: empFetching } =
     useEmployeeLiteSearch(empSearch);
+  const { data: companies = [] } = useCompanies();
+  const { data: organizations = [] } = useOrganizations();
+  const { data: locations = [] } = useHrLocations();
+  const { data: shifts = [] } = useShifts();
 
   // Detail dialog
   const [detailOpen, setDetailOpen] = useState(false);
@@ -520,20 +599,25 @@ export default function AttendanceList() {
   }, []);
 
   // ── Backend params ──────────────────────────────────────────────────────────
-  const backendParams = useMemo(() => {
-    const isSingleDay = fromDate && (!toDate || toDate === fromDate);
-    return {
-      page,
-      limit,
-      date: isSingleDay ? fromDate : "",
-      fromDate: !isSingleDay ? fromDate : "",
-      toDate: !isSingleDay ? toDate : "",
-      employeeId,
-      status,
-      sortBy,
-      sortOrder,
-    };
-  }, [page, limit, fromDate, toDate, employeeId, status, sortBy, sortOrder]);
+const backendParams = useMemo(() => {
+  const isSingleDay = fromDate && (!toDate || toDate === fromDate);
+  return {
+    page,
+    limit,
+    date:       isSingleDay ? fromDate : "",
+    fromDate:   !isSingleDay ? fromDate : "",
+    toDate:     !isSingleDay ? toDate : "",
+    employeeId,
+    companyId,
+    orgId,
+    locationId,
+    shiftId,
+    status,
+    sortBy,
+    sortOrder,
+  };
+}, [page, limit, fromDate, toDate, employeeId, companyId, orgId, locationId, shiftId, status, sortBy, sortOrder]);
+
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
@@ -606,13 +690,25 @@ export default function AttendanceList() {
   );
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
-  const hasActiveFilters = employeeId || fromDate || toDate || status;
+  const hasActiveFilters =
+    employeeId ||
+    fromDate ||
+    toDate ||
+    status ||
+    companyId ||
+    orgId ||
+    locationId ||
+    shiftId;
 
   const clearAllFilters = () => {
     setFromDate(null);
     setToDate(null);
     setEmployeeId(null);
     setStatus(null);
+    setCompanyId(null);
+    setOrgId(null);
+    setLocationId(null);
+    setShiftId(null);
     setSelectedEmployee(null);
     setEmpSearch("");
     setPage(1);
@@ -639,9 +735,13 @@ export default function AttendanceList() {
       fromDate: backendParams.fromDate,
       toDate: backendParams.toDate,
       employeeId,
+      companyId,
+      orgId,
+      locationId,
+      shiftId,
       status,
     }),
-    [backendParams, employeeId, status],
+    [backendParams, employeeId, companyId, orgId, locationId, shiftId, status],
   );
 
   // ── Columns ─────────────────────────────────────────────────────────────────
@@ -699,22 +799,22 @@ export default function AttendanceList() {
         ),
       },
       {
-  header: "Clock-in & Out",
-  cell: ({ row }) => {
-    const { IN_TIME, OUT_TIME, WORK_MINUTES } = row.original;
-    return (
-      <div className="flex items-center gap-1.5 text-sm">
-        <span className="font-medium">{fmtTime(IN_TIME)}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground text-xs">
-          {formatDuration(WORK_MINUTES)}
-        </span>
-        <span className="text-muted-foreground">→</span>
-        <span className="font-medium">{fmtTime(OUT_TIME)}</span>
-      </div>
-    );
-  },
-},
+        header: "Clock-in & Out",
+        cell: ({ row }) => {
+          const { IN_TIME, OUT_TIME, WORK_MINUTES } = row.original;
+          return (
+            <div className="flex items-center gap-1.5 text-sm">
+              <span className="font-medium">{fmtTime(IN_TIME)}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground text-xs">
+                {formatDuration(WORK_MINUTES)}
+              </span>
+              <span className="text-muted-foreground">→</span>
+              <span className="font-medium">{fmtTime(OUT_TIME)}</span>
+            </div>
+          );
+        },
+      },
       {
         header: "Overtime",
         cell: ({ row }) => {
@@ -1016,27 +1116,62 @@ export default function AttendanceList() {
 
             {/* Status */}
             <Select
-  value={status || "all"}
-  onValueChange={(v) => {
-    setStatus(v === "all" ? null : v);
-    setPage(1);
-  }}
->
-  <SelectTrigger className="h-9 w-[150px]">
-    <SelectValue placeholder="All Statuses" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="all">All Statuses</SelectItem>
-    <SelectItem value="PRESENT">Present</SelectItem>
-    <SelectItem value="LATE">Late</SelectItem>
-    <SelectItem value="EARLY_LEAVE">Early Leave</SelectItem>
-    <SelectItem value="ABSENT">Absent</SelectItem>
-    <SelectItem value="HOLIDAY">Holiday</SelectItem>
-    <SelectItem value="WEEKLY_OFF">Weekly Off</SelectItem>
-    <SelectItem value="ON_LEAVE">On Leave</SelectItem>
-    <SelectItem value="UNSCHEDULED">Unscheduled</SelectItem>
-  </SelectContent>
-</Select>
+              value={status || "all"}
+              onValueChange={(v) => {
+                setStatus(v === "all" ? null : v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-[150px]">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="PRESENT">Present</SelectItem>
+                <SelectItem value="LATE">Late</SelectItem>
+                <SelectItem value="EARLY_LEAVE">Early Leave</SelectItem>
+                <SelectItem value="ABSENT">Absent</SelectItem>
+                <SelectItem value="HOLIDAY">Holiday</SelectItem>
+                <SelectItem value="WEEKLY_OFF">Weekly Off</SelectItem>
+                <SelectItem value="ON_LEAVE">On Leave</SelectItem>
+                <SelectItem value="UNSCHEDULED">Unscheduled</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Company */}
+<FilterCombobox
+  placeholder="All Companies"
+  options={companies.map((c) => ({ label: c.COMPANY_NAME, value: String(c.COMPANY_ID) }))}
+  value={companyId}
+  onValueChange={(v) => { setCompanyId(v || null); setPage(1); }}
+/>
+
+{/* Organization */}
+<FilterCombobox
+  placeholder="All Organizations"
+  options={organizations.map((o) => ({ label: o.NAME, value: String(o.ID) }))}
+  value={orgId}
+  onValueChange={(v) => { setOrgId(v || null); setPage(1); }}
+/>
+
+{/* Location */}
+<FilterCombobox
+  placeholder="All Locations"
+  options={locations.map((l) => ({ label: l.LOCATION_NAME, value: String(l.ID) }))}
+  value={locationId}
+  onValueChange={(v) => { setLocationId(v || null); setPage(1); }}
+/>
+
+{/* Shift */}
+<FilterCombobox
+  placeholder="All Shifts"
+  options={shifts.map((s) => ({
+    label: `${s.NAME} ${s.START_TIME}–${s.END_TIME}`,
+    value: String(s.SHIFT_ID),
+  }))}
+  value={shiftId}
+  onValueChange={(v) => { setShiftId(v || null); setPage(1); }}
+/>
 
             {/* Reset all */}
             {hasActiveFilters && (
@@ -1094,16 +1229,16 @@ export default function AttendanceList() {
 
           {/* ── Table ──────────────────────────────────────────────────── */}
           <DataTable
-  table={table}
-  columns={columns}
-  isFetching={isFetching}
-  loadingLabel="Loading Attendances…"
-  empty={{
-    colSpan: columns.length,
-    icon: Clock,
-    title: "No Attendance Records Found",
-  }}
-/>
+            table={table}
+            columns={columns}
+            isFetching={isFetching}
+            loadingLabel="Loading Attendances…"
+            empty={{
+              colSpan: columns.length,
+              icon: Clock,
+              title: "No Attendance Records Found",
+            }}
+          />
 
           <DataTablePagination table={table} />
         </div>
@@ -1162,5 +1297,39 @@ function PageHeader({ isFetching, onRefetch }) {
         )}
       </div>
     </div>
+  );
+}
+
+
+function FilterCombobox({ placeholder, options, value, onValueChange }) {
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
+  const hasValue = !!value;
+
+  return (
+    <Combobox
+      items={options.map((o) => o.label)}
+      value={selectedLabel}
+      onValueChange={(label) => {
+        if (!label) { onValueChange(""); return; }
+        const opt = options.find((o) => o.label === label);
+        onValueChange(opt?.value ?? "");
+      }}
+    >
+      <ComboboxInput
+        placeholder={placeholder}
+        showTrigger={!hasValue}
+        showClear={hasValue}
+      />
+      <ComboboxContent>
+        <ComboboxEmpty>No results.</ComboboxEmpty>
+        <ComboboxList>
+          {(label) => (
+            <ComboboxItem key={label} value={label}>
+              {label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   );
 }

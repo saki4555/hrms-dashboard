@@ -3,6 +3,7 @@
 
 
 import { PATHS } from "./paths";
+import { PERMISSIONS as P } from "./permissions";
 import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "./roles";
 import {
   IconLayoutDashboard,
@@ -25,6 +26,7 @@ export const NAV_ITEMS = [
         defaultOpen: true,
         subItems: [
           { title: "Overview", url: PATHS.DASHBOARD, roles: ALL_ROLES },
+          
         ],
       },
       {
@@ -72,22 +74,22 @@ export const NAV_ITEMS = [
           { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, roles: ADMIN_HR  },
           { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        roles: ADMIN_HR  },
           { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     roles: ADMIN_HR  },
-          { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    roles: [ADMIN]   },
-          { title: "Items",              url: PATHS.SETTINGS.ITEMS,         roles: [ADMIN]   },
-          { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   roles: [ADMIN]   },
-          { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  roles: [ADMIN]   },
-          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  permissions: [P.HR_SETUP] },
-          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     permissions: [P.HR_SETUP] },
-          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        permissions: [P.HR_SETUP] },
-          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  permissions: [P.HR_SETUP] },
-          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       permissions: [P.HR_SETUP] },
-          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     permissions: [P.HR_SETUP] },
-          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     permissions: [P.HR_SETUP] },
-          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     permissions: [P.HR_SETUP] },
-          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      permissions: [P.HR_SETUP] },
-          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, permissions: [P.HR_SETUP] },
-          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        permissions: [P.SHIFT_SETUP] },
-          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     permissions: [P.HR_SETUP] },
+          // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    roles: [ADMIN]   },
+          // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         roles: [ADMIN]   },
+          // { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   roles: [ADMIN]   },
+          // { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  roles: [ADMIN]   },
+          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  roles: ADMIN_HR },
+          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     roles: ADMIN_HR },
+          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        roles: ADMIN_HR },
+          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  roles: ADMIN_HR },
+          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       roles: ADMIN_HR },
+          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     roles: ADMIN_HR },
+          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     roles: ADMIN_HR },
+          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     roles: ADMIN_HR },
+          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      roles: ADMIN_HR },
+          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, roles: ADMIN_HR },
+          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        roles: ADMIN_HR },
+          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     roles: ADMIN_HR },
           // Admin-only — using PAY_CONFIG as the Admin-only gate
           // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
           // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
