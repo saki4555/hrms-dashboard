@@ -27,6 +27,8 @@ import { UserCog } from "lucide-react";
 import { DatePicker } from "@/components/DatePicker";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreatePersonType } from "./queries";
+import DialogHeaderWithIcon from "@/components/shared/dialog-header-with-icon";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z
   .object({
@@ -127,19 +129,13 @@ export default function AddPersonTypeDialog({
       }}
     >
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle>Add New Person Type</DialogTitle>
-              <DialogDescription>
-                Create a new employee person type category
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
+      
+  <DialogHeaderWithIcon
+    icon={UserCog}
+    title="Add New Person Type"
+    description="Create a new employee person type category"
+  />
+<Separator />
 
         <Form {...form}>
           <div className="space-y-5">

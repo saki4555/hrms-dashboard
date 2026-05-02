@@ -88,8 +88,6 @@ import {
   useDeleteUser,
   useActivateUser,
   useRoles,
-  useModules,
-  usePermissions,
 } from "./queries";
 import AddUserDialog from "./add-user-dialog";
 import UpdateUserDialog from "./update-user-dialog";
@@ -179,7 +177,7 @@ function SortHeader({ column, children, className }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FILTER COMBOBOX  (same pattern as EmployeeList)
+//  FILTER COMBOBOX
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FilterCombobox({ placeholder, options, value, onValueChange }) {
@@ -289,14 +287,6 @@ export default function UserList() {
     "roleId",
     parseAsString.withDefault(""),
   );
-  const [moduleId, setModuleId] = useQueryState(
-    "moduleId",
-    parseAsString.withDefault(""),
-  );
-  const [permissionId, setPermissionId] = useQueryState(
-    "permissionId",
-    parseAsString.withDefault(""),
-  );
   const [sortBy, setSortBy] = useQueryState(
     "sortBy",
     parseAsString.withDefault("CREATED_AT"),
@@ -320,21 +310,11 @@ export default function UserList() {
 
   // ── Filter data ─────────────────────────────────────────────────────────────
   const { data: roles = [] } = useRoles();
-  const { data: modules = [] } = useModules();
-  const { data: permissions = [] } = usePermissions();
 
   // ── Combobox options ────────────────────────────────────────────────────────
   const roleOptions = roles.map((r) => ({
     label: r.ROLE_NAME,
     value: String(r.ID),
-  }));
-  const moduleOptions = modules.map((m) => ({
-    label: m.MODULE_NAME,
-    value: String(m.ID),
-  }));
-  const permissionOptions = permissions.map((p) => ({
-    label: p.PERMISSION_NAME,
-    value: String(p.ID),
   }));
 
   // ── Backend params ──────────────────────────────────────────────────────────
@@ -344,12 +324,10 @@ export default function UserList() {
       limit,
       search,
       roleId,
-      moduleId,
-      permissionId,
       sortBy,
       sortOrder,
     }),
-    [page, limit, search, roleId, moduleId, permissionId, sortBy, sortOrder],
+    [page, limit, search, roleId, sortBy, sortOrder],
   );
 
   // ── Queries ─────────────────────────────────────────────────────────────────
@@ -363,7 +341,6 @@ export default function UserList() {
   } = useUsers(backendParams);
 
   const deleteMutation = useDeleteUser();
-
   const activateMutation = useActivateUser();
 
   // ── Derived ─────────────────────────────────────────────────────────────────
@@ -430,14 +407,12 @@ export default function UserList() {
   );
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
-  const hasActiveFilters = search || roleId || moduleId || permissionId;
+  const hasActiveFilters = search || roleId;
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearch(null);
     setRoleId(null);
-    setModuleId(null);
-    setPermissionId(null);
     setPage(1);
   };
 
@@ -483,47 +458,41 @@ export default function UserList() {
       toast.error(err?.message || "Failed to activate user.");
     }
   };
+
   // ── Columns ─────────────────────────────────────────────────────────────────
   const columns = useMemo(
     () => [
       {
-  id: "user",
-  accessorFn: (row) => row.USERNAME,
-  header: ({ column }) => <SortHeader column={column}>User</SortHeader>,
-  cell: ({ row }) => {
-    const u = row.original;
-    const fullName = [u.FIRST_NAME, u.LAST_NAME].filter(Boolean).join(" ");
+        id: "user",
+        accessorFn: (row) => row.USERNAME,
+        header: ({ column }) => <SortHeader column={column}>User</SortHeader>,
+        cell: ({ row }) => {
+          const u = row.original;
+          const fullName = [u.FIRST_NAME, u.LAST_NAME].filter(Boolean).join(" ");
 
-    return (
-      <div className="flex items-center gap-3 py-1">
-        <UserListAvatar user={u} />
-
-        <div className="flex flex-col min-w-0">
-          {/* Username */}
-          <span className="font-medium leading-tight">{u.USERNAME}</span>
-
-          {/* Linked employee info */}
-          {fullName && (
-            <span className="text-xs text-muted-foreground truncate">
-              {fullName}
-              {u.EMP_NO && (
-                <span className="ml-1 font-mono opacity-70">{u.EMP_NO}</span>
-                
-              )}
-            </span>
-          )}
-
-          {/* Location */}
-          {u.LOCATION_NAME && (
-            <span className="text-xs text-muted-foreground/60 truncate">
-              {u.LOCATION_NAME}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  },
-},
+          return (
+            <div className="flex items-center gap-3 py-1">
+              <UserListAvatar user={u} />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium leading-tight">{u.USERNAME}</span>
+                {fullName && (
+                  <span className="text-xs text-muted-foreground truncate">
+                    {fullName}
+                    {u.EMP_NO && (
+                      <span className="ml-1 font-mono opacity-70">{u.EMP_NO}</span>
+                    )}
+                  </span>
+                )}
+                {u.LOCATION_NAME && (
+                  <span className="text-xs text-muted-foreground/60 truncate">
+                    {u.LOCATION_NAME}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
       {
         accessorKey: "STATUS",
         header: "Status",
@@ -760,28 +729,6 @@ export default function UserList() {
               value={roleId}
               onValueChange={(v) => {
                 setRoleId(v || null);
-                setPage(1);
-              }}
-            />
-
-            {/* Module — Combobox */}
-            <FilterCombobox
-              placeholder="Module"
-              options={moduleOptions}
-              value={moduleId}
-              onValueChange={(v) => {
-                setModuleId(v || null);
-                setPage(1);
-              }}
-            />
-
-            {/* Permission — Combobox */}
-            <FilterCombobox
-              placeholder="Permission"
-              options={permissionOptions}
-              value={permissionId}
-              onValueChange={(v) => {
-                setPermissionId(v || null);
                 setPage(1);
               }}
             />
