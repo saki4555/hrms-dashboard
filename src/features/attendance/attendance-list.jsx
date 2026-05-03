@@ -99,7 +99,10 @@ import {
 import { cn } from "@/lib/utils";
 import { getAvatarColor } from "@/lib/avatar-utils";
 
-import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
+import {
+  useEmployeeLiteSearch,
+  useSupervisorLiteSearch,
+} from "@/hooks/use-lite-search";
 import { useCompanies } from "@/features/settings/work-structure/company/queries";
 import { useOrganizations } from "@/features/settings/work-structure/organization/queries";
 import { useHrLocations } from "@/features/settings/work-structure/locations/queries";
@@ -569,6 +572,10 @@ export default function AttendanceList() {
     "shiftId",
     parseAsString.withDefault(""),
   );
+  const [supervisorId, setSupervisorId] = useQueryState(
+    "supervisorId",
+    parseAsString.withDefault(""),
+  );
 
   // ── Local UI state ──────────────────────────────────────────────────────────
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -577,8 +584,13 @@ export default function AttendanceList() {
   const [empOpen, setEmpOpen] = useState(false);
   const [empSearch, setEmpSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [supOpen, setSupOpen] = useState(false);
+  const [supSearch, setSupSearch] = useState("");
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const { data: employees = [], isFetching: empFetching } =
     useEmployeeLiteSearch(empSearch);
+  const { data: supervisors = [], isFetching: supFetching } =
+    useSupervisorLiteSearch(supSearch);
   const { data: companies = [] } = useCompanies();
   const { data: organizations = [] } = useOrganizations();
   const { data: locations = [] } = useHrLocations();
@@ -599,25 +611,30 @@ export default function AttendanceList() {
   }, []);
 
   // ── Backend params ──────────────────────────────────────────────────────────
-const backendParams = useMemo(() => {
+ const backendParams = useMemo(() => {
   const isSingleDay = fromDate && (!toDate || toDate === fromDate);
   return {
     page,
     limit,
-    date:       isSingleDay ? fromDate : "",
-    fromDate:   !isSingleDay ? fromDate : "",
-    toDate:     !isSingleDay ? toDate : "",
+    date: isSingleDay ? fromDate : "",
+    fromDate: !isSingleDay ? fromDate : "",
+    toDate: !isSingleDay ? toDate : "",
     employeeId,
-    companyId,
-    orgId,
-    locationId,
-    shiftId,
+    supervisorId,
+    companyId,    
+    orgId,        
+    locationId,   
+    shiftId,      
     status,
     sortBy,
     sortOrder,
   };
-}, [page, limit, fromDate, toDate, employeeId, companyId, orgId, locationId, shiftId, status, sortBy, sortOrder]);
-
+}, [
+  page, limit, fromDate, toDate,
+  employeeId, supervisorId,
+  companyId, orgId, locationId, shiftId,  
+  status, sortBy, sortOrder,
+]);
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
@@ -690,29 +707,27 @@ const backendParams = useMemo(() => {
   );
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
-  const hasActiveFilters =
-    employeeId ||
-    fromDate ||
-    toDate ||
-    status ||
-    companyId ||
-    orgId ||
-    locationId ||
-    shiftId;
+const hasActiveFilters =
+  employeeId || supervisorId ||
+  companyId || orgId || locationId || shiftId ||  
+  fromDate || toDate || status;
 
-  const clearAllFilters = () => {
-    setFromDate(null);
-    setToDate(null);
-    setEmployeeId(null);
-    setStatus(null);
-    setCompanyId(null);
-    setOrgId(null);
-    setLocationId(null);
-    setShiftId(null);
-    setSelectedEmployee(null);
-    setEmpSearch("");
-    setPage(1);
-  };
+const clearAllFilters = () => {
+  setFromDate(null);
+  setToDate(null);
+  setEmployeeId(null);
+  setSupervisorId(null);
+  setCompanyId(null);    
+  setOrgId(null);        
+  setLocationId(null);   
+  setShiftId(null);      
+  setStatus(null);
+  setSelectedEmployee(null);
+  setEmpSearch("");
+  setSelectedSupervisor(null);
+  setSupSearch("");
+  setPage(1);
+};
 
   // ── Detail dialog opener ────────────────────────────────────────────────────
   const openDetail = (row) => {
@@ -735,13 +750,10 @@ const backendParams = useMemo(() => {
       fromDate: backendParams.fromDate,
       toDate: backendParams.toDate,
       employeeId,
-      companyId,
-      orgId,
-      locationId,
-      shiftId,
+      supervisorId,
       status,
     }),
-    [backendParams, employeeId, companyId, orgId, locationId, shiftId, status],
+    [backendParams, employeeId, supervisorId, status],
   );
 
   // ── Columns ─────────────────────────────────────────────────────────────────
@@ -1139,39 +1151,197 @@ const backendParams = useMemo(() => {
             </Select>
 
             {/* Company */}
-<FilterCombobox
-  placeholder="All Companies"
-  options={companies.map((c) => ({ label: c.COMPANY_NAME, value: String(c.COMPANY_ID) }))}
-  value={companyId}
-  onValueChange={(v) => { setCompanyId(v || null); setPage(1); }}
-/>
+            <FilterCombobox
+              placeholder="All Companies"
+              options={companies.map((c) => ({
+                label: c.COMPANY_NAME,
+                value: String(c.COMPANY_ID),
+              }))}
+              value={companyId}
+              onValueChange={(v) => {
+                setCompanyId(v || null);
+                setPage(1);
+              }}
+            />
 
-{/* Organization */}
-<FilterCombobox
-  placeholder="All Organizations"
-  options={organizations.map((o) => ({ label: o.NAME, value: String(o.ID) }))}
-  value={orgId}
-  onValueChange={(v) => { setOrgId(v || null); setPage(1); }}
-/>
+            {/* Organization */}
+            <FilterCombobox
+              placeholder="All Organizations"
+              options={organizations.map((o) => ({
+                label: o.NAME,
+                value: String(o.ID),
+              }))}
+              value={orgId}
+              onValueChange={(v) => {
+                setOrgId(v || null);
+                setPage(1);
+              }}
+            />
 
-{/* Location */}
-<FilterCombobox
-  placeholder="All Locations"
-  options={locations.map((l) => ({ label: l.LOCATION_NAME, value: String(l.ID) }))}
-  value={locationId}
-  onValueChange={(v) => { setLocationId(v || null); setPage(1); }}
-/>
+            {/* Location */}
+            <FilterCombobox
+              placeholder="All Locations"
+              options={locations.map((l) => ({
+                label: l.LOCATION_NAME,
+                value: String(l.ID),
+              }))}
+              value={locationId}
+              onValueChange={(v) => {
+                setLocationId(v || null);
+                setPage(1);
+              }}
+            />
 
-{/* Shift */}
-<FilterCombobox
-  placeholder="All Shifts"
-  options={shifts.map((s) => ({
-    label: `${s.NAME} ${s.START_TIME}–${s.END_TIME}`,
-    value: String(s.SHIFT_ID),
-  }))}
-  value={shiftId}
-  onValueChange={(v) => { setShiftId(v || null); setPage(1); }}
-/>
+            {/* Shift */}
+            <FilterCombobox
+              placeholder="All Shifts"
+              options={shifts.map((s) => ({
+                label: `${s.NAME} ${s.START_TIME}–${s.END_TIME}`,
+                value: String(s.SHIFT_ID),
+              }))}
+              value={shiftId}
+              onValueChange={(v) => {
+                setShiftId(v || null);
+                setPage(1);
+              }}
+            />
+            {/* Supervisor / Team filter */}
+            <Popover open={supOpen} onOpenChange={setSupOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "h-9 w-[240px] justify-between font-normal px-2",
+                    !selectedSupervisor && "text-muted-foreground",
+                  )}
+                >
+                  {selectedSupervisor ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Avatar className="h-5 w-5 shrink-0">
+                        <AvatarImage
+                          src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${selectedSupervisor.employeeId}`}
+                        />
+                        <AvatarFallback
+                          className={cn(
+                            "text-[10px] font-semibold text-white",
+                            getAvatarColor(selectedSupervisor.name),
+                          )}
+                        >
+                          {selectedSupervisor.name
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-sm text-foreground">
+                        {selectedSupervisor.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        ({selectedSupervisor.empNo})
+                      </span>
+                    </div>
+                  ) : (
+                    <span>Filter by team...</span>
+                  )}
+                  <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                    {selectedSupervisor && (
+                      <span
+                        role="button"
+                        className="rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSupervisor(null);
+                          setSupSearch("");
+                          setSupervisorId(null);
+                          setPage(1);
+                        }}
+                      >
+                        <IconX className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </div>
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Type 2+ characters..."
+                    value={supSearch}
+                    onValueChange={setSupSearch}
+                  />
+                  <CommandList>
+                    {supFetching && (
+                      <div className="flex items-center justify-center py-4">
+                        <Spinner className="h-4 w-4" />
+                      </div>
+                    )}
+                    {!supFetching && supSearch.length >= 2 && supervisors.length === 0 && (
+                      <CommandEmpty>No supervisors found.</CommandEmpty>
+                    )}
+                    {!supFetching && supSearch.length < 2 && (
+                      <CommandEmpty>Type at least 2 characters.</CommandEmpty>
+                    )}
+                    <CommandGroup>
+                      {supervisors.map((sup) => (
+                        <CommandItem
+                          key={sup.employeeId}
+                          value={String(sup.employeeId)}
+                          onSelect={() => {
+                            setSelectedSupervisor(sup);
+                            setSupervisorId(String(sup.employeeId));
+                            setPage(1);
+                            setSupOpen(false);
+                          }}
+                        >
+                          <Avatar className="h-6 w-6 shrink-0 mr-2">
+                            <AvatarImage
+                              src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${sup.employeeId}`}
+                            />
+                            <AvatarFallback
+                              className={cn(
+                                "text-[10px] font-semibold text-white",
+                                getAvatarColor(sup.name),
+                              )}
+                            >
+                              {sup.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{sup.name}</span>
+                          <span className="ml-1 text-xs text-muted-foreground shrink-0">
+                            {sup.empNo}
+                          </span>
+                          {/* role badge */}
+                          <Badge
+                            variant="outline"
+                            className="ml-auto text-[10px] px-1.5 py-0 h-4 shrink-0"
+                          >
+                            {sup.role}
+                          </Badge>
+                          <Check
+                            className={cn(
+                              "ml-2 h-4 w-4 shrink-0",
+                              selectedSupervisor?.employeeId === sup.employeeId
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
             {/* Reset all */}
             {hasActiveFilters && (
@@ -1300,7 +1470,6 @@ function PageHeader({ isFetching, onRefetch }) {
   );
 }
 
-
 function FilterCombobox({ placeholder, options, value, onValueChange }) {
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
   const hasValue = !!value;
@@ -1310,7 +1479,10 @@ function FilterCombobox({ placeholder, options, value, onValueChange }) {
       items={options.map((o) => o.label)}
       value={selectedLabel}
       onValueChange={(label) => {
-        if (!label) { onValueChange(""); return; }
+        if (!label) {
+          onValueChange("");
+          return;
+        }
         const opt = options.find((o) => o.label === label);
         onValueChange(opt?.value ?? "");
       }}
