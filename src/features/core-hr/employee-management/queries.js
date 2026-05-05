@@ -1,3 +1,4 @@
+// src\features\core-hr\employee-management\queries.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/hr-employee`;
