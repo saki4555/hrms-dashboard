@@ -1,3 +1,4 @@
+// src\features\core-hr\employee-management\employee-list.jsx
 import { useState, useMemo, useCallback } from "react";
 import {
   flexRender,
@@ -227,6 +228,10 @@ export default function EmployeeList() {
     "countryId",
     parseAsString.withDefault(""),
   );
+  const [status, setStatus] = useQueryState(
+  "status",
+  parseAsString.withDefault("1")
+);
 
   // Local state only for the search input (so typing is snappy before debounce)
   const [searchInput, setSearchInput] = useState(search);
@@ -248,6 +253,7 @@ export default function EmployeeList() {
       companyId,
       positionId,
       countryId,
+      status,
     }),
     [
       page,
@@ -260,6 +266,7 @@ export default function EmployeeList() {
       companyId,
       positionId,
       countryId,
+      status
     ],
   );
 
@@ -350,8 +357,8 @@ export default function EmployeeList() {
   );
 
   // ── Filter helpers ─────────────────────────────────────────────────────────
-  const hasActiveFilters =
-    search || gender || personType || companyId || positionId || countryId;
+const hasActiveFilters =
+  search || gender || personType || companyId || positionId || countryId || status !== "1";
 
   const clearAllFilters = () => {
     setSearchInput("");
@@ -361,7 +368,9 @@ export default function EmployeeList() {
     setCompanyId(null);
     setPositionId(null);
     setCountryId(null);
-    setPage(1);
+    setStatus("1");
+  setPage(1);
+    
   };
 
   // ── Delete handler ─────────────────────────────────────────────────────────
@@ -659,6 +668,21 @@ export default function EmployeeList() {
                 <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
+            {/* status filter */}
+            <FilterCombobox
+  placeholder="Status"
+  options={[
+    { label: "Active",  value: "1" },
+    { label: "Ended",   value: "2" },
+    { label: "Deleted", value: "0" },
+    { label: "All",     value: "all" },
+  ]}
+  value={status}
+  onValueChange={(v) => {
+    setStatus(v || "1");
+    setPage(1);
+  }}
+/>
 
             {/* Person Type — Combobox (dynamic from API) */}
             <FilterCombobox
