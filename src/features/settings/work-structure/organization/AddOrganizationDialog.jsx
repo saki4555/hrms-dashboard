@@ -330,7 +330,7 @@ export default function AddOrganizationDialog({
                 render={({ field }) => {
                   // Filter organizations where ORG_TYPE_ID is 24 (Cost Center)
                   const costCenterOrgs = organizationData.filter(
-                    (org) => org.ORG_TYPE_ID === 24,
+                    (org) => org.ORG_TYPE === "Cost Center",
                   );
 
                   return (

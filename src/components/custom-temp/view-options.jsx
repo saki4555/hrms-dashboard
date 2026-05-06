@@ -1,30 +1,27 @@
-import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu'
+import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import { CheckIcon } from 'lucide-react'
+} from "@/components/ui/dropdown-menu";
+import { CheckIcon } from "lucide-react";
+import { IconColumns3Filled } from "@tabler/icons-react";
 
 export function DataTableViewOptions({ table }) {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className='ms-auto hidden h-8 lg:flex'
-        >
-          <CheckIcon className='size-4' />
-          View
+        
+        <Button variant="ghost" size="sm" className="h-9 font-medium ms-auto hidden lg:flex shadow-sm">
+          <IconColumns3Filled className="size-3.5" /> Columns
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align='end' className='w-[150px]'>
+      <DropdownMenuContent align="end" className="w-[150px]">
         <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -32,12 +29,12 @@ export function DataTableViewOptions({ table }) {
           .getAllColumns()
           .filter(
             (column) =>
-              typeof column.accessorFn !== 'undefined' && column.getCanHide()
+              typeof column.accessorFn !== "undefined" && column.getCanHide(),
           )
           .map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
-              className='capitalize'
+              className="capitalize"
               checked={column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
             >
@@ -46,5 +43,5 @@ export function DataTableViewOptions({ table }) {
           ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

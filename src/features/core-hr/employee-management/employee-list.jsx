@@ -22,6 +22,10 @@ import {
   ArrowDown,
   ChevronDown,
   EyeOff,
+  ArrowLeftRight,
+  TrendingUp,
+  UserX,
+  UserCheck,
 } from "lucide-react";
 import { IconCirclePlus, IconSelector, IconX } from "@tabler/icons-react";
 
@@ -76,6 +80,10 @@ import {
 } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
 import { DataTablePagination } from "@/components/DataTablePagination";
+import TransferEmployeeSheet from "./components/transfer-employee-sheet";
+import IncrementDialog from "./components/increment-dialog";
+import EndEmploymentDialog from "./components/end-employment-dialog";
+import ReinstateDialog from "./components/reinstate-dialog";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { useEmployees, useDeleteEmployee } from "./queries";
@@ -188,6 +196,11 @@ function SortHeader({ column, children, className }) {
 export default function EmployeeList() {
   const navigate = useNavigate();
   const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
+  const [activeEmployee, setActiveEmployee] = useState(null);
+  const [openTransfer, setOpenTransfer] = useState(false);
+  const [openIncrement, setOpenIncrement] = useState(false);
+  const [openEndEmp, setOpenEndEmp] = useState(false);
+  const [openReinstate, setOpenReinstate] = useState(false);
 
   // ── URL State via nuqs ─────────────────────────────────────────────────────
   // These are the ONLY source of truth — no useState for filters
@@ -229,9 +242,9 @@ export default function EmployeeList() {
     parseAsString.withDefault(""),
   );
   const [status, setStatus] = useQueryState(
-  "status",
-  parseAsString.withDefault("1")
-);
+    "status",
+    parseAsString.withDefault("1"),
+  );
 
   // Local state only for the search input (so typing is snappy before debounce)
   const [searchInput, setSearchInput] = useState(search);
@@ -266,7 +279,7 @@ export default function EmployeeList() {
       companyId,
       positionId,
       countryId,
-      status
+      status,
     ],
   );
 
@@ -357,8 +370,14 @@ export default function EmployeeList() {
   );
 
   // ── Filter helpers ─────────────────────────────────────────────────────────
-const hasActiveFilters =
-  search || gender || personType || companyId || positionId || countryId || status !== "1";
+  const hasActiveFilters =
+    search ||
+    gender ||
+    personType ||
+    companyId ||
+    positionId ||
+    countryId ||
+    status !== "1";
 
   const clearAllFilters = () => {
     setSearchInput("");
@@ -369,8 +388,7 @@ const hasActiveFilters =
     setPositionId(null);
     setCountryId(null);
     setStatus("1");
-  setPage(1);
-    
+    setPage(1);
   };
 
   // ── Delete handler ─────────────────────────────────────────────────────────
@@ -493,22 +511,11 @@ const hasActiveFilters =
         enableSorting: false,
         cell: ({ row }) => {
           const emp = row.original;
+          const isEnded = emp.EMP_STATUS === 2;
+
           return (
             <div className="flex items-center gap-1">
-              {/* <Button
-              variant="outline" size="icon" className="h-8 w-8"
-              onClick={() => navigate(`/core-hr/employee-management/update/${emp.PERSON_ID}`)}
-            >
-              <Pencil className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
-            <Button
-              variant="outline" size="icon" className="h-8 w-8"
-              onClick={() => navigate(`/core-hr/employee-management/update-modern/${emp.PERSON_ID}`)}
-            >
-              <Pencil className="h-4 w-4" />
-              <span className="sr-only">Edit Modern</span>
-            </Button> */}
+              {/* Delete */}
               <Button
                 variant="outline"
                 size="icon"
@@ -523,6 +530,8 @@ const hasActiveFilters =
                 )}
                 <span className="sr-only">Delete</span>
               </Button>
+
+              {/* Details */}
               <Button
                 variant="outline"
                 size="icon"
@@ -536,6 +545,58 @@ const hasActiveFilters =
                 <FileTextIcon className="w-4 h-4" />
                 <span className="sr-only">Details</span>
               </Button>
+
+              {/* More actions — dropdown to keep the row clean */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <ChevronDown className="h-4 w-4" />
+                    <span className="sr-only">More actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {!isEnded && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setActiveEmployee(emp);
+                          setOpenTransfer(true);
+                        }}
+                      >
+                        <ArrowLeftRight className="mr-2 h-4 w-4" /> Transfer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setActiveEmployee(emp);
+                          setOpenIncrement(true);
+                        }}
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4" /> Increment /
+                        Promote
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => {
+                          setActiveEmployee(emp);
+                          setOpenEndEmp(true);
+                        }}
+                      >
+                        <UserX className="mr-2 h-4 w-4" /> End Employment
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {isEnded && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setActiveEmployee(emp);
+                        setOpenReinstate(true);
+                      }}
+                    >
+                      <UserCheck className="mr-2 h-4 w-4" /> Reinstate
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           );
         },
@@ -670,19 +731,19 @@ const hasActiveFilters =
             </Select>
             {/* status filter */}
             <FilterCombobox
-  placeholder="Status"
-  options={[
-    { label: "Active",  value: "1" },
-    { label: "Ended",   value: "2" },
-    { label: "Deleted", value: "0" },
-    { label: "All",     value: "all" },
-  ]}
-  value={status}
-  onValueChange={(v) => {
-    setStatus(v || "1");
-    setPage(1);
-  }}
-/>
+              placeholder="Status"
+              options={[
+                { label: "Active", value: "1" },
+                { label: "Ended", value: "2" },
+                { label: "Deleted", value: "0" },
+                { label: "All", value: "all" },
+              ]}
+              value={status}
+              onValueChange={(v) => {
+                setStatus(v || "1");
+                setPage(1);
+              }}
+            />
 
             {/* Person Type — Combobox (dynamic from API) */}
             <FilterCombobox
@@ -776,22 +837,46 @@ const hasActiveFilters =
           </p>
 
           {/* ── Table ───────────────────────────────────────────────────── */}
-<DataTable
-  table={table}
-  isFetching={isFetching}
-  loadingLabel="Loading employees..."
-  empty={{
-    colSpan: columns.length,
-    icon: UsersIcon,
-    title: "No Employees Found",
-  }}
-/>
+          <DataTable
+            table={table}
+            isFetching={isFetching}
+            loadingLabel="Loading employees..."
+            empty={{
+              colSpan: columns.length,
+              icon: UsersIcon,
+              title: "No Employees Found",
+            }}
+          />
 
           <DataTablePagination table={table} />
         </div>
       </div>
 
-      <ConfirmationDialog />
+      <TransferEmployeeSheet
+  open={openTransfer}
+  onOpenChange={setOpenTransfer}
+  employee={activeEmployee}
+  showConfirmation={showConfirmation}
+/>
+<IncrementDialog
+  open={openIncrement}
+  onOpenChange={setOpenIncrement}
+  employee={activeEmployee}
+  showConfirmation={showConfirmation}
+/>
+<EndEmploymentDialog
+  open={openEndEmp}
+  onOpenChange={setOpenEndEmp}
+  employee={activeEmployee}
+  showConfirmation={showConfirmation}
+/>
+<ReinstateDialog
+  open={openReinstate}
+  onOpenChange={setOpenReinstate}
+  employee={activeEmployee}
+  showConfirmation={showConfirmation}
+/>
+<ConfirmationDialog />
     </div>
   );
 }
