@@ -87,11 +87,13 @@ export default function AddOrgTypeDialog({ open, onOpenChange, showConfirmation 
   const onSubmit = async (data) => {
     try {
       const backendData = {
-        orgType: data.orgType,
-        startDate: data.effectiveStartDate,
-        endDate: data.effectiveEndDate,
-      };
+  ORG_TYPE: data.orgType,
+  EFFECTIVE_START_DATE: data.effectiveStartDate,
+  EFFECTIVE_END_DATE: data.effectiveEndDate,
+};
 
+      // console.log(backendData);
+      // return;
       await createOrgTypeMutation.mutateAsync(backendData);
       toast.success("Organization type created successfully!");
       form.reset();

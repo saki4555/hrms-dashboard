@@ -1,3 +1,4 @@
+// src\features\core-hr\employee-management\EmployeeDetailsPage.jsx
 import { useRef, useState } from "react";
 import { format } from "date-fns";
 
@@ -63,6 +64,7 @@ import PageContainer from "@/components/page-container";
 
 import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { useEmployeeById } from "./queries";
+import { useAuditHistory } from "./core-hr.queries";
 
 import { EditPersonalSheet } from "./components/edit-personal-sheet";
 import { EditEmploymentSheet } from "./components/edit-employment-sheet";
@@ -473,9 +475,14 @@ const EmployeeDetailsPage = () => {
                 "identification",
                 "employment",
                 "system",
+                "audit",
               ].map((t) => (
                 <TabsTrigger key={t} value={t} className="px-5 py-2 capitalize">
-                  {t === "system" ? "System Audit" : t}
+                  {t === "system"
+                    ? "System Audit"
+                    : t === "audit"
+                      ? "Audit History"
+                      : t}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -708,6 +715,10 @@ const EmployeeDetailsPage = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+            {/* Audit */}
+            <TabsContent value="audit" className="mt-0">
+  <AuditHistoryTab personId={employee.PERSON_ID} />
+</TabsContent>
           </Tabs>
         </main>
       </PageContainer>
@@ -951,13 +962,12 @@ function EmployeeAvatar({ employee }) {
 
       {/* Avatar */}
       <Avatar className="h-32 w-32 border-4 border-card shadow-md">
-        
-          <AvatarImage
-            src={imageUrl}
-            onLoad={() => setHasImage(true)}
-            onError={() => setHasImage(false)}
-          />
-        
+        <AvatarImage
+          src={imageUrl}
+          onLoad={() => setHasImage(true)}
+          onError={() => setHasImage(false)}
+        />
+
         <AvatarFallback className="text-2xl bg-muted text-muted-foreground">
           {employee.FIRST_NAME?.[0]}
           {employee.LAST_NAME?.[0]}
@@ -1005,5 +1015,172 @@ function EmployeeAvatar({ employee }) {
         `}
       />
     </div>
+  );
+}
+
+
+
+function AuditHistoryTab({ personId }) {
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const { data, isLoading, isError } = useAuditHistory(personId, { page, limit });
+
+  const logs    = data?.data       ?? [];
+  const total   = data?.pagination?.total      ?? 0;
+  const totalPages = data?.pagination?.totalPages ?? 1;
+
+  const formatDateTime = (d) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleString("en-GB", {
+      day: "numeric", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  };
+
+  // Badge color per operation
+  const operationVariant = (op) => {
+    if (["TERMINATION", "END_EMPLOYMENT"].includes(op)) return "destructive";
+    if (op === "REINSTATE")   return "outline";
+    if (op === "TRANSFER")    return "secondary";
+    if (["INCREMENT", "PROMOTION"].includes(op)) return "outline";
+    return "secondary";
+  };
+
+  if (isLoading) return (
+    <Card className="shadow-sm">
+      <CardContent className="flex justify-center py-12">
+        <Spinner className="h-6 w-6" />
+      </CardContent>
+    </Card>
+  );
+
+  if (isError) return (
+    <Card className="shadow-sm">
+      <CardContent className="py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load audit history</AlertTitle>
+        </Alert>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <Card className="shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <ShieldCheck className="h-5 w-5 text-accent-foreground" />
+          Audit History
+        </CardTitle>
+        <CardDescription>
+          All HR actions performed on this employee — {total} record{total !== 1 ? "s" : ""}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {logs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No audit records found.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {/* Timeline */}
+            <div className="relative space-y-0">
+              {logs.map((log, idx) => (
+                <div key={log.auditId} className="flex gap-4 pb-6 relative">
+                  {/* Line */}
+                  {idx !== logs.length - 1 && (
+                    <div className="absolute left-[15px] top-8 bottom-0 w-px bg-border" />
+                  )}
+
+                  {/* Dot */}
+                  <div className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 bg-muted/30 rounded-lg border border-border p-4 space-y-3">
+                    {/* Header row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={operationVariant(log.operation)}>
+                        {log.operation}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        on <strong className="text-foreground">{log.table}</strong>
+                      </span>
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {formatDateTime(log.changedOn)}
+                      </span>
+                    </div>
+
+                    {/* Changed by */}
+                    <p className="text-xs text-muted-foreground">
+                      By <span className="font-medium text-foreground">{log.changedBy}</span>
+                    </p>
+
+                    {/* Old → New values */}
+                    {(log.oldValues || log.newValues) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        {log.oldValues && Object.keys(log.oldValues).length > 0 && (
+                          <div className="bg-red-500/5 border border-red-500/20 rounded-md p-3">
+                            <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-2">Before</p>
+                            <dl className="space-y-1">
+                              {Object.entries(log.oldValues).map(([k, v]) => (
+                                <div key={k} className="flex gap-2 text-xs">
+                                  <dt className="text-muted-foreground shrink-0">{k}:</dt>
+                                  <dd className="font-medium truncate">{String(v ?? "—")}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </div>
+                        )}
+                        {log.newValues && Object.keys(log.newValues).length > 0 && (
+                          <div className="bg-green-500/5 border border-green-500/20 rounded-md p-3">
+                            <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wider mb-2">After</p>
+                            <dl className="space-y-1">
+                              {Object.entries(log.newValues).map(([k, v]) => (
+                                <div key={k} className="flex gap-2 text-xs">
+                                  <dt className="text-muted-foreground shrink-0">{k}:</dt>
+                                  <dd className="font-medium truncate">{String(v ?? "—")}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  Page {page} of {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
