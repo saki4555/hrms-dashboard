@@ -18,6 +18,7 @@ export function DatePicker({
   onChange,
   placeholder = "Select date",
   className = "w-48",
+  disabled = false
 }) {
   const [open, setOpen] = useState(false)
 
@@ -47,6 +48,7 @@ export function DatePicker({
             mode="single"
             selected={value}
             captionLayout="dropdown"
+            disabled={disabled}
             onSelect={(selected) => {
               onChange?.(selected)
               setOpen(false)

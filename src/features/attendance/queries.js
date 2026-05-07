@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+// src\features\attendance\queries.js
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/attendance`;
 
@@ -127,4 +128,23 @@ export const useTeamAttendanceStats = (supervisorId, params) =>
     },
     enabled: !!supervisorId && !!(params.date || (params.fromDate && params.toDate)),
     ...queryDefaults,
+  });
+
+
+export const useProcessAttendance = () =>
+  useMutation({
+    mutationFn: ({ fromDate, toDate }) =>
+      fetcher(`${BASE}/process`, {
+        method: "POST",
+        body: JSON.stringify({ fromDate, toDate }),
+      }),
+  });
+
+export const useReprocessEmployee = () =>
+  useMutation({
+    mutationFn: ({ employeeId, fromDate, toDate }) =>
+      fetcher(`${BASE}/reprocess/employee`, {
+        method: "POST",
+        body: JSON.stringify({ employeeId, fromDate, toDate }),
+      }),
   });

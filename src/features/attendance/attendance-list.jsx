@@ -25,6 +25,8 @@ import {
   ChevronsUpDown,
   Check,
   CalendarIcon,
+  CpuIcon,
+  CalendarClockIcon,
 } from "lucide-react";
 import { IconSelector, IconX } from "@tabler/icons-react";
 
@@ -111,6 +113,7 @@ import { useShifts } from "@/features/settings/work-structure/shift/queries";
 import { useAttendance, useAttendanceSummary, buildExportUrl } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";
 import { DataTable } from "@/components/shared/data-table";
+import ProcessAttendanceDialog from "./process-attendance-dialog";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
@@ -1430,19 +1433,17 @@ const clearAllFilters = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PageHeader({ isFetching, onRefetch }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-0.5">
-          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
-            Attendance
-          </h1>
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Attendance</h1>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link to="/">Dashboard</Link>
-                </BreadcrumbLink>
+                <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>Attendance Management</BreadcrumbItem>
@@ -1453,19 +1454,22 @@ function PageHeader({ isFetching, onRefetch }) {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        {onRefetch && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onRefetch}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", isFetching && "animate-spin")}
-            />
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2">
+         <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setOpen(true)}>
+  <CalendarClockIcon className="h-4 w-4" />
+  Process / Reprocess
+</Button>
+
+          {onRefetch && (
+            <Button variant="outline" size="icon" onClick={onRefetch} disabled={isFetching}>
+              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            </Button>
+          )}
+        </div>
       </div>
+
+      <ProcessAttendanceDialog open={open} onOpenChange={setOpen} />
     </div>
   );
 }
