@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { addYears } from "date-fns";
-import { Building2, Sparkles } from "lucide-react";
+import { Building2, Sparkles, Check, ChevronsUpDown } from "lucide-react";
+import { IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import {
@@ -22,9 +23,28 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DatePicker } from "@/components/DatePicker";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { getAvatarColor } from "@/lib/avatar-utils";
 
 import { ComboboxField } from "./combobox-field";
 import { PositionComboboxField } from "./position-combobox-field";
@@ -43,6 +63,8 @@ import { useOrganizations } from "@/features/settings/work-structure/organizatio
 import { useOrgPositions } from "@/features/settings/work-structure/position/queries";
 import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { useShifts } from "@/features/settings/work-structure/shift/queries";
+import { useHrLocations } from "@/features/settings/work-structure/locations/queries";
+import { useSupervisorLiteSearch } from "@/hooks/use-lite-search";
 
 export function EditAssignmentSheet({
   employee,
@@ -56,6 +78,16 @@ export function EditAssignmentSheet({
   const { data: orgPositions = [], isLoading: posL } = useOrgPositions();
   const { data: grades = [] } = useGrades();
   const { data: shifts = [], isLoading: shiftsL } = useShifts();
+  const { data: locations = [], isLoading: locL } = useHrLocations();
+  console.log("locations sample:", locations[0]); // ← check actual keys
+
+  // Supervisor search state
+  const [supOpen, setSupOpen] = useState(false);
+  const [supSearch, setSupSearch] = useState("");
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const { data: supervisors = [], isFetching: supFetching } =
+    useSupervisorLiteSearch(supSearch);
+
   const [selectedOrgId, setSelectedOrgId] = useState(null);
   const [formSeeded, setFormSeeded] = useState(false);
 
@@ -80,6 +112,8 @@ export function EditAssignmentSheet({
       gradeId: "",
       payrollId: "",
       shiftId: "",
+      locationId: "",
+      supervisorId: undefined,
       assignmentEffectiveStartDate: new Date(),
       assignmentEffectiveEndDate: addYears(new Date(), 5),
     },
@@ -103,11 +137,24 @@ export function EditAssignmentSheet({
       orgPositionId: "",
       gradeId: a?.GRADE_ID?.toString() || "",
       payrollId: a?.PAYROLL_ID?.toString() || "",
-      shiftId: a?.SHIFT_ID?.toString() || "",
+      shiftId: employee.shift?.SHIFT_ID?.toString() || "",
+      locationId: a?.LOCATION_ID?.toString() || "",
+      supervisorId: undefined,
       assignmentEffectiveStartDate: parseDate(a?.EFFECTIVE_START_DATE) ?? today,
       assignmentEffectiveEndDate:
         parseDate(a?.EFFECTIVE_END_DATE) ?? fiveYearsLater,
     });
+
+    // Pre-fill supervisor if employee already has one
+    if (employee.supervisor) {
+      setSelectedSupervisor(employee.supervisor);
+      form.setValue("supervisorId", employee.supervisor.employeeId, {
+        shouldValidate: false,
+      });
+    } else {
+      setSelectedSupervisor(null);
+    }
+
     setFormSeeded(true);
   }, [open, employee]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -135,7 +182,7 @@ export function EditAssignmentSheet({
     }
   }, [formSeeded, employee, orgPositions, grades]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-update end date when start date changes (5 years later)
+  // Auto-update end date when start date changes
   const assignmentStart = form.watch("assignmentEffectiveStartDate");
   useEffect(() => {
     if (assignmentStart) {
@@ -154,6 +201,8 @@ export function EditAssignmentSheet({
     }
     form.reset();
     setFormSeeded(false);
+    setSelectedSupervisor(null);
+    setSupSearch("");
     onClose();
   };
 
@@ -168,21 +217,25 @@ export function EditAssignmentSheet({
             permanent: addrToPayload(employee.permanentAddress),
           },
           assignment: {
-            COMPANY_ID: parseInt(data.companyId),
-            OU_ID: parseInt(data.ouId),
-            ORG_ID: parseInt(data.orgId),
+            COMPANY_ID:  parseInt(data.companyId),
+            OU_ID:       parseInt(data.ouId),
+            ORG_ID:      parseInt(data.orgId),
             POSITION_ID: parseInt(data.orgPositionId),
-            PAYROLL_ID: parseInt(data.payrollId),
-            GRADE_ID: parseInt(data.gradeId),
+            PAYROLL_ID:  parseInt(data.payrollId),
+            GRADE_ID:    parseInt(data.gradeId),
+            LOCATION_ID: data.locationId ? parseInt(data.locationId) : null,
             EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
-            EFFECTIVE_END_DATE: fd(data.assignmentEffectiveEndDate),
+            EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
           },
           shift: data.shiftId
             ? {
-                SHIFT_ID: parseInt(data.shiftId),
+                SHIFT_ID:            parseInt(data.shiftId),
                 EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
-                EFFECTIVE_END_DATE: fd(data.assignmentEffectiveEndDate),
+                EFFECTIVE_END_DATE:   fd(data.assignmentEffectiveEndDate),
               }
+            : null,
+          supervisor: data.supervisorId
+            ? { SUPERVISOR_ID: data.supervisorId }
             : null,
           STATUS: employee.STATUS,
         },
@@ -195,7 +248,6 @@ export function EditAssignmentSheet({
     }
   };
 
-  // Grade display value
   const gradeValue = form.watch("gradeId");
   const gradeLabel =
     grades.find((g) => String(g.ID) === String(gradeValue))?.GRADE || "";
@@ -216,8 +268,8 @@ export function EditAssignmentSheet({
             <div>
               <SheetTitle>Assignment</SheetTitle>
               <SheetDescription>
-                Update organisation, position, grade, shift, and assignment
-                period.
+                Update organisation, position, grade, shift, location,
+                supervisor, and assignment period.
               </SheetDescription>
             </div>
           </div>
@@ -342,6 +394,186 @@ export function EditAssignmentSheet({
                       {shift.CODE} · {shift.START_TIME} – {shift.END_TIME}
                     </span>
                   </div>
+                )}
+              />
+
+              {/* Location */}
+              <ComboboxField
+                form={form}
+                name="locationId"
+                label="Location"
+                items={locations}
+                idKey="ID"
+                nameKey="LOCATION_NAME"
+                placeholder={locL ? "Loading..." : "Select location"}
+                disabled={isPending || locL}
+              />
+
+              {/* Supervisor — search combobox */}
+              <FormField
+                control={form.control}
+                name="supervisorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Supervisor
+                    </FormLabel>
+                    <Popover open={supOpen} onOpenChange={setSupOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            disabled={isPending}
+                            className={cn(
+                              "w-full justify-between font-normal px-2",
+                              !selectedSupervisor && "text-muted-foreground",
+                            )}
+                          >
+                            {selectedSupervisor ? (
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Avatar className="h-5 w-5 shrink-0">
+                                  <AvatarImage
+                                    src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${selectedSupervisor.employeeId}`}
+                                  />
+                                  <AvatarFallback
+                                    className={cn(
+                                      "text-[10px] font-semibold text-white",
+                                      getAvatarColor(selectedSupervisor.name),
+                                    )}
+                                  >
+                                    {selectedSupervisor.name
+                                      ?.split(" ")
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .slice(0, 2)
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="truncate text-sm text-foreground">
+                                  {selectedSupervisor.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground shrink-0">
+                                  ({selectedSupervisor.empNo})
+                                </span>
+                                {selectedSupervisor.role && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] shrink-0"
+                                  >
+                                    {selectedSupervisor.role}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span>Search by name or emp no...</span>
+                            )}
+                            <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                              {selectedSupervisor && (
+                                <span
+                                  role="button"
+                                  className="rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedSupervisor(null);
+                                    setSupSearch("");
+                                    field.onChange(undefined);
+                                  }}
+                                >
+                                  <IconX className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                            </div>
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[380px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Type 2+ characters..."
+                            value={supSearch}
+                            onValueChange={setSupSearch}
+                          />
+                          <CommandList>
+                            {supFetching && (
+                              <div className="flex items-center justify-center py-4">
+                                <Spinner className="h-4 w-4" />
+                              </div>
+                            )}
+                            {!supFetching && supSearch.length < 2 && (
+                              <CommandEmpty>
+                                Type at least 2 characters to search.
+                              </CommandEmpty>
+                            )}
+                            {!supFetching &&
+                              supSearch.length >= 2 &&
+                              supervisors.length === 0 && (
+                                <CommandEmpty>
+                                  No supervisors found.
+                                </CommandEmpty>
+                              )}
+                            {!supFetching && supervisors.length > 0 && (
+                              <CommandGroup>
+                                {supervisors.map((sup) => (
+                                  <CommandItem
+                                    key={sup.id}
+                                    value={String(sup.id)}
+                                    onSelect={() => {
+                                      setSelectedSupervisor(sup);
+                                      field.onChange(sup.employeeId);
+                                      setSupOpen(false);
+                                      setSupSearch("");
+                                    }}
+                                  >
+                                    <Avatar className="h-6 w-6 shrink-0 mr-2">
+                                      <AvatarImage
+                                        src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${sup.employeeId}`}
+                                      />
+                                      <AvatarFallback
+                                        className={cn(
+                                          "text-[10px] font-semibold text-white",
+                                          getAvatarColor(sup.name),
+                                        )}
+                                      >
+                                        {sup.name
+                                          ?.split(" ")
+                                          .map((n) => n[0])
+                                          .join("")
+                                          .slice(0, 2)
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate">{sup.name}</span>
+                                    {sup.role && (
+                                      <Badge
+                                        variant="outline"
+                                        className="ml-2 text-xs shrink-0"
+                                      >
+                                        {sup.role}
+                                      </Badge>
+                                    )}
+                                    <span className="ml-auto text-xs text-muted-foreground shrink-0 pl-2">
+                                      {sup.empNo}
+                                    </span>
+                                    <Check
+                                      className={cn(
+                                        "ml-2 h-4 w-4 shrink-0",
+                                        selectedSupervisor?.id === sup.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
                 )}
               />
 
