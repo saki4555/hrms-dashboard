@@ -189,7 +189,7 @@ export function EditAssignmentSheet({
       form.setValue(
         "assignmentEffectiveEndDate",
         addYears(assignmentStart, 5),
-        { shouldDirty: true },
+        // { shouldDirty: true },
       );
     }
   }, [assignmentStart]); // eslint-disable-line react-hooks/exhaustive-deps

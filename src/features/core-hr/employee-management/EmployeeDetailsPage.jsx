@@ -615,6 +615,8 @@ const EmployeeDetailsPage = () => {
                 <AssignmentCard
                   assignment={assignment}
                   formatDate={formatDate}
+                  shift={employee.shift}
+                  supervisor={employee.supervisor}
                 />
               )}
               <Card className="shadow-sm">
@@ -717,8 +719,8 @@ const EmployeeDetailsPage = () => {
             </TabsContent>
             {/* Audit */}
             <TabsContent value="audit" className="mt-0">
-  <AuditHistoryTab personId={employee.PERSON_ID} />
-</TabsContent>
+              <AuditHistoryTab personId={employee.PERSON_ID} />
+            </TabsContent>
           </Tabs>
         </main>
       </PageContainer>
@@ -820,7 +822,7 @@ function AddressCard({ title, address, formatDate }) {
   );
 }
 
-function AssignmentCard({ assignment, formatDate }) {
+function AssignmentCard({ assignment, formatDate, shift, supervisor }) {
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -854,12 +856,18 @@ function AssignmentCard({ assignment, formatDate }) {
             <div className="bg-muted/30 p-4 rounded-lg border">
               <DataItem
                 label="Payroll"
-                value={`Payroll #${assignment.PAYROLL_ID}`}
+                value={
+                  assignment.PAYROLL_ID
+                    ? `Payroll #${assignment.PAYROLL_ID}`
+                    : null
+                }
               />
             </div>
           </dl>
         </div>
+
         <Separator />
+
         <div>
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
             Position & Grade
@@ -880,7 +888,52 @@ function AssignmentCard({ assignment, formatDate }) {
             />
           </dl>
         </div>
+
         <Separator />
+
+        {/* ── NEW: Location & Shift & Supervisor ── */}
+        <div>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+            Work Details
+          </h3>
+          <dl className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Location */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <DataItem label="Location" value={assignment.LOCATION_NAME} />
+            </div>
+
+            {/* Shift */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              {shift ? (
+                <>
+                  <DataItem label="Shift" value={shift.SHIFT_NAME} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {shift.SHIFT_CODE} · {shift.START_TIME} – {shift.END_TIME}
+                  </p>
+                </>
+              ) : (
+                <DataItem label="Shift" value={null} />
+              )}
+            </div>
+
+            {/* Supervisor */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              {supervisor ? (
+                <>
+                  <DataItem label="Supervisor" value={supervisor.name} />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {supervisor.empNo}
+                  </p>
+                </>
+              ) : (
+                <DataItem label="Supervisor" value={null} />
+              )}
+            </div>
+          </dl>
+        </div>
+
+        <Separator />
+
         <div>
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
             Assignment Period
@@ -1018,53 +1071,59 @@ function EmployeeAvatar({ employee }) {
   );
 }
 
-
-
 function AuditHistoryTab({ personId }) {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { data, isLoading, isError } = useAuditHistory(personId, { page, limit });
+  const { data, isLoading, isError } = useAuditHistory(personId, {
+    page,
+    limit,
+  });
 
-  const logs    = data?.data       ?? [];
-  const total   = data?.pagination?.total      ?? 0;
+  const logs = data?.data ?? [];
+  const total = data?.pagination?.total ?? 0;
   const totalPages = data?.pagination?.totalPages ?? 1;
 
   const formatDateTime = (d) => {
     if (!d) return "—";
     return new Date(d).toLocaleString("en-GB", {
-      day: "numeric", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Badge color per operation
   const operationVariant = (op) => {
     if (["TERMINATION", "END_EMPLOYMENT"].includes(op)) return "destructive";
-    if (op === "REINSTATE")   return "outline";
-    if (op === "TRANSFER")    return "secondary";
+    if (op === "REINSTATE") return "outline";
+    if (op === "TRANSFER") return "secondary";
     if (["INCREMENT", "PROMOTION"].includes(op)) return "outline";
     return "secondary";
   };
 
-  if (isLoading) return (
-    <Card className="shadow-sm">
-      <CardContent className="flex justify-center py-12">
-        <Spinner className="h-6 w-6" />
-      </CardContent>
-    </Card>
-  );
+  if (isLoading)
+    return (
+      <Card className="shadow-sm">
+        <CardContent className="flex justify-center py-12">
+          <Spinner className="h-6 w-6" />
+        </CardContent>
+      </Card>
+    );
 
-  if (isError) return (
-    <Card className="shadow-sm">
-      <CardContent className="py-8">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load audit history</AlertTitle>
-        </Alert>
-      </CardContent>
-    </Card>
-  );
+  if (isError)
+    return (
+      <Card className="shadow-sm">
+        <CardContent className="py-8">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Failed to load audit history</AlertTitle>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
 
   return (
     <Card className="shadow-sm">
@@ -1074,7 +1133,8 @@ function AuditHistoryTab({ personId }) {
           Audit History
         </CardTitle>
         <CardDescription>
-          All HR actions performed on this employee — {total} record{total !== 1 ? "s" : ""}
+          All HR actions performed on this employee — {total} record
+          {total !== 1 ? "s" : ""}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1106,7 +1166,8 @@ function AuditHistoryTab({ personId }) {
                         {log.operation}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        on <strong className="text-foreground">{log.table}</strong>
+                        on{" "}
+                        <strong className="text-foreground">{log.table}</strong>
                       </span>
                       <span className="ml-auto text-xs text-muted-foreground">
                         {formatDateTime(log.changedOn)}
@@ -1115,38 +1176,55 @@ function AuditHistoryTab({ personId }) {
 
                     {/* Changed by */}
                     <p className="text-xs text-muted-foreground">
-                      By <span className="font-medium text-foreground">{log.changedBy}</span>
+                      By{" "}
+                      <span className="font-medium text-foreground">
+                        {log.changedBy}
+                      </span>
                     </p>
 
                     {/* Old → New values */}
                     {(log.oldValues || log.newValues) && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                        {log.oldValues && Object.keys(log.oldValues).length > 0 && (
-                          <div className="bg-red-500/5 border border-red-500/20 rounded-md p-3">
-                            <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-2">Before</p>
-                            <dl className="space-y-1">
-                              {Object.entries(log.oldValues).map(([k, v]) => (
-                                <div key={k} className="flex gap-2 text-xs">
-                                  <dt className="text-muted-foreground shrink-0">{k}:</dt>
-                                  <dd className="font-medium truncate">{String(v ?? "—")}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          </div>
-                        )}
-                        {log.newValues && Object.keys(log.newValues).length > 0 && (
-                          <div className="bg-green-500/5 border border-green-500/20 rounded-md p-3">
-                            <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wider mb-2">After</p>
-                            <dl className="space-y-1">
-                              {Object.entries(log.newValues).map(([k, v]) => (
-                                <div key={k} className="flex gap-2 text-xs">
-                                  <dt className="text-muted-foreground shrink-0">{k}:</dt>
-                                  <dd className="font-medium truncate">{String(v ?? "—")}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          </div>
-                        )}
+                        {log.oldValues &&
+                          Object.keys(log.oldValues).length > 0 && (
+                            <div className="bg-red-500/5 border border-red-500/20 rounded-md p-3">
+                              <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wider mb-2">
+                                Before
+                              </p>
+                              <dl className="space-y-1">
+                                {Object.entries(log.oldValues).map(([k, v]) => (
+                                  <div key={k} className="flex gap-2 text-xs">
+                                    <dt className="text-muted-foreground shrink-0">
+                                      {k}:
+                                    </dt>
+                                    <dd className="font-medium truncate">
+                                      {String(v ?? "—")}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            </div>
+                          )}
+                        {log.newValues &&
+                          Object.keys(log.newValues).length > 0 && (
+                            <div className="bg-green-500/5 border border-green-500/20 rounded-md p-3">
+                              <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wider mb-2">
+                                After
+                              </p>
+                              <dl className="space-y-1">
+                                {Object.entries(log.newValues).map(([k, v]) => (
+                                  <div key={k} className="flex gap-2 text-xs">
+                                    <dt className="text-muted-foreground shrink-0">
+                                      {k}:
+                                    </dt>
+                                    <dd className="font-medium truncate">
+                                      {String(v ?? "—")}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>
@@ -1162,14 +1240,16 @@ function AuditHistoryTab({ personId }) {
                 </p>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
                     Previous
                   </Button>
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
                   >

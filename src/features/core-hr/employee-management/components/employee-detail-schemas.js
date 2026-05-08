@@ -55,6 +55,8 @@ export const assignmentSchema = z
     gradeId:                      z.string().trim().optional(),
     payrollId:                    z.string().trim().optional(),
     shiftId:                      z.string().optional(),
+     locationId:                   z.string().optional(),   
+    supervisorId:                 z.number().optional(),   
     assignmentEffectiveStartDate: z.date().optional(),
     assignmentEffectiveEndDate:   z.date().optional(),
   })
