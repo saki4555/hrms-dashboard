@@ -31,6 +31,7 @@ export default function ProcessAttendanceDialog({ open, onOpenChange }) {
   const [empOpen, setEmpOpen]               = useState(false);
   const [empSearch, setEmpSearch]           = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  console.log("selected employee", selectedEmployee);
 
   const { data: employees = [], isFetching: empFetching } = useEmployeeLiteSearch(empSearch);
 
@@ -74,6 +75,9 @@ export default function ProcessAttendanceDialog({ open, onOpenChange }) {
         fromDate: toISO(empFrom),
         toDate: toISO(empTo),
       });
+
+     
+     
       toast.success(`Reprocessed ${data.updatedRows} records`);
       resetAll();
       onOpenChange(false);
