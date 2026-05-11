@@ -5,7 +5,7 @@ import { useState } from "react"
 
 const users = [
   { role: "All Roles", username: "asm", password: "123456" },
-  { role: "Admin", username: "pqc", password: "123456" },
+  { role: "Admin", username: "admin", password: "123456" },
   { role: "HR", username: "hr_user", password: "123456" },
   { role: "Supervisor", username: "supervisor_1", password: "123456" },
   { role: "Employee", username: "masud", password: "123456" },
