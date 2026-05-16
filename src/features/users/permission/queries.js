@@ -1,3 +1,4 @@
+// src\features\users\permission\queries.js
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const permissionQueryKeys = {

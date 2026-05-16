@@ -1,6 +1,8 @@
+// src\config\paths.js
 export const PATHS = {
   // ─── Dashboard ────────────────────────────────────────────────────────────
   DASHBOARD: "/",
+  PROFILE: "/profile",
 
   // ─── Authentication ────────────────────────────────────────────────────────
   LOGIN: "/login",
@@ -36,12 +38,10 @@ export const PATHS = {
   },
 
   // ─── Payroll ──────────────────────────────────────────────────────────────
-  PAYROLL: {
-    CONFIGURATION: "payroll/configuration",
-    PROCESSING: "payroll/processing",
-    APPROVALS: "payroll/approvals",
-    OUTPUT: "payroll/output",
-  },
+ PAYROLL: {
+  RUNS:          "payroll/runs",
+  SALARY_SHEET:  "payroll/runs/:payrollId/salary-sheet",
+},
 
   // ─── Performance ──────────────────────────────────────────────────────────
   PERFORMANCE: {

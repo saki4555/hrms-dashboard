@@ -1084,6 +1084,28 @@ function AuditHistoryTab({ personId }) {
   const total = data?.pagination?.total ?? 0;
   const totalPages = data?.pagination?.totalPages ?? 1;
 
+  const AUDIT_LABELS = {
+    // ── Show these with friendly labels ──
+    ASSIGNMENT_ID: "Assignment ID",
+    COMPANY_NAME: "Company",
+    OU_NAME: "Operational Unit",
+    ORG_NAME: "Organization",
+    POSITION_NAME: "Position",
+    GRADE_NAME: "Grade",
+    LOCATION_NAME: "Location",
+    EFFECTIVE_START_DATE: "Start Date",
+    EFFECTIVE_END_DATE: "End Date",
+    REMARKS: "Remarks",
+    // ── Hide raw ID fields — names shown instead ──
+    COMPANY_ID: null,
+    OU_ID: null,
+    ORG_ID: null,
+    POSITION_ID: null,
+    GRADE_ID: null,
+    LOCATION_ID: null,
+    PAYROLL_ID: null, // TODO: resolve when payroll module is built
+  };
+
   const formatDateTime = (d) => {
     if (!d) return "—";
     return new Date(d).toLocaleString("en-GB", {
@@ -1192,16 +1214,20 @@ function AuditHistoryTab({ personId }) {
                                 Before
                               </p>
                               <dl className="space-y-1">
-                                {Object.entries(log.oldValues).map(([k, v]) => (
-                                  <div key={k} className="flex gap-2 text-xs">
-                                    <dt className="text-muted-foreground shrink-0">
-                                      {k}:
-                                    </dt>
-                                    <dd className="font-medium truncate">
-                                      {String(v ?? "—")}
-                                    </dd>
-                                  </div>
-                                ))}
+                                {Object.entries(log.oldValues).map(([k, v]) => {
+                                  if (AUDIT_LABELS[k] === null) return null; // skip raw ID fields
+                                  const label = AUDIT_LABELS[k] ?? k; // fallback to key name
+                                  return (
+                                    <div key={k} className="flex gap-2 text-xs">
+                                      <dt className="text-muted-foreground shrink-0">
+                                        {label}:
+                                      </dt>
+                                      <dd className="font-medium truncate">
+                                        {String(v ?? "—")}
+                                      </dd>
+                                    </div>
+                                  );
+                                })}
                               </dl>
                             </div>
                           )}
@@ -1212,17 +1238,17 @@ function AuditHistoryTab({ personId }) {
                                 After
                               </p>
                               <dl className="space-y-1">
-                                {Object.entries(log.newValues).map(([k, v]) => (
-                                  <div key={k} className="flex gap-2 text-xs">
-                                    <dt className="text-muted-foreground shrink-0">
-                                      {k}:
-                                    </dt>
-                                    <dd className="font-medium truncate">
-                                      {String(v ?? "—")}
-                                    </dd>
-                                  </div>
-                                ))}
-                              </dl>
+  {Object.entries(log.newValues).map(([k, v]) => {
+    if (AUDIT_LABELS[k] === null) return null;
+    const label = AUDIT_LABELS[k] ?? k;
+    return (
+      <div key={k} className="flex gap-2 text-xs">
+        <dt className="text-muted-foreground shrink-0">{label}:</dt>
+        <dd className="font-medium truncate">{String(v ?? "—")}</dd>
+      </div>
+    );
+  })}
+</dl>
                             </div>
                           )}
                       </div>
