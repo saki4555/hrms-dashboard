@@ -108,7 +108,12 @@ export function NavUser({ user }) {
               </DropdownMenuItem>
             </DropdownMenuGroup> */}
 
-            {/* <DropdownMenuSeparator /> */}
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+  <IconUserCircle />
+  Profile
+</DropdownMenuItem>
+
+            <DropdownMenuSeparator />
 
             <DropdownMenuItem onClick={handleLogout}>
               <IconLogout />

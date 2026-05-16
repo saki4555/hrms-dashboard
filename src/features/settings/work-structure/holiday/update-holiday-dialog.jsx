@@ -35,6 +35,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { useUpdateHoliday } from "./queries";
 import { useHrLocations } from "../locations/queries";
 import { useHolidayTypes } from "../holiday-type/queries";
+import { useAuthV2 } from "@/features/authentication-v2/use-auth-v2";
 
 const formSchema = z.object({
   locationId: z.string().min(1, "Location is required"),
@@ -50,6 +51,7 @@ export default function UpdateHolidayDialog({ open, onOpenChange, showConfirmati
   const updateHolidayMutation = useUpdateHoliday();
   const { data: locations = [], isLoading: locationsLoading } = useHrLocations();
   const { data: holidayTypes = [], isLoading: typesLoading } = useHolidayTypes();
+  const {user} = useAuthV2();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -87,6 +89,7 @@ export default function UpdateHolidayDialog({ open, onOpenChange, showConfirmati
         TDATE: data.tdate,
         HOLIDAY_TYPE_ID: Number(data.holidayTypeId),
         DESCRIPTION: data.description || null,
+         UPDATED_BY: user?.id ?? null,
       };
 
       await updateHolidayMutation.mutateAsync({ id: holiday.ID, data: backendData });

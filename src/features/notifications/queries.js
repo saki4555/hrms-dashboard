@@ -1,3 +1,5 @@
+// src\features\notifications\queries.js
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/notifications`;

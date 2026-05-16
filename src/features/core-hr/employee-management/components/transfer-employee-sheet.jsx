@@ -1,3 +1,5 @@
+// src\features\core-hr\employee-management\components\transfer-employee-sheet.jsx
+
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -149,6 +151,8 @@ export default function TransferEmployeeSheet({ open, onOpenChange, employee, sh
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const onSubmit = async (data) => {
+
+    console.log("data", data);
     try {
       await transferMutation.mutateAsync({
         personId: employee.PERSON_ID,

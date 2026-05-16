@@ -1,7 +1,5 @@
 // src\config\nav-config.js
 
-
-
 import { PATHS } from "./paths";
 import { PERMISSIONS as P } from "./permissions";
 import { ALL_ROLES, ADMIN_HR, ADMIN_HR_SUP, ROLES } from "./roles";
@@ -10,7 +8,7 @@ import {
   IconUserCheck,
   IconSettings,
   IconUsersGroup,
-  IconPackage
+  IconPackage,
 } from "@tabler/icons-react";
 
 const { ADMIN, EMPLOYEE, SUPERVISOR } = ROLES;
@@ -26,7 +24,6 @@ export const NAV_ITEMS = [
         defaultOpen: true,
         subItems: [
           { title: "Overview", url: PATHS.DASHBOARD, roles: ALL_ROLES },
-          
         ],
       },
       {
@@ -34,9 +31,21 @@ export const NAV_ITEMS = [
         icon: IconUserCheck,
         roles: ADMIN_HR,
         subItems: [
-          { title: "Employee Management",   url: PATHS.CORE_HR.EMPLOYEES,             roles: ADMIN_HR },
-          { title: "Employee Types",        url: PATHS.CORE_HR.EMPLOYEE_TYPES,        roles: ADMIN_HR },
-          { title: "Supervisor Assignment", url: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT, roles: ADMIN_HR },
+          {
+            title: "Employee Management",
+            url: PATHS.CORE_HR.EMPLOYEES,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Employee Types",
+            url: PATHS.CORE_HR.EMPLOYEE_TYPES,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Supervisor Assignment",
+            url: PATHS.CORE_HR.SUPERVISOR_ASSIGNMENT,
+            roles: ADMIN_HR,
+          },
         ],
       },
       {
@@ -44,11 +53,39 @@ export const NAV_ITEMS = [
         icon: IconUserCheck,
         roles: ALL_ROLES,
         subItems: [
-          { title: "Attendance Data",   url: PATHS.ATTENDANCE.DATA,         roles: ADMIN_HR     },
-          { title: "My Attendance",     url: PATHS.ATTENDANCE.MY,           roles: [EMPLOYEE]   },
-          { title: "Team Attendance",   url: PATHS.ATTENDANCE.TEAM,         roles: [SUPERVISOR] },
-          { title: "Leave Requests",    url: PATHS.ATTENDANCE.LEAVE_REQUEST, roles: ALL_ROLES   },
-          { title: "Leave Types",       url: PATHS.ATTENDANCE.LEAVE_TYPES,  roles: ADMIN_HR     },
+          {
+            title: "Attendance Data",
+            url: PATHS.ATTENDANCE.DATA,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "My Attendance",
+            url: PATHS.ATTENDANCE.MY,
+            roles: [EMPLOYEE],
+          },
+          {
+            title: "Team Attendance",
+            url: PATHS.ATTENDANCE.TEAM,
+            roles: [SUPERVISOR],
+          },
+          {
+            title: "Leave Requests",
+            url: PATHS.ATTENDANCE.LEAVE_REQUEST,
+            roles: ALL_ROLES,
+          },
+          {
+            title: "Leave Types",
+            url: PATHS.ATTENDANCE.LEAVE_TYPES,
+            roles: ADMIN_HR,
+          },
+        ],
+      },
+      {
+        title: "Payroll",
+        icon: IconLayoutDashboard, // swap for a better icon later
+        roles: ADMIN_HR,
+        subItems: [
+          { title: "Payroll Runs", url: PATHS.PAYROLL.RUNS, roles: ADMIN_HR },
         ],
       },
     ],
@@ -62,34 +99,98 @@ export const NAV_ITEMS = [
         icon: IconSettings,
         roles: ADMIN_HR,
         subItems: [
-          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  roles: ADMIN_HR  },
-          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     roles: ADMIN_HR  },
-          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        roles: ADMIN_HR  },
-          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  roles: ADMIN_HR  },
-          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       roles: ADMIN_HR  },
-          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     roles: ADMIN_HR  },
-          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     roles: ADMIN_HR  },
-          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     roles: ADMIN_HR  },
-          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      roles: ADMIN_HR  },
-          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, roles: ADMIN_HR  },
-          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        roles: ADMIN_HR  },
-          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     roles: ADMIN_HR  },
+          {
+            title: "Organization",
+            url: PATHS.SETTINGS.ORGANIZATION,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Positions",
+            url: PATHS.SETTINGS.POSITIONS,
+            roles: ADMIN_HR,
+          },
+          { title: "Grades", url: PATHS.SETTINGS.GRADES, roles: ADMIN_HR },
+          {
+            title: "HR Positions",
+            url: PATHS.SETTINGS.HR_POSITIONS,
+            roles: ADMIN_HR,
+          },
+          { title: "Company", url: PATHS.SETTINGS.COMPANY, roles: ADMIN_HR },
+          {
+            title: "Organization Types",
+            url: PATHS.SETTINGS.ORG_TYPES,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Locations",
+            url: PATHS.SETTINGS.LOCATIONS,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Geo Setup",
+            url: PATHS.SETTINGS.GEO_SETUP,
+            roles: ADMIN_HR,
+          },
+          { title: "Holidays", url: PATHS.SETTINGS.HOLIDAYS, roles: ADMIN_HR },
+          {
+            title: "Holiday Types",
+            url: PATHS.SETTINGS.HOLIDAY_TYPES,
+            roles: ADMIN_HR,
+          },
+          { title: "Shifts", url: PATHS.SETTINGS.SHIFTS, roles: ADMIN_HR },
+          {
+            title: "Contracts",
+            url: PATHS.SETTINGS.CONTRACTS,
+            roles: ADMIN_HR,
+          },
           // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    roles: [ADMIN]   },
           // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         roles: [ADMIN]   },
           // { title: "Item Stocks",        url: PATHS.SETTINGS.ITEM_STOCKS,   roles: [ADMIN]   },
           // { title: "Dispatch",           url: PATHS.SETTINGS.REQUISITIONS,  roles: [ADMIN]   },
-          { title: "Organization",       url: PATHS.SETTINGS.ORGANIZATION,  roles: ADMIN_HR },
-          { title: "Positions",          url: PATHS.SETTINGS.POSITIONS,     roles: ADMIN_HR },
-          { title: "Grades",             url: PATHS.SETTINGS.GRADES,        roles: ADMIN_HR },
-          { title: "HR Positions",       url: PATHS.SETTINGS.HR_POSITIONS,  roles: ADMIN_HR },
-          { title: "Company",            url: PATHS.SETTINGS.COMPANY,       roles: ADMIN_HR },
-          { title: "Organization Types", url: PATHS.SETTINGS.ORG_TYPES,     roles: ADMIN_HR },
-          { title: "Locations",          url: PATHS.SETTINGS.LOCATIONS,     roles: ADMIN_HR },
-          { title: "Geo Setup",          url: PATHS.SETTINGS.GEO_SETUP,     roles: ADMIN_HR },
-          { title: "Holidays",           url: PATHS.SETTINGS.HOLIDAYS,      roles: ADMIN_HR },
-          { title: "Holiday Types",      url: PATHS.SETTINGS.HOLIDAY_TYPES, roles: ADMIN_HR },
-          { title: "Shifts",             url: PATHS.SETTINGS.SHIFTS,        roles: ADMIN_HR },
-          { title: "Contracts",          url: PATHS.SETTINGS.CONTRACTS,     roles: ADMIN_HR },
+          {
+            title: "Organization",
+            url: PATHS.SETTINGS.ORGANIZATION,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Positions",
+            url: PATHS.SETTINGS.POSITIONS,
+            roles: ADMIN_HR,
+          },
+          { title: "Grades", url: PATHS.SETTINGS.GRADES, roles: ADMIN_HR },
+          {
+            title: "HR Positions",
+            url: PATHS.SETTINGS.HR_POSITIONS,
+            roles: ADMIN_HR,
+          },
+          { title: "Company", url: PATHS.SETTINGS.COMPANY, roles: ADMIN_HR },
+          {
+            title: "Organization Types",
+            url: PATHS.SETTINGS.ORG_TYPES,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Locations",
+            url: PATHS.SETTINGS.LOCATIONS,
+            roles: ADMIN_HR,
+          },
+          {
+            title: "Geo Setup",
+            url: PATHS.SETTINGS.GEO_SETUP,
+            roles: ADMIN_HR,
+          },
+          { title: "Holidays", url: PATHS.SETTINGS.HOLIDAYS, roles: ADMIN_HR },
+          {
+            title: "Holiday Types",
+            url: PATHS.SETTINGS.HOLIDAY_TYPES,
+            roles: ADMIN_HR,
+          },
+          { title: "Shifts", url: PATHS.SETTINGS.SHIFTS, roles: ADMIN_HR },
+          {
+            title: "Contracts",
+            url: PATHS.SETTINGS.CONTRACTS,
+            roles: ADMIN_HR,
+          },
           // Admin-only — using PAY_CONFIG as the Admin-only gate
           // { title: "Inventory",          url: PATHS.SETTINGS.INVENTORYS,    permissions: [P.PAY_CONFIG] },
           // { title: "Items",              url: PATHS.SETTINGS.ITEMS,         permissions: [P.PAY_CONFIG] },
@@ -108,10 +209,14 @@ export const NAV_ITEMS = [
         icon: IconUsersGroup,
         roles: ADMIN_HR,
         subItems: [
-          { title: "User Management", url: PATHS.USERS.USER_MANAGEMENT, roles: ADMIN_HR },
-          { title: "Role",            url: PATHS.USERS.ROLE,            roles: ADMIN_HR },
-          { title: "Permission",      url: PATHS.USERS.PERMISSION,      roles: ADMIN_HR },
-          { title: "Module",          url: PATHS.USERS.MODULE,          roles: ADMIN_HR },
+          {
+            title: "User Management",
+            url: PATHS.USERS.USER_MANAGEMENT,
+            roles: ADMIN_HR,
+          },
+          { title: "Role", url: PATHS.USERS.ROLE, roles: ADMIN_HR },
+          { title: "Permission", url: PATHS.USERS.PERMISSION, roles: ADMIN_HR },
+          { title: "Module", url: PATHS.USERS.MODULE, roles: ADMIN_HR },
         ],
       },
     ],
@@ -135,6 +240,3 @@ export const NAV_ITEMS = [
   //   ],
   // },
 ];
-
-
- 
