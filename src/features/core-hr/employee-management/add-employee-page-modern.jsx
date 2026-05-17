@@ -96,6 +96,7 @@ import { ErrorSummary } from "./components/error-summary";
 import { ReviewStep } from "./components/review-step";
 import { employeeSchema } from "./employee-schema";
 import { getAvatarColor } from "@/lib/avatar-utils";
+import { usePayStructures } from "@/features/payroll/pay-structure/queries";
 
 export default function AddEmployeePageModern() {
   const createEmployeeMutation = useCreateEmployee();
@@ -126,6 +127,7 @@ export default function AddEmployeePageModern() {
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const { data: supervisors = [], isFetching: supFetching } =
     useSupervisorLiteSearch(supSearch);
+    const { data: payStructures = [], isLoading: payStructuresLoading } = usePayStructures();
 
   const filteredPositions = useMemo(() => {
     if (!selectedOrgId) return [];
@@ -170,7 +172,8 @@ export default function AddEmployeePageModern() {
       orgPositionId: "",
       locationId: "",
       supervisorId: undefined,
-      payrollId: "",
+      // payrollId: "",
+      payStructureId: "",
       gradeId: "",
       effectiveStartDate: today,
       effectiveEndDate: fiveYearsLater,
@@ -410,7 +413,8 @@ export default function AddEmployeePageModern() {
           OU_ID: parseInt(data.ouId),
           ORG_ID: parseInt(data.orgId),
           POSITION_ID: parseInt(data.orgPositionId),
-          PAYROLL_ID: parseInt(data.payrollId),
+          // PAYROLL_ID: parseInt(data.payrollId),
+          PAY_STRUCTURE_ID: data.payStructureId ? parseInt(data.payStructureId) : null,
           GRADE_ID: parseInt(data.gradeId),
           LOCATION_ID: data.locationId ? parseInt(data.locationId) : null,
           EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
@@ -867,13 +871,16 @@ export default function AddEmployeePageModern() {
                         );
                       }}
                     />
-                    <FieldWithCounter
-                      form={form}
-                      name="payrollId"
-                      label="Payroll ID"
-                      placeholder="Enter payroll ID"
-                      maxLength={30}
-                    />
+                    <ComboboxField
+  form={form}
+  name="payStructureId"
+  label="Pay Structure"
+  items={payStructures}
+  idKey="PAY_STRUCTURE_ID"
+  nameKey="NAME"
+  placeholder={payStructuresLoading ? "Loading..." : "Select pay structure"}
+  disabled={payStructuresLoading}
+/>
                     <ComboboxField
                       form={form}
                       name="shiftId"

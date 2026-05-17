@@ -86,6 +86,7 @@ export const NAV_ITEMS = [
         roles: ADMIN_HR,
         subItems: [
           { title: "Payroll Runs", url: PATHS.PAYROLL.RUNS, roles: ADMIN_HR },
+          { title: "Pay Structure", url: PATHS.PAYROLL.PAY_STRUCTURE, roles: ADMIN_HR },
         ],
       },
     ],

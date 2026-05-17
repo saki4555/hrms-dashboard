@@ -855,12 +855,8 @@ function AssignmentCard({ assignment, formatDate, shift, supervisor }) {
             </div>
             <div className="bg-muted/30 p-4 rounded-lg border">
               <DataItem
-                label="Payroll"
-                value={
-                  assignment.PAYROLL_ID
-                    ? `Payroll #${assignment.PAYROLL_ID}`
-                    : null
-                }
+                label="Pay Structure"
+                value={assignment.PAY_STRUCTURE_NAME ?? null}
               />
             </div>
           </dl>
@@ -1104,6 +1100,7 @@ function AuditHistoryTab({ personId }) {
     GRADE_ID: null,
     LOCATION_ID: null,
     PAYROLL_ID: null, // TODO: resolve when payroll module is built
+    PAY_STRUCTURE_ID: "Pay Structure",
   };
 
   const formatDateTime = (d) => {
@@ -1238,17 +1235,21 @@ function AuditHistoryTab({ personId }) {
                                 After
                               </p>
                               <dl className="space-y-1">
-  {Object.entries(log.newValues).map(([k, v]) => {
-    if (AUDIT_LABELS[k] === null) return null;
-    const label = AUDIT_LABELS[k] ?? k;
-    return (
-      <div key={k} className="flex gap-2 text-xs">
-        <dt className="text-muted-foreground shrink-0">{label}:</dt>
-        <dd className="font-medium truncate">{String(v ?? "—")}</dd>
-      </div>
-    );
-  })}
-</dl>
+                                {Object.entries(log.newValues).map(([k, v]) => {
+                                  if (AUDIT_LABELS[k] === null) return null;
+                                  const label = AUDIT_LABELS[k] ?? k;
+                                  return (
+                                    <div key={k} className="flex gap-2 text-xs">
+                                      <dt className="text-muted-foreground shrink-0">
+                                        {label}:
+                                      </dt>
+                                      <dd className="font-medium truncate">
+                                        {String(v ?? "—")}
+                                      </dd>
+                                    </div>
+                                  );
+                                })}
+                              </dl>
                             </div>
                           )}
                       </div>

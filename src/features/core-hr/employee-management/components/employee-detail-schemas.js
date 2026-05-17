@@ -1,3 +1,4 @@
+// src\features\core-hr\employee-management\components\employee-detail-schemas.js
 import * as z from "zod";
 
 // ─── Personal Details ─────────────────────────────────────────────────────────
@@ -53,7 +54,8 @@ export const assignmentSchema = z
     positionId:                   z.string().trim().optional(),
     orgPositionId:                z.string().trim().optional(),
     gradeId:                      z.string().trim().optional(),
-    payrollId:                    z.string().trim().optional(),
+    // payrollId:                    z.string().trim().optional(),
+    payStructureId: z.string().trim().optional(),
     shiftId:                      z.string().optional(),
      locationId:                   z.string().optional(),   
     supervisorId:                 z.number().optional(),   

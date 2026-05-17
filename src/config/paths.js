@@ -41,6 +41,7 @@ export const PATHS = {
  PAYROLL: {
   RUNS:          "payroll/runs",
   SALARY_SHEET:  "payroll/runs/:payrollId/salary-sheet",
+  PAY_STRUCTURE: "payroll/pay-structure",
 },
 
   // ─── Performance ──────────────────────────────────────────────────────────

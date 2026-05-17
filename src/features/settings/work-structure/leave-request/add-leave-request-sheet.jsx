@@ -54,6 +54,8 @@ import { useCreateLeaveRequest } from "./queries";
 import { useEmployeeLiteSearch } from "@/hooks/use-lite-search";
 import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
 import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
+// ── NEW ───────────────────────────────────────────────────────────────────────
+import LeaveBalanceInline from "@/features/attendance-management/leave-balance/LeaveBalanceInline";
 
 const formSchema = z
   .object({
@@ -93,6 +95,9 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
 
   const { formState: { isDirty } } = form;
 
+  // ── Watch leave_type_id for LeaveBalanceInline ────────────────────────────
+  const watchedLeaveTypeId = form.watch("leave_type_id");
+
   // Reset on open
   useEffect(() => {
     if (open) {
@@ -123,55 +128,55 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
     }
   }, [startDate, endDate]);
 
- const onSubmit = async (data) => {
-  // Confirmation for Admin/HR
-  if (isAdminOrHR) {
-    const confirmed = await showConfirmation({
-      title: "Create & Approve Leave?",
-      description: `This will immediately approve ${selectedEmployee?.name}'s leave from ${data.start_date} to ${data.end_date} (${data.days} days). This cannot be undone automatically.`,
-      confirmText: "Yes, Create & Approve",
-      cancelText: "Review Again",
-      variant: "default",
-    });
-    if (!confirmed) return;
-  }
+  const onSubmit = async (data) => {
+    // Confirmation for Admin/HR
+    if (isAdminOrHR) {
+      const confirmed = await showConfirmation({
+        title: "Create & Approve Leave?",
+        description: `This will immediately approve ${selectedEmployee?.name}'s leave from ${data.start_date} to ${data.end_date} (${data.days} days). This cannot be undone automatically.`,
+        confirmText: "Yes, Create & Approve",
+        cancelText: "Review Again",
+        variant: "default",
+      });
+      if (!confirmed) return;
+    }
 
-  // Confirmation for Employee
-  if (!isAdminOrHR) {
-    const confirmed = await showConfirmation({
-      title: "Submit Leave Request?",
-      description: `Submit leave request from ${data.start_date} to ${data.end_date} (${data.days} days)? Your supervisor will be notified.`,
-      confirmText: "Yes, Submit",
-      cancelText: "Review Again",
-      variant: "default",
-    });
-    if (!confirmed) return;
-  }
+    // Confirmation for Employee
+    if (!isAdminOrHR) {
+      const confirmed = await showConfirmation({
+        title: "Submit Leave Request?",
+        description: `Submit leave request from ${data.start_date} to ${data.end_date} (${data.days} days)? Your supervisor will be notified.`,
+        confirmText: "Yes, Submit",
+        cancelText: "Review Again",
+        variant: "default",
+      });
+      if (!confirmed) return;
+    }
 
-  try {
-    const payload = {
-      employee_id:   isAdminOrHR ? data.employeeId : user.employee_id,
-      leave_type_id: Number(data.leave_type_id),
-      start_date:    data.start_date,
-      end_date:      data.end_date,
-      days:          data.days ? Number(data.days) : null,
-      reason:        data.reason || null,
-      created_by:    user?.employee_id ?? null,
-      status:        isAdminOrHR ? "APPROVED" : "PENDING",
-      approver_id: isAdminOrHR ? (user?.employee_id ?? user?.id) : null,
-    };
-    await createMutation.mutateAsync(payload);
-    toast.success(
-      isAdminOrHR
-        ? "Leave request created and approved!"
-        : "Leave request submitted successfully!"
-    );
-    form.reset();
-    onOpenChange(false);
-  } catch (error) {
-    toast.error(error?.message || "Failed to submit leave request.");
-  }
-};
+    try {
+      const payload = {
+        employee_id:   isAdminOrHR ? data.employeeId : user.employee_id,
+        leave_type_id: Number(data.leave_type_id),
+        start_date:    data.start_date,
+        end_date:      data.end_date,
+        days:          data.days ? Number(data.days) : null,
+        reason:        data.reason || null,
+        created_by:    user?.employee_id ?? null,
+        status:        isAdminOrHR ? "APPROVED" : "PENDING",
+        approver_id:   isAdminOrHR ? (user?.employee_id ?? user?.id) : null,
+      };
+      await createMutation.mutateAsync(payload);
+      toast.success(
+        isAdminOrHR
+          ? "Leave request created and approved!"
+          : "Leave request submitted successfully!"
+      );
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(error?.message || "Failed to submit leave request.");
+    }
+  };
 
   const handleCancel = async () => {
     if (isDirty && showConfirmation) {
@@ -217,151 +222,151 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
               {/* Employee picker — only for Admin/HR */}
-{isAdminOrHR && (
-  <FormField
-    control={form.control}
-    name="employeeId"
-    render={({ field }) => (
-      <FormItem>
-        <FormLabel>
-          Employee <span className="text-destructive">*</span>
-        </FormLabel>
-        <Popover open={empOpen} onOpenChange={setEmpOpen}>
-          <PopoverTrigger asChild>
-            <FormControl>
-              <Button
-                variant="outline"
-                role="combobox"
-                disabled={isSubmitting}
-                className={cn(
-                  "w-full justify-between font-normal px-2",
-                  !selectedEmployee && "text-muted-foreground"
-                )}
-              >
-                {selectedEmployee ? (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Avatar className="h-5 w-5 shrink-0">
-                      <AvatarImage
-                        src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${selectedEmployee.id}`}
-                      />
-                      <AvatarFallback
-                        className={cn(
-                          "text-[10px] font-semibold text-white",
-                          getAvatarColor(selectedEmployee.name),
-                        )}
-                      >
-                        {selectedEmployee.name
-                          ?.split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate text-sm text-foreground">
-                      {selectedEmployee.name}
-                    </span>
-                    {selectedEmployee.empNo && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        ({selectedEmployee.empNo})
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span>Search by name or emp no...</span>
-                )}
-                <div className="flex items-center gap-0.5 ml-1 shrink-0">
-                  {selectedEmployee && (
-                    <span
-                      role="button"
-                      className="rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedEmployee(null);
-                        setEmpSearch("");
-                        field.onChange(undefined);
-                      }}
-                    >
-                      <IconX className="h-3.5 w-3.5" />
-                    </span>
+              {isAdminOrHR && (
+                <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Employee <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Popover open={empOpen} onOpenChange={setEmpOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              disabled={isSubmitting}
+                              className={cn(
+                                "w-full justify-between font-normal px-2",
+                                !selectedEmployee && "text-muted-foreground"
+                              )}
+                            >
+                              {selectedEmployee ? (
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Avatar className="h-5 w-5 shrink-0">
+                                    <AvatarImage
+                                      src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${selectedEmployee.id}`}
+                                    />
+                                    <AvatarFallback
+                                      className={cn(
+                                        "text-[10px] font-semibold text-white",
+                                        getAvatarColor(selectedEmployee.name),
+                                      )}
+                                    >
+                                      {selectedEmployee.name
+                                        ?.split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="truncate text-sm text-foreground">
+                                    {selectedEmployee.name}
+                                  </span>
+                                  {selectedEmployee.empNo && (
+                                    <span className="text-xs text-muted-foreground shrink-0">
+                                      ({selectedEmployee.empNo})
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span>Search by name or emp no...</span>
+                              )}
+                              <div className="flex items-center gap-0.5 ml-1 shrink-0">
+                                {selectedEmployee && (
+                                  <span
+                                    role="button"
+                                    className="rounded p-0.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedEmployee(null);
+                                      setEmpSearch("");
+                                      field.onChange(undefined);
+                                    }}
+                                  >
+                                    <IconX className="h-3.5 w-3.5" />
+                                  </span>
+                                )}
+                                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                              </div>
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[420px] p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Type 2+ characters..."
+                              value={empSearch}
+                              onValueChange={setEmpSearch}
+                            />
+                            <CommandList>
+                              {empFetching && (
+                                <div className="flex items-center justify-center py-4">
+                                  <Spinner className="h-4 w-4" />
+                                </div>
+                              )}
+                              {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
+                                <CommandEmpty>No employees found.</CommandEmpty>
+                              )}
+                              {!empFetching && empSearch.length < 2 && (
+                                <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
+                              )}
+                              <CommandGroup>
+                                {employees.map((emp) => (
+                                  <CommandItem
+                                    key={emp.id}
+                                    value={String(emp.id)}
+                                    onSelect={() => {
+                                      setSelectedEmployee(emp);
+                                      field.onChange(emp.id);
+                                      setEmpOpen(false);
+                                    }}
+                                  >
+                                    <Avatar className="h-6 w-6 shrink-0 mr-2">
+                                      <AvatarImage
+                                        src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${emp.id}`}
+                                      />
+                                      <AvatarFallback
+                                        className={cn(
+                                          "text-[10px] font-semibold text-white",
+                                          getAvatarColor(emp.name),
+                                        )}
+                                      >
+                                        {emp.name
+                                          ?.split(" ")
+                                          .map((n) => n[0])
+                                          .join("")
+                                          .slice(0, 2)
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate">{emp.name}</span>
+                                    <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                                      {emp.empNo}
+                                    </span>
+                                    <Check
+                                      className={cn(
+                                        "ml-2 h-4 w-4 shrink-0",
+                                        selectedEmployee?.id === emp.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                </div>
-              </Button>
-            </FormControl>
-          </PopoverTrigger>
-          <PopoverContent className="w-[420px] p-0" align="start">
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder="Type 2+ characters..."
-                value={empSearch}
-                onValueChange={setEmpSearch}
-              />
-              <CommandList>
-                {empFetching && (
-                  <div className="flex items-center justify-center py-4">
-                    <Spinner className="h-4 w-4" />
-                  </div>
-                )}
-                {!empFetching && empSearch.length >= 2 && employees.length === 0 && (
-                  <CommandEmpty>No employees found.</CommandEmpty>
-                )}
-                {!empFetching && empSearch.length < 2 && (
-                  <CommandEmpty>Type at least 2 characters to search.</CommandEmpty>
-                )}
-                <CommandGroup>
-                  {employees.map((emp) => (
-                    <CommandItem
-                      key={emp.id}
-                      value={String(emp.id)}
-                      onSelect={() => {
-                        setSelectedEmployee(emp);
-                        field.onChange(emp.id);
-                        setEmpOpen(false);
-                      }}
-                    >
-                      <Avatar className="h-6 w-6 shrink-0 mr-2">
-                        <AvatarImage
-                          src={`${import.meta.env.VITE_API_BASE_URL}/api/emp-images/person/${emp.id}`}
-                        />
-                        <AvatarFallback
-                          className={cn(
-                            "text-[10px] font-semibold text-white",
-                            getAvatarColor(emp.name),
-                          )}
-                        >
-                          {emp.name
-                            ?.split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="truncate">{emp.name}</span>
-                      <span className="ml-auto text-xs text-muted-foreground shrink-0">
-                        {emp.empNo}
-                      </span>
-                      <Check
-                        className={cn(
-                          "ml-2 h-4 w-4 shrink-0",
-                          selectedEmployee?.id === emp.id
-                            ? "opacity-100"
-                            : "opacity-0",
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        <FormMessage />
-      </FormItem>
-    )}
-  />
-)}
+                />
+              )}
 
               {/* Leave Type */}
               <FormField
@@ -370,7 +375,11 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Leave Type <span className="text-destructive">*</span></FormLabel>
-                    <Select disabled={isSubmitting || leaveTypesLoading} onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      disabled={isSubmitting || leaveTypesLoading}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={leaveTypesLoading ? "Loading..." : "Select leave type"} />
@@ -386,6 +395,14 @@ export default function AddLeaveRequestSheet({ open, onOpenChange, showConfirmat
                       </SelectContent>
                     </Select>
                     <FormMessage />
+
+                    {/* ── Balance indicator — only for regular employees ── */}
+                    {!isAdminOrHR && (
+                      <LeaveBalanceInline
+                        employeeId={user?.employee_id}
+                        leaveTypeId={watchedLeaveTypeId}
+                      />
+                    )}
                   </FormItem>
                 )}
               />

@@ -41,6 +41,7 @@ const EmployeeTypes = lazy(() => import("@/features/core-hr/employee-types"));
 // ─── Payroll ─────────────────────────────────────────────────────────────────
 const PayrollRuns = lazy(() => import("@/features/payroll"));
 const SalarySheet = lazy(() => import("@/features/payroll/salary-sheet"));
+const PayStructure = lazy(() => import("@/features/payroll/pay-structure"));
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 const Organizations = lazy(
@@ -164,6 +165,7 @@ export const ROUTE_MAP = [
     component: SalarySheet,
     permissions: [P.PAY_PROCESS, P.PAY_VIEW_ALL],
   },
+  { path: PATHS.PAYROLL.PAY_STRUCTURE, component: PayStructure, permissions: [P.PAY_CONFIG] },
   // {
   //   path: PATHS.PAYROLL.SALARY_SHEET,
   //   component: SalarySheet,
