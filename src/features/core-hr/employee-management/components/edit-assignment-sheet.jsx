@@ -65,6 +65,7 @@ import { useGrades } from "@/features/settings/work-structure/hr-grade/queries";
 import { useShifts } from "@/features/settings/work-structure/shift/queries";
 import { useHrLocations } from "@/features/settings/work-structure/locations/queries";
 import { useSupervisorLiteSearch } from "@/hooks/use-lite-search";
+import { usePayStructures } from "@/features/payroll/pay-structure/queries";
 
 export function EditAssignmentSheet({
   employee,
@@ -79,6 +80,7 @@ export function EditAssignmentSheet({
   const { data: grades = [] } = useGrades();
   const { data: shifts = [], isLoading: shiftsL } = useShifts();
   const { data: locations = [], isLoading: locL } = useHrLocations();
+  const { data: payStructures = [], isLoading: payStrL } = usePayStructures();
   console.log("locations sample:", locations[0]); // ← check actual keys
 
   // Supervisor search state
@@ -110,7 +112,8 @@ export function EditAssignmentSheet({
       positionId: "",
       orgPositionId: "",
       gradeId: "",
-      payrollId: "",
+      // payrollId: "",
+      payStructureId: "",
       shiftId: "",
       locationId: "",
       supervisorId: undefined,
@@ -136,7 +139,8 @@ export function EditAssignmentSheet({
       positionId: "",
       orgPositionId: "",
       gradeId: a?.GRADE_ID?.toString() || "",
-      payrollId: a?.PAYROLL_ID?.toString() || "",
+      // payrollId: a?.PAYROLL_ID?.toString() || "",
+      payStructureId: a?.PAY_STRUCTURE_ID?.toString() || "",
       shiftId: employee.shift?.SHIFT_ID?.toString() || "",
       locationId: a?.LOCATION_ID?.toString() || "",
       supervisorId: undefined,
@@ -221,7 +225,8 @@ export function EditAssignmentSheet({
             OU_ID:       parseInt(data.ouId),
             ORG_ID:      parseInt(data.orgId),
             POSITION_ID: parseInt(data.orgPositionId),
-            PAYROLL_ID:  parseInt(data.payrollId),
+            // PAYROLL_ID:  parseInt(data.payrollId),
+            PAY_STRUCTURE_ID: data.payStructureId ? parseInt(data.payStructureId) : null,
             GRADE_ID:    parseInt(data.gradeId),
             LOCATION_ID: data.locationId ? parseInt(data.locationId) : null,
             EFFECTIVE_START_DATE: fd(data.assignmentEffectiveStartDate),
@@ -358,25 +363,16 @@ export function EditAssignmentSheet({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="payrollId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      Payroll ID
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter payroll ID"
-                        disabled={isPending}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+             <ComboboxField
+  form={form}
+  name="payStructureId"
+  label="Pay Structure"
+  items={payStructures}
+  idKey="PAY_STRUCTURE_ID"
+  nameKey="NAME"
+  placeholder={payStrL ? "Loading..." : "Select pay structure"}
+  disabled={isPending || payStrL}
+/>
 
               <ComboboxField
                 form={form}

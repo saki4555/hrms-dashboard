@@ -1,5 +1,8 @@
 // src/features/payroll/create-run-dialog.jsx
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { toast } from "sonner";
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
@@ -13,7 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -26,37 +36,62 @@ import { Spinner } from "@/components/ui/spinner";
 
 import { useCreatePayrollRun } from "./queries";
 
-// Build a list of the last 12 months as options
 const getMonthOptions = () => {
   const options = [];
   const now = new Date();
   for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = format(d, "yyyy-MM");
-    const label = format(d, "MMMM yyyy");
-    options.push({ value, label });
+    options.push({ value: format(d, "yyyy-MM"), label: format(d, "MMMM yyyy") });
   }
   return options;
 };
 
 const MONTH_OPTIONS = getMonthOptions();
 
-export default function CreateRunDialog({ open, onOpenChange }) {
-  const [runMonth, setRunMonth] = useState(MONTH_OPTIONS[0]?.value ?? "");
-  const [remarks, setRemarks] = useState("");
+const schema = z.object({
+  runMonth: z.string().min(1, "Payroll month is required"),
+  remarks:  z.string().max(500).optional(),
+});
 
+export default function CreateRunDialog({ open, onOpenChange, showConfirmation }) {
   const { mutate: createRun, isPending } = useCreatePayrollRun();
 
-  const handleSubmit = () => {
-    if (!runMonth) return toast.error("Please select a payroll month.");
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { runMonth: MONTH_OPTIONS[0]?.value ?? "", remarks: "" },
+  });
 
+  const { formState: { isDirty } } = form;
+
+  useEffect(() => {
+    if (open) {
+      form.reset({ runMonth: MONTH_OPTIONS[0]?.value ?? "", remarks: "" });
+    }
+  }, [open]);
+
+  const handleCancel = async () => {
+    if (isDirty && showConfirmation) {
+      const confirmed = await showConfirmation({
+        title:       "Discard changes?",
+        description: "You have unsaved changes. Are you sure you want to close without saving?",
+        confirmText: "Discard",
+        cancelText:  "Keep Editing",
+        variant:     "destructive",
+      });
+      if (!confirmed) return;
+    }
+    form.reset();
+    onOpenChange(false);
+  };
+
+  const onSubmit = (data) => {
     createRun(
-      { run_month: runMonth, remarks: remarks.trim() || undefined },
+      { run_month: data.runMonth, remarks: data.remarks?.trim() || undefined },
       {
-        onSuccess: (data) => {
-          toast.success(`Payroll run for ${runMonth} created successfully.`);
+        onSuccess: () => {
+          toast.success(`Payroll run for ${data.runMonth} created successfully.`);
+          form.reset();
           onOpenChange(false);
-          setRemarks("");
         },
         onError: (err) => toast.error(err.message),
       }
@@ -64,7 +99,7 @@ export default function CreateRunDialog({ open, onOpenChange }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCancel(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -76,49 +111,53 @@ export default function CreateRunDialog({ open, onOpenChange }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="run-month">
-              Payroll Month <span className="text-destructive">*</span>
-            </Label>
-            <Select value={runMonth} onValueChange={setRunMonth}>
-              <SelectTrigger id="run-month">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTH_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
 
-          <div className="space-y-2">
-            <Label htmlFor="remarks">Remarks (optional)</Label>
-            <Textarea
-              id="remarks"
-              placeholder="e.g. Regular monthly payroll"
-              rows={3}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
-          </div>
-        </div>
+            <FormField control={form.control} name="runMonth" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payroll Month <span className="text-destructive">*</span></FormLabel>
+                <Select disabled={isPending} onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select month" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {MONTH_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !runMonth}>
-            {isPending ? (
-              <><Spinner className="mr-2 h-4 w-4" /> Creating...</>
-            ) : (
-              <><Plus className="mr-2 h-4 w-4" /> Create Run</>
-            )}
-          </Button>
-        </DialogFooter>
+            <FormField control={form.control} name="remarks" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Remarks (optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="e.g. Regular monthly payroll"
+                    rows={3}
+                    disabled={isPending}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleCancel} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending
+                  ? <><Spinner className="mr-2 h-4 w-4" /> Creating...</>
+                  : <><Plus className="mr-2 h-4 w-4" /> Create Run</>}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

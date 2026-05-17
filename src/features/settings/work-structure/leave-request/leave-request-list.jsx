@@ -78,6 +78,7 @@ import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
 import { cn } from "@/lib/utils";
 import { useLeaveTypes } from "@/features/attendance-management/leave-type/queries";
+import LeaveBalanceCards from "@/features/attendance-management/leave-balance/LeaveBalanceCards";
 
 import {
   useAllLeaves,
@@ -365,68 +366,68 @@ function buildColumns({
       },
     },
     {
-  accessorKey: "APPROVED_ON",
-  header: "Actioned On",
-  enableSorting: false,
-  cell: ({ row }) => {
-    const status     = row.original.STATUS;
-    const actionedOn = row.getValue("APPROVED_ON");
+      accessorKey: "APPROVED_ON",
+      header: "Actioned On",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const status = row.original.STATUS;
+        const actionedOn = row.getValue("APPROVED_ON");
 
-    if ((status !== "APPROVED" && status !== "REJECTED") || !actionedOn)
-      return <span className="text-muted-foreground">—</span>;
+        if ((status !== "APPROVED" && status !== "REJECTED") || !actionedOn)
+          return <span className="text-muted-foreground">—</span>;
 
-    return (
-      <div className="text-sm text-muted-foreground">
-        {fmtDateTime(actionedOn)}  {/* ← changed from fmtDate */}
-      </div>
-    );
-  },
-},
+        return (
+          <div className="text-sm text-muted-foreground">
+            {fmtDateTime(actionedOn)} {/* ← changed from fmtDate */}
+          </div>
+        );
+      },
+    },
     {
-  accessorKey: "APPLIED_ON",
-  header: ({ column }) => (
-    <SortHeader column={column}>Applied On</SortHeader>
-  ),
-  cell: ({ row }) => (
-    <div className="text-muted-foreground text-sm">
-      {fmtDateTime(row.getValue("APPLIED_ON"))}
-    </div>
-  ),
-},
+      accessorKey: "APPLIED_ON",
+      header: ({ column }) => (
+        <SortHeader column={column}>Applied On</SortHeader>
+      ),
+      cell: ({ row }) => (
+        <div className="text-muted-foreground text-sm">
+          {fmtDateTime(row.getValue("APPLIED_ON"))}
+        </div>
+      ),
+    },
   );
 
- // Actions column — only for general employees
-if (!isAdminOrHR && !isSupervisor) {
-  cols.push({
-    id: "actions",
-    header: "Actions",
-    enableHiding: false,
-    enableSorting: false,
-    cell: ({ row }) => {
-      const leave = row.original;
-      if (leave.STATUS !== "PENDING") return null;
-      return (
-        <div className="flex items-center gap-2">
-          {/* ← removed edit button entirely */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={() => onDelete(leave)}
-            disabled={deletePending}
-          >
-            {deletePending ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-            <span className="sr-only">Cancel</span>
-          </Button>
-        </div>
-      );
-    },
-  });
-}
+  // Actions column — only for general employees
+  if (!isAdminOrHR && !isSupervisor) {
+    cols.push({
+      id: "actions",
+      header: "Actions",
+      enableHiding: false,
+      enableSorting: false,
+      cell: ({ row }) => {
+        const leave = row.original;
+        if (leave.STATUS !== "PENDING") return null;
+        return (
+          <div className="flex items-center gap-2">
+            {/* ← removed edit button entirely */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onDelete(leave)}
+              disabled={deletePending}
+            >
+              {deletePending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              <span className="sr-only">Cancel</span>
+            </Button>
+          </div>
+        );
+      },
+    });
+  }
 
   return cols;
 }
@@ -442,12 +443,12 @@ export default function LeaveRequestList() {
   console.log({ permissions });
   const employeeId = user?.employee_id;
 
-// ── Role checks — use roles array not permissions ──────────────────────────
-const isAdminOrHR  = user?.roles?.includes(ROLES.ADMIN) || user?.roles?.includes(ROLES.HR);
-const isSupervisor = !isAdminOrHR && user?.roles?.includes(ROLES.SUPERVISOR);
-const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLES.EMPLOYEE);
-
-
+  // ── Role checks — use roles array not permissions ──────────────────────────
+  const isAdminOrHR =
+    user?.roles?.includes(ROLES.ADMIN) || user?.roles?.includes(ROLES.HR);
+  const isSupervisor = !isAdminOrHR && user?.roles?.includes(ROLES.SUPERVISOR);
+  const isEmployee =
+    !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLES.EMPLOYEE);
 
   // ── URL state (nuqs) ────────────────────────────────────────────────────────
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
@@ -537,23 +538,23 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
     setIsUpdateSheetOpen(true);
   };
 
- const handleDelete = async (leave) => {
-  const confirmed = await showConfirmation({
-    title: "Cancel leave request?",
-    description: `Cancel Leave #${leave.LEAVE_ID} (${leave.LEAVE_TYPE_NAME})? Your supervisor will be notified.`,
-    confirmText: "Yes, Cancel Leave",
-    cancelText: "Keep It",
-    variant: "destructive",
-  });
-  if (confirmed) {
-    try {
-      await deleteMutation.mutateAsync(leave.LEAVE_ID);
-      toast.success("Leave request cancelled successfully!");
-    } catch (e) {
-      toast.error(e?.message || "Failed to cancel leave request.");
+  const handleDelete = async (leave) => {
+    const confirmed = await showConfirmation({
+      title: "Cancel leave request?",
+      description: `Cancel Leave #${leave.LEAVE_ID} (${leave.LEAVE_TYPE_NAME})? Your supervisor will be notified.`,
+      confirmText: "Yes, Cancel Leave",
+      cancelText: "Keep It",
+      variant: "destructive",
+    });
+    if (confirmed) {
+      try {
+        await deleteMutation.mutateAsync(leave.LEAVE_ID);
+        toast.success("Leave request cancelled successfully!");
+      } catch (e) {
+        toast.error(e?.message || "Failed to cancel leave request.");
+      }
     }
-  }
-};
+  };
   const clearFilters = () => {
     setFromDate(null);
     setToDate(null);
@@ -654,11 +655,15 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
     return (
       <div>
         <PageHeader
-  onRefetch={refetch}
-  isFetching={isFetching}
-  isAdminOrHR={isAdminOrHR}
-  onAdd={(isEmployee || isAdminOrHR) ? () => setIsAddSheetOpen(true) : undefined}
-/>
+          onRefetch={refetch}
+          isFetching={isFetching}
+          isAdminOrHR={isAdminOrHR}
+          onAdd={
+            isEmployee || isAdminOrHR
+              ? () => setIsAddSheetOpen(true)
+              : undefined
+          }
+        />
         <div className="bg-card rounded-md shadow-sm p-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -694,11 +699,16 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
   return (
     <div>
       <PageHeader
-  onRefetch={refetch}
-  isFetching={isFetching}
-  isAdminOrHR={isAdminOrHR}
-  onAdd={(isEmployee || isAdminOrHR) ? () => setIsAddSheetOpen(true) : undefined}
-/>
+        onRefetch={refetch}
+        isFetching={isFetching}
+        isAdminOrHR={isAdminOrHR}
+        onAdd={
+          isEmployee || isAdminOrHR ? () => setIsAddSheetOpen(true) : undefined
+        }
+      />
+      {!isAdminOrHR && !isSupervisor && (
+  <LeaveBalanceCards employeeId={employeeId} className="mb-2" />
+)}
 
       <div className="bg-card rounded-md shadow-sm p-4">
         <div className="space-y-4">
@@ -873,14 +883,14 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
         </div>
       </div>
 
-     {isAddSheetOpen && (
-  <AddLeaveRequestSheet
-    open={isAddSheetOpen}
-    onOpenChange={setIsAddSheetOpen}
-    showConfirmation={showConfirmation}
-    isAdminOrHR={isAdminOrHR}  // ← new
-  />
-)}
+      {isAddSheetOpen && (
+        <AddLeaveRequestSheet
+          open={isAddSheetOpen}
+          onOpenChange={setIsAddSheetOpen}
+          showConfirmation={showConfirmation}
+          isAdminOrHR={isAdminOrHR} // ← new
+        />
+      )}
       {isUpdateSheetOpen && (
         <UpdateLeaveRequestSheet
           open={isUpdateSheetOpen}
@@ -899,7 +909,7 @@ const isEmployee   = !isAdminOrHR && !isSupervisor && user?.roles?.includes(ROLE
 //  PAGE HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PageHeader({ onAdd, onRefetch, isFetching , isAdminOrHR }) {
+function PageHeader({ onAdd, onRefetch, isFetching, isAdminOrHR }) {
   return (
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
