@@ -30,19 +30,20 @@ export const PATHS = {
     ASSIGNMENT: "attendance/assignment",
     SCHEDULE: "attendance/schedule",
     DATA: "attendance/data",
-    TEAM:          "attendance/team", 
-  MY:            "attendance/my",          
+    TEAM: "attendance/team",
+    MY: "attendance/my",
     REPORTS: "attendance/reports",
     LEAVE_REQUEST: "attendance/leave-requests",
     LEAVE_TYPES: "attendance/leave-types",
+    LATE_APPLICATION: "attendance/late-applications",
   },
 
   // ─── Payroll ──────────────────────────────────────────────────────────────
- PAYROLL: {
-  RUNS:          "payroll/runs",
-  SALARY_SHEET:  "payroll/runs/:payrollId/salary-sheet",
-  PAY_STRUCTURE: "payroll/pay-structure",
-},
+  PAYROLL: {
+    RUNS: "payroll/runs",
+    SALARY_SHEET: "payroll/runs/:payrollId/salary-sheet",
+    PAY_STRUCTURE: "payroll/pay-structure",
+  },
 
   // ─── Performance ──────────────────────────────────────────────────────────
   PERFORMANCE: {
@@ -88,8 +89,6 @@ export const PATHS = {
     // ITEM_STOCKS: "settings/work-structure/item-stock",
     // REQUISITION: "settings/work-structure/req-master",
     // REQUISITIONS: "settings/work-structure/requisitions",
-   
-  
   },
 
   // ─── Reports ──────────────────────────────────────────────────────────────

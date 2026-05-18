@@ -105,6 +105,9 @@ const AttendanceTeam = lazy(
 const AttendanceMy = lazy(
   () => import("@/features/attendance/attendance-my.jsx"),
 );
+const LateApplications = lazy(
+  () => import("@/features/attendance-management/late-application"),
+);
 
 // Profile
 const Profile = lazy(() => import("@/features/profile/profile-page"));
@@ -198,6 +201,11 @@ export const ROUTE_MAP = [
     component: LeaveTypes,
     permissions: [P.SHIFT_SETUP, P.HR_SETUP],
   },
+  {
+  path:        PATHS.ATTENDANCE.LATE_APPLICATION,
+  component:   LateApplications,
+  permissions: [P.ATT_LEAVE_APPROVE, P.MSS_APPROVE_TEAM, P.ESS_LATE_APPLY],
+},
 
   // ── Settings ──────────────────────────────────────────────────────────────────
   {
