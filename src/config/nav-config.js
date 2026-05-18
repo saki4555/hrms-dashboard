@@ -74,6 +74,11 @@ export const NAV_ITEMS = [
             roles: ALL_ROLES,
           },
           {
+            title: "Late Applications",
+            url: PATHS.ATTENDANCE.LATE_APPLICATION,
+            roles: ALL_ROLES,
+          },
+          {
             title: "Leave Types",
             url: PATHS.ATTENDANCE.LEAVE_TYPES,
             roles: ADMIN_HR,
@@ -86,7 +91,11 @@ export const NAV_ITEMS = [
         roles: ADMIN_HR,
         subItems: [
           { title: "Payroll Runs", url: PATHS.PAYROLL.RUNS, roles: ADMIN_HR },
-          { title: "Pay Structure", url: PATHS.PAYROLL.PAY_STRUCTURE, roles: ADMIN_HR },
+          {
+            title: "Pay Structure",
+            url: PATHS.PAYROLL.PAY_STRUCTURE,
+            roles: ADMIN_HR,
+          },
         ],
       },
     ],
