@@ -1,3 +1,4 @@
+// src\layouts\dashboard-layout.jsx
 import { AppSidebar } from "@/components/app-sidebar";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { PageLoader } from "@/components/loading-spinner";
