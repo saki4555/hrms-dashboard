@@ -1,5 +1,5 @@
 // src\features\attendance\queries.js
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const BASE = `${import.meta.env.VITE_API_BASE_URL}/api/attendance`;
 
@@ -148,3 +148,20 @@ export const useReprocessEmployee = () =>
         body: JSON.stringify({ employeeId, fromDate, toDate }),
       }),
   });
+
+  // ── Manual Attendance Edit (Admin & HR only — ATT_CORRECTION_APPROVE) ─────────
+export const useManualAttendanceEdit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ attendanceId, inTime, outTime }) =>
+      fetcher(`${BASE}/${attendanceId}/manual-edit`, {
+        method: "PUT",
+        body: JSON.stringify({ inTime, outTime }),
+      }),
+    onSuccess: () => {
+      // Invalidate all attendance query keys so the list and summary
+      // both refresh automatically after the edit + reprocess completes
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+};

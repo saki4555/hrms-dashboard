@@ -36,6 +36,7 @@ export const PATHS = {
     LEAVE_REQUEST: "attendance/leave-requests",
     LEAVE_TYPES: "attendance/leave-types",
     LATE_APPLICATION: "attendance/late-applications",
+    ATTENDANCE_CORRECTION: "attendance/corrections",
   },
 
   // ─── Payroll ──────────────────────────────────────────────────────────────

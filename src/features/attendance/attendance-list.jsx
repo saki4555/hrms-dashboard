@@ -27,6 +27,7 @@ import {
   Check,
   CalendarIcon,
   CpuIcon,
+  Pencil,
   CalendarClockIcon,
 } from "lucide-react";
 import { IconSelector, IconX } from "@tabler/icons-react";
@@ -115,7 +116,11 @@ import { useAttendance, useAttendanceSummary, buildExportUrl } from "./queries";
 import AttendanceDetailDialog from "./attendance-detail-dialog";
 import { DataTable } from "@/components/shared/data-table";
 import ProcessAttendanceDialog from "./process-attendance-dialog";
+import ManualEditDialog from "./manual-edit-dialog";
+import { useConfirmationDialog } from "@/hooks/useConfirmationDialog";
 
+import { useAuthV2 as useAuth } from "@/features/authentication-v2/use-auth-v2";
+import { ROLES } from "@/config/roles";
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -530,6 +535,7 @@ function ExportButton({ exportParams }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AttendanceList() {
+  const { showConfirmation, ConfirmationDialog } = useConfirmationDialog();
   // ── URL state via nuqs ──────────────────────────────────────────────────────
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [limit, setLimit] = useQueryState(
@@ -605,6 +611,13 @@ export default function AttendanceList() {
   const [detailEmployeeId, setDetailEmployeeId] = useState(null);
   const [detailDate, setDetailDate] = useState(null);
   const [detailEmployeeName, setDetailEmployeeName] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
+
+ 
+  const { user } = useAuth();
+  const isAdminOrHR =
+    user?.roles?.includes(ROLES.ADMIN) || user?.roles?.includes(ROLES.HR);
 
   useEffect(() => {
     if (!fromDate && !toDate) {
@@ -615,30 +628,39 @@ export default function AttendanceList() {
   }, []);
 
   // ── Backend params ──────────────────────────────────────────────────────────
- const backendParams = useMemo(() => {
-  const isSingleDay = fromDate && (!toDate || toDate === fromDate);
-  return {
+  const backendParams = useMemo(() => {
+    const isSingleDay = fromDate && (!toDate || toDate === fromDate);
+    return {
+      page,
+      limit,
+      date: isSingleDay ? fromDate : "",
+      fromDate: !isSingleDay ? fromDate : "",
+      toDate: !isSingleDay ? toDate : "",
+      employeeId,
+      supervisorId,
+      companyId,
+      orgId,
+      locationId,
+      shiftId,
+      status,
+      sortBy,
+      sortOrder,
+    };
+  }, [
     page,
     limit,
-    date: isSingleDay ? fromDate : "",
-    fromDate: !isSingleDay ? fromDate : "",
-    toDate: !isSingleDay ? toDate : "",
+    fromDate,
+    toDate,
     employeeId,
     supervisorId,
-    companyId,    
-    orgId,        
-    locationId,   
-    shiftId,      
+    companyId,
+    orgId,
+    locationId,
+    shiftId,
     status,
     sortBy,
     sortOrder,
-  };
-}, [
-  page, limit, fromDate, toDate,
-  employeeId, supervisorId,
-  companyId, orgId, locationId, shiftId,  
-  status, sortBy, sortOrder,
-]);
+  ]);
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
@@ -711,27 +733,33 @@ export default function AttendanceList() {
   );
 
   // ── Filter helpers ──────────────────────────────────────────────────────────
-const hasActiveFilters =
-  employeeId || supervisorId ||
-  companyId || orgId || locationId || shiftId ||  
-  fromDate || toDate || status;
+  const hasActiveFilters =
+    employeeId ||
+    supervisorId ||
+    companyId ||
+    orgId ||
+    locationId ||
+    shiftId ||
+    fromDate ||
+    toDate ||
+    status;
 
-const clearAllFilters = () => {
-  setFromDate(null);
-  setToDate(null);
-  setEmployeeId(null);
-  setSupervisorId(null);
-  setCompanyId(null);    
-  setOrgId(null);        
-  setLocationId(null);   
-  setShiftId(null);      
-  setStatus(null);
-  setSelectedEmployee(null);
-  setEmpSearch("");
-  setSelectedSupervisor(null);
-  setSupSearch("");
-  setPage(1);
-};
+  const clearAllFilters = () => {
+    setFromDate(null);
+    setToDate(null);
+    setEmployeeId(null);
+    setSupervisorId(null);
+    setCompanyId(null);
+    setOrgId(null);
+    setLocationId(null);
+    setShiftId(null);
+    setStatus(null);
+    setSelectedEmployee(null);
+    setEmpSearch("");
+    setSelectedSupervisor(null);
+    setSupSearch("");
+    setPage(1);
+  };
 
   // ── Detail dialog opener ────────────────────────────────────────────────────
   const openDetail = (row) => {
@@ -890,19 +918,37 @@ const clearAllFilters = () => {
         enableHiding: false,
         enableSorting: false,
         cell: ({ row }) => (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs gap-1.5"
-            onClick={() => openDetail(row.original)}
-          >
-            <Clock className="h-3.5 w-3.5" />
-            Punches
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => openDetail(row.original)}
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Punches
+            </Button>
+
+            {/* Edit button — Admin & HR only */}
+            {isAdminOrHR && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => {
+                  setSelectedAttendance(row.original);
+                  setEditDialogOpen(true);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
+            )}
+          </div>
         ),
       },
     ],
-    [],
+    [isAdminOrHR],
   );
 
   // ── TanStack table ──────────────────────────────────────────────────────────
@@ -1284,9 +1330,11 @@ const clearAllFilters = () => {
                         <Spinner className="h-4 w-4" />
                       </div>
                     )}
-                    {!supFetching && supSearch.length >= 2 && supervisors.length === 0 && (
-                      <CommandEmpty>No supervisors found.</CommandEmpty>
-                    )}
+                    {!supFetching &&
+                      supSearch.length >= 2 &&
+                      supervisors.length === 0 && (
+                        <CommandEmpty>No supervisors found.</CommandEmpty>
+                      )}
                     {!supFetching && supSearch.length < 2 && (
                       <CommandEmpty>Type at least 2 characters.</CommandEmpty>
                     )}
@@ -1425,6 +1473,14 @@ const clearAllFilters = () => {
         date={detailDate}
         employeeName={detailEmployeeName}
       />
+      <ManualEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        attendance={selectedAttendance}
+        showConfirmation={showConfirmation}
+      />
+
+      <ConfirmationDialog />
     </div>
   );
 }
@@ -1440,11 +1496,15 @@ function PageHeader({ isFetching, onRefetch }) {
     <div className="bg-card rounded-md shadow-sm p-4 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-0.5">
-          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">Attendance</h1>
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight">
+            Attendance
+          </h1>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/">Dashboard</Link></BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link to="/">Dashboard</Link>
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>Attendance Management</BreadcrumbItem>
@@ -1457,14 +1517,26 @@ function PageHeader({ isFetching, onRefetch }) {
         </div>
 
         <div className="flex items-center gap-2">
-         <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setOpen(true)}>
-  <CalendarClockIcon className="h-4 w-4" />
-  Process / Reprocess
-</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5"
+            onClick={() => setOpen(true)}
+          >
+            <CalendarClockIcon className="h-4 w-4" />
+            Process / Reprocess
+          </Button>
 
           {onRefetch && (
-            <Button variant="outline" size="icon" onClick={onRefetch} disabled={isFetching}>
-              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefetch}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isFetching && "animate-spin")}
+              />
             </Button>
           )}
         </div>

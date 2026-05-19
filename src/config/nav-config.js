@@ -79,6 +79,11 @@ export const NAV_ITEMS = [
             roles: ALL_ROLES,
           },
           {
+            title: "Attendance Corrections",
+            url: PATHS.ATTENDANCE.ATTENDANCE_CORRECTION,
+            roles: ALL_ROLES,
+          },
+          {
             title: "Leave Types",
             url: PATHS.ATTENDANCE.LEAVE_TYPES,
             roles: ADMIN_HR,
