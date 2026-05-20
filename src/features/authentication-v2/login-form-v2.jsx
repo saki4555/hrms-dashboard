@@ -27,12 +27,12 @@ export default function LoginFormV2() {
   return (
     <div className="max-w-sm mx-auto">
       <div className="flex flex-col items-center gap-2">
-         <img
+         {/* <img
           src={pqcLogo}
           alt="PQC Logo"
           className="w-11 shadow-xl  object-contain"
           aria-hidden="true"
-        />
+        /> */}
         <div className="text-center mb-4">
           <h2 className="text-lg font-semibold sm:text-center">Welcome back</h2>
           <p className="text-sm text-muted-foreground sm:text-center">
